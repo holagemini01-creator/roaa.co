@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>رؤى — جولات افتراضية ومسح ثلاثي الأبعاد للعقارات</title>
+<meta name="description" content="رؤى — استوديو متخصص في الجولات الافتراضية والمسح ثلاثي الأبعاد للعقارات الفاخرة." />
+
+<link rel="icon" type="image/png" href="roaa-logo-main.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Kufam:wght@700;800&family=Tajawal:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --ink: #17181a;
+    --ink-2: #1d1e21;
+    --panel: #232427;
+    --panel-line: #38393d;
+    --gold: #c6a35d;
+    --gold-soft: #a98c52;
+    --gold-dim: rgba(198,163,93,0.14);
+    --paper: #f3efe6;
+    --muted: #9a978d;
+    --radius: 2px;
+  }
+
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+
+  body{
+    margin:0;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Tajawal', sans-serif;
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Blueprint grid backdrop ---------- */
+  .bp-grid{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      linear-gradient(var(--gold-dim) 1px, transparent 1px),
+      linear-gradient(90deg, var(--gold-dim) 1px, transparent 1px),
+      linear-gradient(rgba(198,163,93,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(198,163,93,0.05) 1px, transparent 1px);
+    background-size: 88px 88px, 88px 88px, 22px 22px, 22px 22px;
+    background-position: center;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 40%, transparent 85%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 40%, transparent 85%);
+    opacity:0.9;
+  }
+  .bp-vignette{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(198,163,93,0.06), transparent 60%),
+                linear-gradient(180deg, transparent 0%, var(--ink) 96%);
+  }
+
+  /* ---------- Corner registration marks (تم تصحيح الاتجاهات لتشير للخارج بشكل هندسي) ---------- */
+  .reg-marks span{
+    position:fixed; width:18px; height:18px; z-index:2; pointer-events:none;
+    border-color: var(--gold-soft); opacity:0.55;
+  }
+  .reg-marks .tl{ top:18px; left:18px; border-top:1px solid; border-left:1px solid; }
+  .reg-marks .tr{ top:18px; right:18px; border-top:1px solid; border-right:1px solid; }
+  .reg-marks .bl{ bottom:18px; left:18px; border-bottom:1px solid; border-left:1px solid; }
+  .reg-marks .br{ bottom:18px; right:18px; border-bottom:1px solid; border-right:1px solid; }
+  @media (max-width: 640px){ .reg-marks{ display:none; } }
+
+  .page{
+    position:relative; z-index:1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 30px 28px 64px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{ text-align:center; display: flex; flex-direction: column; align-items: center; }
+  .mark{
+    width: clamp(120px, 26vw, 80px);
+    max-width: 70%;
+    height:auto; margin: 0 auto 4px;
+    opacity:0; transform: translateY(10px);
+    animation: rise 0.9s cubic-bezier(.2,.7,.2,1) 0.1s forwards;
+  }
+  .eyebrow{
+    display:block; margin: 20px 0 70px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.9rem; letter-spacing:0.32em; text-transform:uppercase;
+    color: var(--gold-soft); opacity:0;
+    animation: rise 0.9s cubic-bezier(.2,.7,.2,1) 0.42s forwards;
+  }
+  .tagline{
+    font-family:'Tajawal', sans-serif;
+    font-weight:400;
+    font-size: clamp(1rem, 2.4vw, 1.2rem);
+    line-height: 1.8;
+    color: var(--muted);
+    max-width: 620px;
+    margin: -35px auto 0;
+    text-align: center;
+    opacity:0; transform: translateY(10px);
+    animation: rise 0.9s cubic-bezier(.2,.7,.2,1) 0.56s forwards;
+  }
+
+  @keyframes rise{ to{ opacity:1; transform:none; } }
+
+  .divider{
+    width:100%; max-width:220px; height:1px; margin: 25px auto;
+    background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+    opacity:0.6;
+  }
+
+  /* ---------- Tour "drawing sheet" (تم تصحيح تأطير زوايا الجولة الافتراضية بدقة) ---------- */
+  .tour-block{ margin: 8px 0 40px; }
+  .sheet{
+    border: 1px solid var(--panel-line);
+    background: var(--panel);
+    border-radius: var(--radius);
+    position:relative;
+    opacity:0; transform: translateY(14px);
+    animation: rise 0.9s cubic-bezier(.2,.7,.2,1) 0.7s forwards;
+  }
+  
+  /* زوايا التأطير الأربعة للجولة الافتراضية تشير للخارج الآن بشكل صحيح هندسياً */
+  .sheet::before, .sheet::after,
+  .sheet .c2::before, .sheet .c2::after{
+    content:""; position:absolute; width:14px; height:14px;
+    border-color: var(--gold); opacity:0.9;
+  }
+  /* أعلى اليمين */
+  .sheet::before{ top:-1px; right:-1px; border-top:1px solid; border-right:1px solid; border-bottom: none; border-left: none; }
+  /* أسفل اليسار */
+  .sheet::after{ bottom:-1px; left:-1px; border-bottom:1px solid; border-left:1px solid; border-top: none; border-right: none; }
+  /* أعلى اليسار */
+  .sheet .c2::before{ top:-1px; left:-1px; border-top:1px solid; border-left:1px solid; border-bottom: none; border-right: none; }
+  /* أسفل اليمين */
+  .sheet .c2::after{ bottom:-1px; right:-1px; border-bottom:1px solid; border-right:1px solid; border-top: none; border-left: none; }
+
+  .sheet-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--panel-line);
+  }
+  .tag{
+    font-family:'Cairo', sans-serif; font-weight:600; font-size:0.85rem;
+    color: var(--paper); letter-spacing:0.02em;
+  }
+  .tag.mono{
+    font-family:'JetBrains Mono', monospace; font-weight:500; font-size:0.7rem;
+    color: var(--gold-soft); letter-spacing:0.1em; text-transform:uppercase;
+  }
+
+  .viewport{
+    position:relative;
+    width:100%;
+    aspect-ratio: 16 / 10;
+    background:
+      repeating-linear-gradient(135deg, rgba(198,163,93,0.05) 0 2px, transparent 2px 14px),
+      var(--ink-2);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .viewport iframe{
+    width:100%; height:100%; border:0; display:block;
+  }
+
+  /* ---------- مربعات براند رؤى فوق الـ iframe ---------- */
+  .cover{
+    position:absolute; z-index:5; pointer-events:auto;
+    transition: opacity 0.6s ease;
+    border-radius:14px; overflow:hidden; isolation:isolate;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cover img{
+    position:relative; z-index:1;
+    max-width:90%; max-height:88%; object-fit:contain;
+    pointer-events:none;
+  }
+  /* اللوجو الأفقي داخل مربع اليسار العريض */
+  .cover-topleft img{ max-height:70%; max-width:88%; }
+  /* مربعات معتمة تماماً (لا يبان شيء تحتها) */
+  .cover-dark{ background:#1e1f22; }
+  .cover-dark::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background: linear-gradient(160deg, rgba(255,255,255,0.05) 0%, transparent 35%);
+  }
+  /* مربع فاتح معتم (للوجو الملوّن) */
+  .cover-light{ background:#f3efe6; }
+  .cover-light::after{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background: linear-gradient(160deg, rgba(255,255,255,0.35) 0%, transparent 40%);
+  }
+
+  /* أسفل اليمين (فوق شعار matterport) - حاجز شفاف */
+  .cover-logo{ bottom:8px; right:8px; width:150px; height:66px; background:transparent; }
+  /* أعلى اليسار - يغطي شعار matterport فقط (بدون النص تحته) */
+  .cover-topleft{ top:6px; left:5px; width:150px; height:38px; }
+  /* حاجز شفاف يبدأ من أقصى الزاوية العلوية اليسرى، أكبر قليلاً من اللوجو */
+  .cover-topblock{ top:0; left:0; width:230px; height:70px; background:transparent; z-index:4; }
+  
+
+  .cover.hide{ opacity:0; pointer-events:none; }
+
+  /* ---------- فقرة شرح الخدمة ---------- */
+  .service-note{
+    max-width: 760px;
+    margin: -10px auto;
+    padding: 0 20px;
+    text-align: center;
+  }
+  .service-note .sn-label{
+    display:inline-block; margin-bottom:30px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.72rem; letter-spacing:0.28em; text-transform:uppercase;
+    color: var(--gold-soft);
+  }
+  .service-note p{
+    font-family:'Tajawal', sans-serif;
+    font-size: clamp(0.98rem, 2.1vw, 1.12rem);
+    line-height: 2.1;
+    color: rgba(240,238,232,0.86);
+    margin: 5;
+  }
+  .service-note .sn-rule{
+    display:block; width:64px; height:1px; margin:22px auto 0;
+    background: linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+  }
+
+  /* ---------- شريط يغطي شعار matterport ---------- */
+  .mp-veil{
+    position:absolute; z-index:7; pointer-events:none;
+    left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; justify-content:center;
+    text-align:center; line-height:1.65;
+    padding:9px 20px; border-radius:22px;
+    background:rgba(18,22,30,0.86);
+    border:1px solid rgba(198,163,93,0.42);
+    color:#f3efe6;
+    font-family:'Kufam', system-ui, sans-serif;
+    letter-spacing:.3px;
+    box-shadow:0 6px 20px rgba(0,0,0,0.3);
+    -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px);
+    transition:opacity 1s ease;
+  }
+  /* الشريط الدائم في الوضع العادي — يمكنك تحريكه بـ top / left */
+  /* الشريط الدائم — للجوال/التابلت فقط (بعد الخروج من ملء الشاشة) */
+  .mp-veil-normal{ top:67%; left:50%; font-size:13px; display:none;
+    min-width:min(78%, 300px); padding:16px 26px; }
+  /* الشريط المؤقت — اللابتوب: 65% */
+  .mp-veil-fs{ top:65%; left:50%; font-size:14px;
+    min-width:min(80%, 300px); padding:18px 28px; }
+  .mp-veil.fade{ opacity:0; }
+  /* لا تظهر أي جملة قبل بدء الجولة */
+  .mp-veil[hidden]{ display:none !important; }
+
+  /* أزرار ملء الشاشة تظهر في الجوال/التابلت فقط */
+  .exit-fs, .resume-fs{ display:none; }
+
+  /* ---------- وضع ملء الشاشة المزيّف (الجوال والتابلت فقط) ---------- */
+  .exit-fs{
+    position:absolute; top:10px; right:10px; z-index:12;
+    width:38px; height:38px; border-radius:50%;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(30,36,48,0.85); color:#f3efe6;
+    border:1px solid rgba(198,163,93,0.5);
+    font-size:20px; line-height:1; cursor:pointer;
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  }
+
+  @media (max-width:1024px){
+    /* الشريط المؤقت في الجوال: 66% */
+    .mp-veil-fs{ top:66%; min-width:min(84%, 250px); padding:18px 26px; }
+    /* الشريط الدائم متاح في الجوال فقط */
+    .mp-veil-normal{ display:flex; }
+    .mp-veil-normal{ top:67%; min-width:min(60%, 180px); }
+    .viewport.is-fs{
+      position:fixed; inset:0; z-index:2147483647;
+      width:100vw; height:100vh; height:100dvh;
+      aspect-ratio:auto;
+      max-width:none; margin:0; border-radius:0;
+      background:#0f1218;
+      display:flex; align-items:center; justify-content:center;
+    }
+    /* الـ iframe يتوسط ويملأ الشاشة بالكامل */
+    .viewport.is-fs iframe{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+    }
+    .viewport.is-fs .exit-fs{ display:flex; }
+    /* تكبير المربعات تناسبياً في وضع الشاشة الكاملة */
+    .viewport.is-fs .cover-topleft{ top:10px; left:9px; width:200px; height:52px; }
+    .viewport.is-fs .cover-logo{ bottom:12px; right:2px; width:200px; height:88px; }
+    /* إلغاء الحاجز الشفاف الأيسر في وضع ملء الشاشة */
+    .viewport.is-fs .cover-block{ display:none; }
+    /* إخفاء بقية الموقع تماماً أثناء ملء الشاشة */
+    body.fs-lock{ overflow:hidden; }
+    body.fs-lock > *:not(.fs-host){ display:none !important; }
+    .fs-host{ position:static; z-index:auto; }
+    /* زر العودة إلى ملء الشاشة (يظهر فوق الـ iframe بعد الخروج) */
+    .resume-fs{ display:flex !important; }
+  }
+
+  /* طبقة تحجب اللمس عن كامل شاشة العرض عند ظهور زر الرجوع */
+  .tap-shield{
+    position:absolute; inset:0; z-index:10;
+    background:transparent; pointer-events:auto;
+  }
+  .tap-shield[hidden]{ display:none !important; }
+
+  /* زر العودة للجولة بملء الشاشة - فوق الـ iframe */
+  .resume-fs{
+    position:absolute; z-index:11;
+    top:50%; left:50%; transform:translate(-50%,-50%);
+    display:none; align-items:center; gap:9px;
+    padding:12px 22px; border-radius:999px;
+    background:rgba(30,36,48,0.92); color:#f3efe6;
+    border:1px solid rgba(198,163,93,0.55);
+    font-family:'Kufam', system-ui, sans-serif; font-size:14px;
+    cursor:pointer; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  }
+  .resume-fs[hidden]{ display:none !important; }
+
+  /* ---------- شاشة التحميل فوق الـ iframe ---------- */
+  .loading-screen{
+    position:absolute; inset:0; z-index:6;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:22px;
+    background:#f3efe6;
+    transition: opacity 0.8s ease;
+  }
+  .loading-screen.hide{ opacity:0; pointer-events:none; }
+  .loading-screen img{
+    width:min(46%, 190px); max-height:38%;
+    object-fit:contain;
+  }
+  .loading-spinner{
+    width:46px; height:46px; border-radius:50%;
+    border:3px solid rgba(30,32,40,0.15);
+    border-top-color:#c9a24a;
+    animation: roaa-spin 0.9s linear infinite;
+  }
+  @keyframes roaa-spin{ to{ transform: rotate(360deg); } }
+  .loading-text{
+    font-family:'Kufam', system-ui, sans-serif;
+    font-size:15px; letter-spacing:.5px;
+    color:#2b2f3a; opacity:.85;
+  }
+  /* حالة "اضغط لبدء الجولة" */
+  .loading-screen.ready{ cursor:pointer; }
+  .loading-screen.ready .loading-text{
+    padding:10px 22px; border-radius:999px;
+    background:#1e2430; color:#f3efe6; opacity:1;
+    animation: roaa-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes roaa-pulse{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.05); }
+  }
+  .empty-state{
+    text-align:center; padding: 24px; max-width: 380px;
+  }
+  .empty-state .glyph{
+    width:40px; height:40px; margin:0 auto 16px; opacity:0.7;
+    border:1px solid var(--gold-soft); border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .empty-state .glyph svg{ width:18px; height:18px; stroke: var(--gold); }
+  .empty-state p.title{
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:1rem;
+    color: var(--paper); margin: 0 0 8px;
+  }
+  .empty-state p.hint{
+    font-family:'Tajawal', sans-serif; font-size:0.85rem; line-height:1.9;
+    color: var(--muted); margin:0;
+  }
+  .empty-state code{
+    display:inline-block; margin-top:10px;
+    font-family:'JetBrains Mono', monospace; font-size:0.7rem;
+    color: var(--gold-soft); background: rgba(198,163,93,0.08);
+    padding: 4px 8px; border-radius: 2px; direction:ltr; unicode-bidi:plaintext;
+  }
+
+  .sheet-foot{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--panel-line);
+  }
+  .prop-info{ display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .prop-name{
+    font-family:'Cairo', sans-serif; font-weight:700;
+    font-size:0.9rem; color: var(--paper); line-height:1.25;
+  }
+  .prop-address{
+    font-family:'Tajawal', sans-serif;
+    font-size:0.72rem; color: var(--muted); line-height:1.25;
+  }
+  .prop-map{
+    display:inline-flex; align-items:center; gap:7px; flex-shrink:0;
+    padding:8px 14px; border-radius:999px;
+    background: rgba(198,163,93,0.10);
+    border:1px solid var(--gold-soft);
+    color: var(--gold-soft);
+    font-family:'Tajawal', sans-serif; font-size:0.8rem; font-weight:500;
+    text-decoration:none; transition: background 0.2s ease, color 0.2s ease;
+  }
+  .prop-map:hover{ background: var(--gold-soft); color: var(--ink); }
+  .prop-map svg{ width:16px; height:16px; }
+  .prop-map[hidden]{ display:none; }
+  .scale-bar{
+    flex:1; height:8px; position:relative; max-width:180px;
+    background-image: repeating-linear-gradient(90deg, var(--gold-soft) 0 1px, transparent 1px 12px);
+    background-position: bottom left; background-size: 100% 1px; background-repeat: repeat-x;
+    opacity:0.7;
+  }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+  .mono.small{ font-size:0.65rem; letter-spacing:0.08em; color: var(--muted); direction:ltr; unicode-bidi:plaintext; }
+
+  /* ---------- Portfolio / مكتبة الأعمال ---------- */
+  .section-head{ text-align:center; margin-bottom: 30px; }
+  .section-head h2{
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:1.1rem;
+    color: var(--paper); margin: 0 0 6px;
+  }
+  .section-head .sub{
+    font-family:'JetBrains Mono', monospace; font-size:0.65rem; letter-spacing:0.28em;
+    color: var(--gold-soft); text-transform:uppercase;
+  }
+  .portfolio{ margin: 8px 0 8px; }
+  .portfolio-grid{
+    display:grid; grid-template-columns: repeat(2, 1fr); gap:16px;
+  }
+  .project-card{
+    display:block; text-decoration:none; color:inherit;
+    border:1px solid var(--panel-line); background: var(--panel);
+    border-radius: var(--radius); overflow:hidden;
+    transition: transform 0.25s ease, border-color 0.25s ease;
+  }
+  .project-card:hover{ transform: translateY(-3px); border-color: var(--gold); }
+  .project-card .thumb{
+    aspect-ratio: 4 / 3; position:relative; overflow:hidden;
+    background:
+      repeating-linear-gradient(135deg, rgba(198,163,93,0.06) 0 2px, transparent 2px 14px),
+      var(--ink-2);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .project-card .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .project-card .thumb .ph{
+    width:34px; height:34px; border:1px solid var(--gold-soft); border-radius:50%; opacity:0.7;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .project-card .thumb .ph svg{ width:15px; height:15px; stroke: var(--gold); }
+  .project-card .info{ padding: 13px 15px; }
+  .project-card .info .name{
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:0.9rem; color: var(--paper);
+  }
+  .project-card .info .loc{
+    font-family:'JetBrains Mono', monospace; font-size:0.63rem; letter-spacing:0.05em;
+    color: var(--muted); margin-top:5px; direction:ltr; unicode-bidi:plaintext; text-align:right;
+  }
+  @media (max-width: 560px){
+    .portfolio-grid{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Contact ---------- */
+  .contact{ text-align:center; }
+  .contact h2{
+    font-family:'Cairo', sans-serif; font-weight:700; font-size:1.1rem;
+    color: var(--paper); margin: 0 0 6px;
+  }
+  .contact .sub{
+    font-family:'JetBrains Mono', monospace; font-size:0.65rem; letter-spacing:0.28em;
+    color: var(--gold-soft); text-transform:uppercase; margin:0 0 28px;
+  }
+  .contact-row{
+    display:flex; align-items:center; justify-content:center; gap:28px; flex-wrap:wrap;
+    margin-top: 15px;
+  }
+  .icon-btn{
+    width:66px; height:66px; border-radius:50%;
+    border:1px solid var(--panel-line); background: var(--panel);
+    display:flex; align-items:center; justify-content:center;
+    color: var(--paper); text-decoration:none;
+    transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+  }
+  .icon-btn svg{ width:26px; height:26px; }
+  .icon-btn:hover{ border-color: var(--gold); background: var(--gold-dim); transform: translateY(-3px); }
+
+  /* ---------- Footer ---------- */
+  .site-foot{ text-align:center; margin-top: 72px; }
+  .site-foot p{
+    font-family:'JetBrains Mono', monospace; font-size:0.65rem;
+    letter-spacing:0.06em; color: var(--muted); margin:4px 0;
+    direction:ltr; unicode-bidi:plaintext;
+  }
+  
+  .rua-brand {
+    font-family: 'Kufam', sans-serif;
+    font-size: 0،90rem;
+    font-weight: 800;
+    color: var(--paper);
+    margin: 0 4px;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 480px){
+    .page{ padding: 64px 18px 48px; }
+    .contact-row{ gap:20px; }
+    .icon-btn{ width: 60px; height: 60px; }
+    .icon-btn svg{ width: 24px; height: 24px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     وضع التضمين (embed): يُفعَّل تلقائياً عند تعشيق رؤى داخل موقع الزبون.
+     يُخفي كل شيء عدا بلوك الجولة، فيبان بنفس شكل الموقع لكن للجولة فقط.
+     ═══════════════════════════════════════════════════════════════ */
+  body.embed-mode .hero,
+  body.embed-mode .service-note,
+  body.embed-mode .portfolio,
+  body.embed-mode .contact,
+  body.embed-mode .site-foot,
+  body.embed-mode .divider{ display:none !important; }
+
+  /* الجولة تملأ إطار الزبون بالكامل (بلا ورقة/ترويسة/نسبة أبعاد ثابتة) */
+  body.embed-mode{ height:100%; overflow:hidden; }
+  body.embed-mode .page{ position:fixed; inset:0; padding:0; margin:0; max-width:none; }
+  body.embed-mode .tour-block{ margin:0; height:100%; }
+  body.embed-mode .sheet{
+    height:100%; border:0; border-radius:0; background:var(--ink-2);
+    animation:none; opacity:1; transform:none;
+    display:flex; flex-direction:column;
+  }
+  body.embed-mode .sheet-head,
+  body.embed-mode .sheet-foot{ display:none; }
+  body.embed-mode .sheet::before, body.embed-mode .sheet::after,
+  body.embed-mode .sheet .c2::before, body.embed-mode .sheet .c2::after{ display:none; }
+  body.embed-mode .viewport{ aspect-ratio:auto; height:100%; flex:1 1 auto; }
+
+  /* ملء الشاشة الحقيقي (Fullscreen API) — للتضمين داخل موقع الزبون */
+  .viewport:fullscreen{ width:100%; height:100%; aspect-ratio:auto; }
+  .viewport:-webkit-full-screen{ width:100%; height:100%; aspect-ratio:auto; }
+  .viewport:fullscreen iframe, .viewport:-webkit-full-screen iframe{ position:absolute; inset:0; }
+  .viewport:fullscreen .cover-topleft{ top:10px; left:9px; width:200px; height:52px; }
+  .viewport:fullscreen .cover-logo{ bottom:12px; right:2px; width:200px; height:88px; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     أزرار الجولة (مجموعة تحت-اليمين): [لوكيشن] [أوبشن] [فل سكرين]
+     ─────────────────────────────────────────────────────────────
+     🎛️ للتحكّم اليدوي بالحجم والمكان، عدّل الأرقام في هذه المتغيّرات.
+        عندك ٣ حالات منفصلة: عادي / جوال / ملء الشاشة.
+     ═══════════════════════════════════════════════════════════════ */
+  .viewport{
+    --ctrl-size:   38px;   /* حجم كل زر */
+    --ctrl-icon:   19px;   /* حجم الأيقونة داخله */
+    --ctrl-gap:     4px;   /* المسافة بين الأزرار */
+    --ctrl-bottom: 23px;   /* البعد من الأسفل */
+    --ctrl-right:  8px;   /* البعد من اليمين */
+  }
+  /* ── على الجوال (عدّل هنا لو مجوش زي ما تبي على التلفون) ── */
+  @media (max-width: 768px){
+    .viewport{
+      --ctrl-size:   45px;
+      --ctrl-icon:   17px;
+      --ctrl-gap:     2px;
+      --ctrl-bottom: 21px;
+      --ctrl-right:  3px;
+    }
+  }
+  /* ── في ملء الشاشة الحقيقي (عدّل هنا لو مجوش زي ما تبي في الفل سكرين) ── */
+  .viewport:fullscreen{
+    --ctrl-size:   44px;
+    --ctrl-icon:   22px;
+    --ctrl-gap:    10px;
+    --ctrl-bottom: 18px;
+    --ctrl-right:  8px;
+  }
+  .viewport:-webkit-full-screen{
+    --ctrl-size:   44px;
+    --ctrl-icon:   22px;
+    --ctrl-gap:    1px;
+    --ctrl-bottom: 18px;
+    --ctrl-right:  6px;
+  }
+
+  .tour-controls{
+    position:absolute; z-index:13;
+    bottom:var(--ctrl-bottom); right:var(--ctrl-right);
+    display:flex; direction:ltr; align-items:center; gap:var(--ctrl-gap);
+  }
+  .tour-ctrl{
+    width:var(--ctrl-size); height:var(--ctrl-size); border-radius:50%;
+    display:flex; align-items:center; justify-content:center; padding:0;
+    background:rgba(30,36,48,0.86); color:var(--paper);
+    border:1px solid rgba(198,163,93,0.5); cursor:pointer; text-decoration:none;
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    transition:background .2s ease;
+  }
+  .tour-ctrl:hover{ background:rgba(40,48,64,0.95); }
+  .tour-ctrl svg{ width:var(--ctrl-icon); height:var(--ctrl-icon); }
+
+  .roaa-opt-panel{
+    position:absolute; z-index:14;
+    bottom:calc(var(--ctrl-bottom) + var(--ctrl-size) + 8px); right:var(--ctrl-right);
+    width:min(88%, 360px); max-height:78%; overflow:auto;
+    background:var(--panel); border:1px solid var(--panel-line);
+    border-radius:12px; padding:16px; display:none;
+    box-shadow:0 12px 40px rgba(0,0,0,0.5);
+    text-align:right;
+  }
+  .roaa-opt-panel.open{ display:block; }
+  .roaa-opt-panel h3{ margin:0 0 4px; font-size:0.95rem; font-weight:700; color:var(--paper);
+    font-family:'Cairo',sans-serif; }
+  .roaa-opt-panel .oc-hint{ margin:0 0 14px; font-size:0.72rem; color:var(--muted); line-height:1.7;
+    font-family:'Tajawal',sans-serif; }
+  .roaa-opt-field{ margin-bottom:14px; }
+  .roaa-opt-field label{ display:block; margin-bottom:6px; font-size:0.68rem;
+    letter-spacing:0.12em; text-transform:uppercase; color:var(--gold-soft);
+    font-family:'JetBrains Mono',monospace; }
+  .roaa-opt-row{ display:flex; gap:8px; }
+  .roaa-opt-row input{ flex:1; min-width:0; padding:9px 11px; border-radius:8px;
+    background:var(--ink); border:1px solid var(--panel-line); color:var(--paper);
+    font-family:'JetBrains Mono',monospace; font-size:0.72rem; direction:ltr; unicode-bidi:plaintext; }
+  .roaa-opt-row button{ flex-shrink:0; padding:0 14px; border-radius:8px; cursor:pointer;
+    background:rgba(198,163,93,0.12); border:1px solid var(--gold-soft); color:var(--gold-soft);
+    font-family:'Tajawal',sans-serif; font-size:0.72rem; font-weight:600;
+    transition:background .2s ease, color .2s ease; }
+  .roaa-opt-row button:hover{ background:var(--gold-soft); color:var(--ink); }
+  .roaa-opt-row button.done{ background:var(--gold); color:var(--ink); border-color:var(--gold); }
+
+  /* الكريدت — يبقى دائماً حتى في وضع الزبون (حضور رؤى غير المباشر) */
+  .roaa-credit{
+    margin:16px 0 0; padding-top:14px; border-top:1px solid var(--panel-line);
+    font-family:'Tajawal',sans-serif; font-size:0.82rem; color:var(--muted); line-height:1.8;
+  }
+  .roaa-credit a{ color:#4a9fff; text-decoration:underline; font-weight:700; }
+  .roaa-credit a:hover{ color:#6fb4ff; }
+</style>
+</head>
+<body>
+
+  <div class="bp-grid" aria-hidden="true"></div>
+  <div class="bp-vignette" aria-hidden="true"></div>
+  <div class="reg-marks" aria-hidden="true">
+    <span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span>
+  </div>
+
+  <main class="page">
+
+    <header class="hero">
+      <img class="mark" src="roaa-logo-main.png" alt="شعار رؤى" /> 
+      <span class="eyebrow">3D SCAN · VIRTUAL TOUR STUDIO</span>
+      <p class="tagline">
+        ادخل لعالم من الواقعية الراقية، وين تبان أدق تفاصيل عقارك بفخامة عصرية. <br>
+        تجربة ترفع من مستوى العرض الخاص بيك وتخلي زباينك يشوفوا العقار بصورة احترافية.
+      </p>
+    </header>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <section class="tour-block" aria-label="الجولة الافتراضية ثلاثية الأبعاد">
+      <div class="sheet">
+        <span class="c2" aria-hidden="true"></span>
+        <div class="sheet-head">
+          <span class="tag">جولة افتراضية ثلاثية الأبعاد</span>
+          <span class="tag mono">SCALE&nbsp;1:1</span>
+        </div>
+        <div class="viewport" id="tourViewport">
+          </div>
+        <div class="sheet-foot">
+          <div class="prop-info">
+            <span class="prop-name" id="propName"></span>
+            <span class="prop-address" id="propAddress"></span>
+          </div>
+          <a class="prop-map" id="propMap" target="_blank" rel="noopener" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>موقع العقار</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <section class="service-note" aria-label="عن الخدمة">
+      <div class="section-head">
+        <h2>خدماتنا</h2>
+        <span class="sub">What we do</span>
+      <p>
+        ننقل عقارك إلى عميلك بدل أن ينتقل إليه. نحوّل المكان إلى جولة تفاعلية
+        بأبعاده الحقيقية، يدخلها من هاتفه ويتجول فيها كما لو كان واقفاً بداخلها.
+      </p>
+      
+    </section>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <section class="portfolio" id="portfolio" aria-label="مكتبة الأعمال">
+      <div class="section-head">
+        <h2>مكتبة الأعمال</h2>
+        <span class="sub">SELECTED PROJECTS</span>
+      </div>
+      <div class="portfolio-grid" id="portfolioGrid">
+        </div>
+    </section>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <section class="contact" aria-label="تواصل معنا">
+      <h2>تواصل معنا</h2>
+      <span class="sub">GET IN TOUCH</span>
+      <div class="contact-row">
+        <a class="icon-btn" id="waLink" href="#" target="_blank" rel="noopener" aria-label="تواصل عبر واتساب">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+        </a>
+        <a class="icon-btn" id="fbLink" href="#" target="_blank" rel="noopener" aria-label="تواصل عبر فيسبوك">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3.5" y="3.5" width="17" height="17" rx="3"/>
+            <path d="M13.8 20v-6.2h2.1l.3-2.5h-2.4V9.6c0-.7.2-1.2 1.3-1.2h1.3V6.1c-.2 0-1-.1-1.9-.1-1.9 0-3.2 1.1-3.2 3.3v1.9H9v2.5h2.1V20"/>
+          </svg>
+        </a>
+        <a class="icon-btn" id="liLink" href="#" target="_blank" rel="noopener" aria-label="تواصل عبر لينكدإن">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3.5" y="3.5" width="17" height="17" rx="3"/>
+            <path d="M8 10.5V17"/>
+            <circle cx="8" cy="7.3" r="0.9" fill="currentColor" stroke="none"/>
+            <path d="M12 17v-4c0-1.4 1-2.3 2.2-2.3 1.3 0 2.1.9 2.1 2.4V17"/>
+            <path d="M12 10.5V17"/>
+          </svg>
+        </a>
+        <a class="icon-btn" id="emailLink" href="#" aria-label="تواصل عبر البريد الإلكتروني">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3.5" y="5.5" width="17" height="13" rx="2.2"/>
+            <path d="m4.5 7 7.5 6 7.5-6"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <footer class="site-foot">
+      <p>© <span id="year"></span> <span class="rua-brand">رؤى</span> — ALL RIGHTS RESERVED</p>
+    </footer>
+
+  </main>
+
+<script>
+  const CONFIG = {
+    // الجولات تُدار الآن عبر مصفوفة projects أدناه (كل جولة لها slug ورابط مستقل).
+    whatsappNumber: "9665XXXXXXXX",
+    whatsappMessage: "مرحباً، أرغب بمعرفة المزيد عن خدمات رؤى",
+    facebookUrl: "https://facebook.com/roaa",
+    linkedinUrl: "https://linkedin.com/company/roaa",
+    email: "info@roaa.com",
+    // الجولة تُفتح من المكتبة أو عبر رابط مستقل: صفحة?p=slug
+    // كل مشروع له:
+    //  slug: مُعرّف واضح يظهر في الرابط المستقل (?p=slug) — يُشارَك مع العميل
+    //  title: اسم العقار   |   location: المدينة/الحي
+    //  address: العنوان التفصيلي   |   mapLink: رابط موقع العقار (خرائط جوجل)
+    //  tour: رابط matterport الخام   |   image: صورة مصغّرة للبطاقة
+    projects: [
+      { slug: "roaa-hq", title: "عقار المعرض", location: "طرابلس، ليبيا", address: "شارع الجمهورية، طرابلس", mapLink: "https://maps.google.com/?q=Tripoli", image: "", tour: "https://my.matterport.com/show?m=q7orzVUG5FX" },
+      { slug: "ain-zara-01", title: "مشروع 01", location: "عين زاره، ليبيا", address: "عين زاره، طرابلس", mapLink: "https://maps.google.com/?q=Ain+Zara+Tripoli", image: "WilderBuildingSummerSolstice.jpg", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=SX1WhWQita6" },
+      { slug: "hadaba-02", title: "مشروع 02", location: "الهضبه، ليبيا", address: "الهضبة، طرابلس", mapLink: "https://maps.google.com/?q=Hadba+Tripoli", image: "", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=MzLChphhRfA" },
+      { slug: "andalus-03", title: "مشروع 03", location: "حي الاندلس، ليبيا", address: "حي الأندلس، طرابلس", mapLink: "", image: "", tour: "" },
+      
+    ]
+  };
+
+  /* ═══════════════════════════════════════════════════════════════
+     الموقع الفاضي (الطبقة الوسطى): رؤى يعشّق هذا الرابط بدل Matterport.
+     الفاضي هو من يطبّق normalizeTourUrl ويعرض Matterport الخام.
+     ← عدّل هذا إلى دومين roaa-core بعد الرفع، مثل: "https://tours.roaa.ly/"
+        محلياً: اترك اسم الملف بجانب هذا الملف في نفس المجلد.
+     ═══════════════════════════════════════════════════════════════ */
+  const EMPTY_SITE = "roaa-core.html";
+
+  /* ═══════════════════════════════════════════════════════════════
+     نظام البراند — يُختار من الرابط: ?brand=roaa (افتراضي) أو ?brand=<الزبون>
+     كل براند يتحكّم في: لوجو شاشة التحميل + لوجو فوق-اليسار + نص الشريط + رابط اللوجو.
+     • لإضافة زبون: انسخ بلوك "alandalus" بالكامل، غيّر الاسم والصور والنص.
+     • للتحكّم بحجم/مكان لوجو الزبون ونصه: عدّل الأرقام داخل style الخاص به.
+     ═══════════════════════════════════════════════════════════════ */
+  const BRANDS = {
+    // ── براند رؤى (الافتراضي) ──
+    roaa: {
+      loadingLogo: "roaa-logo-loading.png",   // لوجو شاشة التحميل
+      topLeftLogo: "roaa-logo-wide.png",       // لوجو فوق-اليسار داخل الجولة
+      veil1: "استكشف المكان",                  // نص الشريط — السطر الأول
+      veil2: "بتقنية رؤى",                     // نص الشريط — السطر الثاني
+      topLeftLink: "https://roaa.ly"           // لوجو رؤى فوق-اليسار = رابط لموقعك
+    },
+
+    // ── مثال زبون white-label (انسخ هذا البلوك لكل زبون) ──
+    alandalus: {
+      loadingLogo: "client-alandalus-loading.png", // لوجو الزبون في شاشة التحميل
+      topLeftLogo: "client-alandalus-wide.png",     // لوجو الزبون فوق-اليسار
+      veil1: "استكشف العقار",                       // نص الزبون — السطر الأول
+      veil2: "مع الأندلس",                          // نص الزبون — السطر الثاني
+      topLeftLink: null,                            // null = شكل فقط بلا رابط (وضع الزبون)
+      // ── وزن لوجو الزبون ونصه بعينك (احذف أي سطر لاستعمال قيم رؤى الافتراضية) ──
+      style: {
+        topLeft:    { top:"6px", left:"5px", width:"150px", height:"38px" }, // مربع فوق-اليسار
+        topLeftImg: { maxWidth:"88%", maxHeight:"70%" },                     // الصورة داخله
+        loadingImg: { width:"min(46%,190px)", maxHeight:"38%" },            // لوجو التحميل
+        veil:       { fontSize:"14px", top:"65%" }                           // نص الشريط
+      }
+    }
+  };
+
+  function applyStyle(el, styleObj){
+    if(!el || !styleObj) return;
+    for(const [k,v] of Object.entries(styleObj)) el.style[k] = v;
+  }
+
+  function isSafeEmbedUrl(u){
+    try{
+      const p = new URL(u, location.href);
+      return p.protocol === "https:" || p.protocol === "http:" || p.protocol === "file:";
+    }catch(e){ return false; }
+  }
+
+  // إعدادات واجهة الجولة الموحّدة: تُطبَّق تلقائياً على أي رابط matterport
+  // حتى تظهر كل الجولات بنفس الشكل وتنطبق عليها مواضع المربعات نفسها.
+  const TOUR_PARAMS = {
+    play: "1", lang: "en-US", brand: "0", title: "0", hl: "0", help: "0",
+    mt: "0", dh: "1", tour: "0", qs: "1", vr: "0", gt: "0", mls: "0",
+    nozoom: "0", search: "0", pin: "0", portal: "0", f: "1", lp: "0"
+  };
+
+  // تأخذ أي رابط جولة (خام أو كامل) وتعيده بالإعدادات الموحّدة أعلاه،
+  // مع الحفاظ على معرّف الجولة (m) الموجود في الرابط الأصلي.
+  function normalizeTourUrl(u){
+    try{
+      const url = new URL(u, location.href);
+      // نطبّق التوحيد على روابط matterport فقط
+      if (!/matterport\.com$/i.test(url.hostname.replace(/^www\./, ""))) return u;
+      const m = url.searchParams.get("m");
+      if (!m) return u;
+      const out = new URL(url.origin + url.pathname);
+      out.searchParams.set("m", m);
+      for (const [k, v] of Object.entries(TOUR_PARAMS)) out.searchParams.set(k, v);
+      return out.toString();
+    }catch(e){ return u; }
+  }
+
+  const params = new URLSearchParams(location.search);
+
+  // البراند النشط (من ?brand=) — الافتراضي رؤى
+  const brandKey = params.get("brand") || "roaa";
+  const BRAND = BRANDS[brandKey] || BRANDS.roaa;
+  document.body.setAttribute("data-brand", brandKey);
+
+  // وضع التضمين: يُفعَّل تلقائياً داخل iframe (موقع الزبون)، أو يدوياً بـ ?embed=1 للمعاينة
+  const IS_TOPLEVEL = (window.self === window.top);
+  const IS_EMBED = !IS_TOPLEVEL || params.get("embed") === "1";
+  if (IS_EMBED) document.body.classList.add("embed-mode");
+
+  // تحضير مسبق للاتصالات لتسريع تحميل الجولة (دومين الفاضي + Matterport)
+  (function preconnect(){
+    const origins = [];
+    try{ origins.push(new URL(EMPTY_SITE, location.href).origin); }catch(e){}
+    origins.push("https://my.matterport.com", "https://static.matterport.com");
+    origins.forEach(o => {
+      if(!o || o === "null") return;
+      const l = document.createElement("link");
+      l.rel = "preconnect"; l.href = o; l.crossOrigin = "anonymous";
+      document.head.appendChild(l);
+    });
+  })();
+
+  // يبني رابط الموقع الفاضي من الـ slug (الفاضي يتكفّل بـ Matterport)
+  function buildCoreUrl(proj){
+    if(!proj) return "";
+    const sep = EMPTY_SITE.includes("?") ? "&" : "?";
+    if(proj.slug) return EMPTY_SITE + sep + "p=" + encodeURIComponent(proj.slug);
+    if(proj.tour) return EMPTY_SITE + sep + "tour=" + encodeURIComponent(proj.tour);
+    return "";
+  }
+
+  // تحديث شريط تفاصيل العقار أسفل الإطار
+  function updatePropInfo(proj){
+    const nameEl = document.getElementById("propName");
+    const addrEl = document.getElementById("propAddress");
+    const mapEl  = document.getElementById("propMap");
+    if (proj){
+      nameEl.textContent = proj.title || "";
+      addrEl.textContent = proj.address || proj.location || "";
+      if (proj.mapLink && isSafeEmbedUrl(proj.mapLink)){
+        mapEl.href = proj.mapLink;
+        mapEl.hidden = false;
+      } else {
+        mapEl.hidden = true;
+      }
+    } else {
+      nameEl.textContent = "";
+      addrEl.textContent = "";
+      mapEl.hidden = true;
+    }
+  }
+
+  // إيجاد المشروع المطلوب: من الرابط المستقل (?p=slug) أو (?tour=رابط)
+  function resolveInitialProject(){
+    const slug = params.get("p");
+    if (slug){
+      const found = CONFIG.projects.find(p => p.slug === slug && p.tour);
+      if (found) return found;
+    }
+    const tourParam = params.get("tour");
+    if (tourParam && isSafeEmbedUrl(tourParam)){
+      return { title: "جولة افتراضية", location: "", address: "", mapLink: "", tour: tourParam };
+    }
+    return null; // لا مشروع محدد: تُعرض الحالة الفارغة حتى يختار العميل
+  }
+
+  const viewport = document.getElementById("tourViewport");
+
+  // تبني الجولة من الصفر: تُستدعى عند فتح الصفحة، وعند اختيار مشروع من المكتبة
+  // تستقبل كائن المشروع (أو null للحالة الفارغة).
+  function buildTour(proj){
+    // إيقاف أي مؤقّتات سابقة وتنظيف الإطار قبل البناء من جديد
+    if (viewport._timers) viewport._timers.forEach(clearTimeout);
+    viewport._timers = [];
+    viewport.classList.remove("is-fs", "fs-host");
+    document.body.classList.remove("fs-lock");
+    viewport.innerHTML = "";
+
+    updatePropInfo(proj);
+
+    const track = (fn, ms) => { const t = setTimeout(fn, ms); viewport._timers.push(t); return t; };
+
+    // رؤى الآن يعشّق الموقع الفاضي (لا Matterport مباشرة).
+    // الفاضي هو من يطبّق normalizeTourUrl ويعرض Matterport الخام.
+    const coreUrl = proj ? buildCoreUrl(proj) : "";
+    if (coreUrl) {
+    const iframe = document.createElement("iframe");
+    iframe.src = coreUrl;
+    // نمرّر الحركة وVR عبر الطبقة؛ الفل-سكرين الحقيقي يبقى معطّلاً
+    // حتى لا تنهار المربعات والحواجز (نستعمل ملء الشاشة المزيّف)
+    iframe.setAttribute("allow", "xr-spatial-tracking; gyroscope; accelerometer");
+    iframe.setAttribute("allowfullscreen", "false");
+    iframe.loading = "eager";
+    iframe.title = "رؤى — جولة افتراضية ثلاثية الأبعاد";
+    viewport.appendChild(iframe);
+
+    // --- مربعات براند رؤى في الزوايا (ظاهرة من البداية) ---
+    const coverLogo = document.createElement("div");   // أسفل اليمين - حاجز شفاف
+    coverLogo.className = "cover cover-logo";
+
+    const coverTopLeft = document.createElement("div"); // أعلى اليسار
+    coverTopLeft.className = "cover cover-light cover-topleft";
+    // لوجو البراند: في وضع رؤى = رابط لموقعك؛ في وضع الزبون = صورة فقط بلا رابط
+    if (BRAND.topLeftLink){
+      coverTopLeft.innerHTML =
+        '<a href="'+BRAND.topLeftLink+'" target="_blank" rel="noopener" ' +
+        'style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;pointer-events:auto">' +
+        '<img src="'+BRAND.topLeftLogo+'" alt="رؤى" /></a>';
+    } else {
+      coverTopLeft.innerHTML = '<img src="'+BRAND.topLeftLogo+'" alt="" />';
+    }
+    applyStyle(coverTopLeft, BRAND.style && BRAND.style.topLeft);
+    applyStyle(coverTopLeft.querySelector("img"), BRAND.style && BRAND.style.topLeftImg);
+
+    // حاجز شفاف يمنع الضغط على زر التشغيل (يغطي المربع الأحمر تماماً)
+    const coverBlock = document.createElement("div");
+    coverBlock.className = "cover cover-block";
+
+    // حاجز شفاف أعلى اليسار (أسفل اللوجو، يمنع الضغط على منطقته)
+    const coverTopBlock = document.createElement("div");
+    coverTopBlock.className = "cover cover-topblock";
+
+    // شريط يغطي شعار matterport: دائم في الوضع العادي، ومؤقت في ملء الشاشة
+    // النص على سطرين لتغطية مساحة أكبر
+    const VEIL_LINE1 = BRAND.veil1;
+    const VEIL_LINE2 = BRAND.veil2;
+    const veilNormal = document.createElement("div");
+    veilNormal.className = "mp-veil mp-veil-normal";
+    veilNormal.innerHTML = VEIL_LINE1 + "<br>" + VEIL_LINE2;
+    veilNormal.hidden = true;   // لا تظهر أثناء شاشة الانتظار
+    const veilFs = document.createElement("div");
+    veilFs.className = "mp-veil mp-veil-fs";
+    veilFs.innerHTML = VEIL_LINE1 + "<br>" + VEIL_LINE2;
+    veilFs.hidden = true;
+    applyStyle(veilNormal, BRAND.style && BRAND.style.veil);
+    applyStyle(veilFs, BRAND.style && BRAND.style.veil);
+
+    // --- شاشة التحميل (تغطي الـ viewport) ---
+    const loading = document.createElement("div");
+    loading.className = "loading-screen";
+    loading.innerHTML =
+      '<img src="'+BRAND.loadingLogo+'" alt="" />' +
+      '<div class="loading-spinner"></div>' +
+      '<div class="loading-text">يتم التحميل…</div>';
+    applyStyle(loading.querySelector("img"), BRAND.style && BRAND.style.loadingImg);
+
+    viewport.appendChild(coverLogo);
+    viewport.appendChild(coverTopBlock);
+    viewport.appendChild(coverTopLeft);
+    viewport.appendChild(coverBlock);
+    viewport.appendChild(veilNormal);
+    viewport.appendChild(veilFs);
+    viewport.appendChild(loading);
+
+    // بعد 8 ثوانٍ: تتحول شاشة التحميل إلى شاشة بدء بلمسة واحدة.
+    // هذا يحل مشكلة الجوال: المتصفح يشترط تفاعل المستخدم لبدء التشغيل،
+    // فتصبح لمستنا هي التي تبدأ الجولة بدلاً من زر matterport ذي الشعار.
+    const spinner = loading.querySelector(".loading-spinner");
+    const text = loading.querySelector(".loading-text");
+
+    // زر الخروج من وضع ملء الشاشة (يظهر في الجوال/التابلت فقط)
+    const exitBtn = document.createElement("button");
+    exitBtn.className = "exit-fs";
+    exitBtn.setAttribute("aria-label", "خروج من ملء الشاشة");
+    exitBtn.innerHTML = "&times;";
+    viewport.appendChild(exitBtn);
+
+    const isMobile = () => window.matchMedia("(max-width:1024px)").matches;
+
+    // زر العودة إلى الجولة بملء الشاشة (فوق الـ iframe، يظهر بعد الخروج)
+    const resumeBtn = document.createElement("button");
+    resumeBtn.className = "resume-fs";
+    resumeBtn.hidden = true;
+    resumeBtn.innerHTML = "▶ عرض الجولة بملء الشاشة";
+
+    // طبقة تحجب اللمس عن كل شيء عدا زر الرجوع، تظهر وتختفي معه
+    const tapShield = document.createElement("div");
+    tapShield.className = "tap-shield";
+    tapShield.hidden = true;
+    viewport.appendChild(tapShield);
+    viewport.appendChild(resumeBtn);
+
+    // نحفظ الموضع الأصلي للعنصر كي نعيده إليه بعد الخروج (مرساة واحدة تُعاد تسميتها)
+    if (!viewport._homeAnchor) {
+      viewport._homeAnchor = document.createComment("viewport-home");
+      viewport.parentNode.insertBefore(viewport._homeAnchor, viewport);
+    }
+    const homeAnchor = viewport._homeAnchor;
+
+    let veilTimer = null;
+
+    const enterFs = () => {
+      if (!isMobile()) return;
+      // ننقل العنصر إلى body للخروج من stacking context الذي يبقي بقية الموقع فوقه
+      document.body.appendChild(viewport);
+      viewport.classList.add("fs-host", "is-fs");
+      document.body.classList.add("fs-lock");
+      resumeBtn.hidden = true;
+      tapShield.hidden = true;
+      window.scrollTo(0, 0);
+      // الدائمة تختفي وتحل محلها المؤقتة التي تزول بعد 9 ثوانٍ
+      veilNormal.hidden = true;
+      veilFs.hidden = false;
+      veilFs.classList.remove("fade");
+      clearTimeout(veilTimer);
+      veilTimer = track(() => veilFs.classList.add("fade"), 12000);
+    };
+
+    const exitFs = () => {
+      viewport.classList.remove("is-fs", "fs-host");
+      document.body.classList.remove("fs-lock");
+      clearTimeout(veilTimer);
+      veilFs.classList.remove("fade");
+      veilFs.hidden = true;
+      // الجملة الدائمة تظهر بعد الخروج من ملء الشاشة
+      veilNormal.hidden = false;
+      // إعادة العنصر إلى مكانه الأصلي داخل الصفحة
+      if (homeAnchor.parentNode) {
+        homeAnchor.parentNode.insertBefore(viewport, homeAnchor);
+      }
+      // إظهار زر العودة فوق الـ iframe
+      if (isMobile()) { resumeBtn.hidden = false; tapShield.hidden = false; }
+    };
+
+    exitBtn.addEventListener("click", (e) => { e.stopPropagation(); exitFs(); });
+    resumeBtn.addEventListener("click", (e) => { e.stopPropagation(); enterFs(); });
+    // نستبدل مستمع Escape في كل بناء بدل تراكمه
+    if (viewport._escHandler) window.removeEventListener("keydown", viewport._escHandler);
+    viewport._escHandler = (e) => { if (e.key === "Escape") exitFs(); };
+    window.addEventListener("keydown", viewport._escHandler);
+
+    let dismissed = false;
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      if (isMobile() && !IS_EMBED) {
+        enterFs();                 // الجوال (خارج التضمين): ملء الشاشة المزيّف + الجملة المؤقتة
+      } else {
+        // اللابتوب أو وضع التضمين: الجولة تملأ الإطار مباشرة، مع الجملة المؤقتة فقط
+        veilFs.hidden = false;
+        veilFs.classList.remove("fade");
+        clearTimeout(veilTimer);
+        veilTimer = track(() => veilFs.classList.add("fade"), 12000);
+      }
+      loading.classList.add("hide");
+      track(() => loading.remove(), 900);
+    };
+
+    // ── إخفاء شاشة التحميل ──
+    // تبقى الشاشة حتى تبدأ الجولة فعلاً، لإخفاء مقدمة Matterport ("powered by matterport"):
+    //  • mp-playing (عبر SDK في الفاضي) = كشف فوري ودقيق في لحظة بدء الجولة.
+    //  • mp-loaded  (بلا مفتاح SDK)     = تغطية المقدمة لمدة SPLASH_COVER_MS ثم الكشف.
+    //  • LOAD_TIMEOUT                    = حدّ أقصى احتياطي إن لم تصل أي إشارة.
+    const PLAYING_GRACE_MS = 2000;  // ← مهلة إضافية بعد بدء الجولة (SDK) قبل كشف الشاشة
+    const SPLASH_COVER_MS   = 6000;  // ← تغطية المقدمة بدون SDK: زده لو ظهرت "powered by"
+    const LOAD_TIMEOUT      = 15000; // حدّ أقصى احتياطي
+    let proceeded = false;
+
+    const proceed = () => {
+      if (proceeded || dismissed) return;
+      proceeded = true;
+      if (isMobile()) {
+        // الجوال/التابلت: يشترط المتصفح لمسة من المستخدم لبدء التشغيل/ملء الشاشة
+        if (spinner) spinner.style.display = "none";
+        if (text) text.textContent = "اضغط لبدء الجولة";
+        loading.classList.add("ready");
+        loading.addEventListener("click", dismiss, { once: true });
+        loading.addEventListener("touchend", dismiss, { once: true });
+      } else {
+        // اللابتوب: تبدأ الجولة مباشرة بلا زر
+        dismiss();
+      }
+    };
+
+    if (viewport._msgHandler) window.removeEventListener("message", viewport._msgHandler);
+    viewport._msgHandler = (e) => {
+      if (!e || !e.data || proceeded) return;
+      if (e.data.roaaCore === "mp-playing") {         // دقيق (SDK): الجولة تعمل الآن + مهلة grace
+        window.removeEventListener("message", viewport._msgHandler);
+        track(proceed, PLAYING_GRACE_MS);
+      } else if (e.data.roaaCore === "mp-loaded") {   // احتياطي (بلا SDK): غطِّ المقدمة ثم اكشف
+        track(proceed, SPLASH_COVER_MS);
+      }
+    };
+    window.addEventListener("message", viewport._msgHandler);
+    track(proceed, LOAD_TIMEOUT);
+
+    // مجموعة أزرار الجولة (تحت-اليمين): [لوكيشن] [أوبشن] [فل سكرين]
+    const controls = document.createElement("div");
+    controls.className = "tour-controls";
+
+    // زر لوكيشن العقار (إن وُجد رابط خريطة)
+    if (proj.mapLink){
+      const loc = document.createElement("a");
+      loc.className = "tour-ctrl loc-btn";
+      loc.href = proj.mapLink; loc.target = "_blank"; loc.rel = "noopener";
+      loc.setAttribute("aria-label", "موقع العقار على الخريطة");
+      loc.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+      controls.appendChild(loc);
+    }
+
+    // زر الأوبشن (اللوحة تُلحق بالـ viewport مستقلة)
+    const opt = makeRoaaOption(proj);
+    controls.appendChild(opt.btn);
+    viewport.appendChild(opt.panel);
+
+    // زر ملء الشاشة الحقيقي — وضع التضمين فقط (يملأ كامل شاشة الزبون)
+    // زر ملء الشاشة — يظهر دائماً (يملأ الشاشة على اللابتوب، ويفتح تبويب على الجوال)
+    controls.appendChild(makeFsToggle(viewport, proj));
+
+    viewport.appendChild(controls);
+  } else {
+    viewport.innerHTML = `
+      <div class="empty-state">
+        <div class="glyph">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 16l9 5 9-5"/><path d="M3 12l9 5 9-5"/></svg>
+        </div>
+        <p class="title">اختر عقاراً لبدء الجولة</p>
+        <p class="hint">تصفّح مكتبة الأعمال بالأسفل واختر العقار الذي تريد استكشافه،<br/>أو افتح الرابط المخصّص الذي شاركناه معك.</p>
+      </div>`;
+    }
+  }
+
+  // زر ملء الشاشة — اكتشاف تلقائي:
+  //  • يدعم ملء الشاشة (لابتوب/أندرويد) → ملء شاشة في مكانه بلا تبويب جديد
+  //  • لا يدعمه (آيفون) → يفتح الجولة بملء المتصفح في تبويب جديد (رابط فعلي لا يُحجب)
+  function makeFsToggle(fsEl, proj){
+    const ICON_EXPAND  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+    const ICON_COMPRESS= '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
+
+    const base = location.href.split("#")[0].split("?")[0];
+    const tabUrl = base + "?p=" + encodeURIComponent(proj.slug || "") +
+                   (brandKey !== "roaa" ? "&brand=" + encodeURIComponent(brandKey) : "") + "&embed=1";
+
+    // نستعمل <a> ليكون فتح التبويب طبيعياً (غير محجوب) على الأجهزة التي لا تدعم ملء الشاشة
+    const el = document.createElement("a");
+    el.className = "tour-ctrl fs-toggle";
+    el.setAttribute("aria-label", "ملء الشاشة");
+    el.href = tabUrl; el.target = "_blank"; el.rel = "noopener";
+    el.innerHTML = ICON_EXPAND;
+
+    const req  = fsEl.requestFullscreen || fsEl.webkitRequestFullscreen;   // undefined على الآيفون
+    const inFS = () => document.fullscreenElement || document.webkitFullscreenElement;
+    const exit = () => { const f = document.exitFullscreen || document.webkitExitFullscreen; if (f) try { f.call(document); } catch(e){} };
+
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!req) return;                    // آيفون: لا ملء شاشة → نترك الرابط يفتح تبويباً
+      e.preventDefault();                  // لابتوب/أندرويد: ملء شاشة في المكان
+      if (inFS()) { exit(); return; }
+      try {
+        const p = req.call(fsEl);
+        if (p && p.catch) p.catch(() => window.open(tabUrl, "_blank", "noopener"));
+      } catch(err){ window.open(tabUrl, "_blank", "noopener"); }
+    });
+
+    const onChange = () => { el.innerHTML = inFS() ? ICON_COMPRESS : ICON_EXPAND; };
+    if (viewport._fsChange){
+      document.removeEventListener("fullscreenchange", viewport._fsChange);
+      document.removeEventListener("webkitfullscreenchange", viewport._fsChange);
+    }
+    viewport._fsChange = onChange;
+    document.addEventListener("fullscreenchange", onChange);
+    document.addEventListener("webkitfullscreenchange", onChange);
+    return el;
+  }
+
+  // ═══ زر أوبشن رؤى — يُبنى داخل إطار الجولة في كل مرة ═══
+  function roaaEmbedCode(proj){
+    const base = location.href.split("#")[0].split("?")[0];
+    const q = "?p=" + encodeURIComponent(proj.slug || "") +
+              (brandKey !== "roaa" ? "&brand=" + encodeURIComponent(brandKey) : "");
+    const src = base + q;
+    return '<iframe src="'+src+'" width="100%" height="600" style="border:0;" ' +
+           'allow="fullscreen; xr-spatial-tracking; gyroscope; accelerometer" loading="lazy"></iframe>';
+  }
+
+  // يبني زر الأوبشن + لوحته لعنصر الجولة الحالي، ويعيدهما لإلحاقهما بالـ viewport
+  function makeRoaaOption(proj){
+    const btn = document.createElement("button");
+    btn.className = "tour-ctrl roaa-opt-btn";
+    btn.setAttribute("aria-label", "خيارات");
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>';
+
+    const panel = document.createElement("div");
+    panel.className = "roaa-opt-panel";
+
+    // كود التضمين يظهر فقط لك (المستوى الأعلى)، لا يظهر داخل موقع الزبون
+    const embedBlock = IS_TOPLEVEL ?
+      '<div class="roaa-opt-field"><label>كود التضمين</label><div class="roaa-opt-row">' +
+        '<input id="roaaEmbedInput" readonly><button data-copy-embed>نسخ</button>' +
+      '</div></div>' : '';
+
+    panel.innerHTML =
+      '<h3>عرض هذه الجولة</h3>' +
+      (IS_TOPLEVEL ? '<p class="oc-hint">انسخ الكود وضعه في موقع الزبون لعرض الجولة بشكل رؤى.</p>' : '') +
+      embedBlock +
+      '<p class="roaa-credit">صُمّمت ونُفّذت بواسطة ' +
+        '<a href="'+BRANDS.roaa.topLeftLink+'" target="_blank" rel="noopener">شركة رؤى</a></p>';
+
+    btn.addEventListener("click", (e) => { e.stopPropagation(); panel.classList.toggle("open"); });
+
+    if (IS_TOPLEVEL){
+      const input = panel.querySelector("#roaaEmbedInput");
+      if (input) input.value = roaaEmbedCode(proj);
+      panel.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-copy-embed]");
+        if(!b || !input) return;
+        navigator.clipboard?.writeText(input.value).then(() => {
+          const old = b.textContent; b.textContent = "✓ تم"; b.classList.add("done");
+          setTimeout(() => { b.textContent = old; b.classList.remove("done"); }, 1500);
+        });
+      });
+    }
+    return { btn, panel };
+  }
+
+  // البناء الافتتاحي: يفتح المشروع المطلوب عبر الرابط، أو يعرض الحالة الفارغة
+  buildTour(resolveInitialProject());
+
+  const grid = document.getElementById("portfolioGrid");
+  grid.innerHTML = CONFIG.projects.map((p, i) => `
+    <a class="project-card" href="${p.tour ? `?p=${encodeURIComponent(p.slug)}` : '#'}"${p.tour ? ` data-tour="${i}"` : ''}>
+      <div class="thumb">
+        ${p.image
+          ? `<img src="${p.image}" alt="${p.title}" loading="lazy" />`
+          : `<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l4.5-5 3.5 4 2.5-3L20 16"/><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/></svg></div>`
+        }
+      </div>
+      <div class="info">
+        <div class="name">${p.title}</div>
+        <div class="loc">${p.location}</div>
+      </div>
+    </a>
+  `).join("");
+
+  // الضغط على مشروع يفتح جولته داخل الإطار، ويحدّث رابط الصفحة ليصبح رابطاً مستقلاً قابلاً للمشاركة
+  grid.addEventListener("click", (e) => {
+    const card = e.target.closest("[data-tour]");
+    if (!card) return;
+    e.preventDefault();
+    const proj = CONFIG.projects[Number(card.dataset.tour)];
+    if (!proj || !proj.tour || !isSafeEmbedUrl(proj.tour)) return;
+
+    // إعادة بناء الجولة بالكامل مع تفاصيل العقار
+    buildTour(proj);
+
+    // تحديث رابط المتصفح إلى الرابط المستقل للمشروع (بدون إعادة تحميل)
+    if (proj.slug){
+      const url = `${location.pathname}?p=${encodeURIComponent(proj.slug)}`;
+      history.pushState({ slug: proj.slug }, "", url);
+    }
+
+    document.getElementById("tourViewport")
+      .scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  // دعم أزرار الرجوع/التقدم في المتصفح للتنقل بين الجولات
+  window.addEventListener("popstate", () => {
+    const sp = new URLSearchParams(location.search).get("p");
+    const proj = sp ? CONFIG.projects.find(p => p.slug === sp && p.tour) : null;
+    buildTour(proj || null);
+  });
+
+  document.getElementById("waLink").href = `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(CONFIG.whatsappMessage)}`;
+  document.getElementById("fbLink").href = CONFIG.facebookUrl;
+  document.getElementById("liLink").href = CONFIG.linkedinUrl;
+  document.getElementById("emailLink").href = `mailto:${CONFIG.email}`;
+  document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
