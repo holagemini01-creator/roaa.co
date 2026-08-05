@@ -755,7 +755,7 @@
 <script>
   const CONFIG = {
     // الجولات تُدار الآن عبر مصفوفة projects أدناه (كل جولة لها slug ورابط مستقل).
-    whatsappNumber: "9665XXXXXXXX",
+    whatsappNumber: "218xxxxxxxxx",
     whatsappMessage: "مرحباً، أرغب بمعرفة المزيد عن خدمات رؤى",
     facebookUrl: "https://facebook.com/roaa",
     linkedinUrl: "https://linkedin.com/company/roaa",
@@ -767,59 +767,21 @@
     //  address: العنوان التفصيلي   |   mapLink: رابط موقع العقار (خرائط جوجل)
     //  tour: رابط matterport الخام   |   image: صورة مصغّرة للبطاقة
     projects: [
-      { slug: "roaa-hq", title: "عقار المعرض", location: "طرابلس، ليبيا", address: "شارع الجمهورية، طرابلس", mapLink: "https://maps.google.com/?q=Tripoli", image: "", tour: "https://my.matterport.com/show?m=q7orzVUG5FX" },
-      { slug: "ain-zara-01", title: "مشروع 01", location: "عين زاره، ليبيا", address: "عين زاره، طرابلس", mapLink: "https://maps.google.com/?q=Ain+Zara+Tripoli", image: "WilderBuildingSummerSolstice.jpg", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=SX1WhWQita6" },
-      { slug: "hadaba-02", title: "مشروع 02", location: "الهضبه، ليبيا", address: "الهضبة، طرابلس", mapLink: "https://maps.google.com/?q=Hadba+Tripoli", image: "", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=MzLChphhRfA" },
-      { slug: "andalus-03", title: "مشروع 03", location: "حي الاندلس، ليبيا", address: "حي الأندلس، طرابلس", mapLink: "", image: "", tour: "" },
+      { slug: "test-01", title: "عرض تجريبي", location: "طرابلس، ليبيا", address: "شارع الجمهورية، طرابلس", mapLink: "https://maps.google.com/?q=Tripoli", image: "", tour: "https://my.matterport.com/show?m=q7orzVUG5FX" },
+      { slug: "test-02", title: "عرض تجريبي", location: "عين زاره، ليبيا", address: "عين زاره، طرابلس", mapLink: "https://maps.google.com/?q=Ain+Zara+Tripoli", image: "", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=SX1WhWQita6" },
+      { slug: "project-01", title: "مشروع 01", location: "الهضبه، ليبيا", address: "الهضبة، طرابلس", mapLink: "https://maps.google.com/?q=Hadba+Tripoli", image: "", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=MzLChphhRfA" },
+      { slug: "project-02", title: "مشروع 02", location: "حي الاندلس، ليبيا", address: "حي الأندلس، طرابلس", mapLink: "", image: "", tour: "" },
       
     ]
   };
 
-  /* ═══════════════════════════════════════════════════════════════
-     الموقع الفاضي (الطبقة الوسطى): رؤى يعشّق هذا الرابط بدل Matterport.
-     الفاضي هو من يطبّق normalizeTourUrl ويعرض Matterport الخام.
-     ← عدّل هذا إلى دومين roaa-core بعد الرفع، مثل: "https://tours.roaa.ly/"
-        محلياً: اترك اسم الملف بجانب هذا الملف في نفس المجلد.
-     ═══════════════════════════════════════════════════════════════ */
-  const EMPTY_SITE = "roaa-core.html";
-
-  /* ═══════════════════════════════════════════════════════════════
-     نظام البراند — يُختار من الرابط: ?brand=roaa (افتراضي) أو ?brand=<الزبون>
-     كل براند يتحكّم في: لوجو شاشة التحميل + لوجو فوق-اليسار + نص الشريط + رابط اللوجو.
-     • لإضافة زبون: انسخ بلوك "alandalus" بالكامل، غيّر الاسم والصور والنص.
-     • للتحكّم بحجم/مكان لوجو الزبون ونصه: عدّل الأرقام داخل style الخاص به.
-     ═══════════════════════════════════════════════════════════════ */
-  const BRANDS = {
-    // ── براند رؤى (الافتراضي) ──
-    roaa: {
-      loadingLogo: "roaa-logo-loading.png",   // لوجو شاشة التحميل
-      topLeftLogo: "roaa-logo-wide.png",       // لوجو فوق-اليسار داخل الجولة
-      veil1: "استكشف المكان",                  // نص الشريط — السطر الأول
-      veil2: "بتقنية رؤى",                     // نص الشريط — السطر الثاني
-      topLeftLink: "https://roaa.ly"           // لوجو رؤى فوق-اليسار = رابط لموقعك
-    },
-
-    // ── مثال زبون white-label (انسخ هذا البلوك لكل زبون) ──
-    alandalus: {
-      loadingLogo: "client-alandalus-loading.png", // لوجو الزبون في شاشة التحميل
-      topLeftLogo: "client-alandalus-wide.png",     // لوجو الزبون فوق-اليسار
-      veil1: "استكشف العقار",                       // نص الزبون — السطر الأول
-      veil2: "مع الأندلس",                          // نص الزبون — السطر الثاني
-      topLeftLink: null,                            // null = شكل فقط بلا رابط (وضع الزبون)
-      // ── وزن لوجو الزبون ونصه بعينك (احذف أي سطر لاستعمال قيم رؤى الافتراضية) ──
-      style: {
-        topLeft:    { top:"6px", left:"5px", width:"150px", height:"38px" }, // مربع فوق-اليسار
-        topLeftImg: { maxWidth:"88%", maxHeight:"70%" },                     // الصورة داخله
-        loadingImg: { width:"min(46%,190px)", maxHeight:"38%" },            // لوجو التحميل
-        veil:       { fontSize:"14px", top:"65%" }                           // نص الشريط
-      }
-    }
+  const BRAND = {
+    loadingLogo: "roaa-logo-loading.png",   // لوجو شاشة التحميل
+    topLeftLogo: "roaa-logo-wide.png",       // لوجو فوق-اليسار داخل الجولة
+    veil1: "استكشف المكان",                  // نص الشريط — السطر الأول
+    veil2: "بتقنية رؤى",                     // نص الشريط — السطر الثاني
+    topLeftLink: "https://roaa.ly"           // لوجو رؤى فوق-اليسار = رابط لموقعك
   };
-
-  function applyStyle(el, styleObj){
-    if(!el || !styleObj) return;
-    for(const [k,v] of Object.entries(styleObj)) el.style[k] = v;
-  }
 
   function isSafeEmbedUrl(u){
     try{
@@ -854,21 +816,14 @@
 
   const params = new URLSearchParams(location.search);
 
-  // البراند النشط (من ?brand=) — الافتراضي رؤى
-  const brandKey = params.get("brand") || "roaa";
-  const BRAND = BRANDS[brandKey] || BRANDS.roaa;
-  document.body.setAttribute("data-brand", brandKey);
-
   // وضع التضمين: يُفعَّل تلقائياً داخل iframe (موقع الزبون)، أو يدوياً بـ ?embed=1 للمعاينة
   const IS_TOPLEVEL = (window.self === window.top);
   const IS_EMBED = !IS_TOPLEVEL || params.get("embed") === "1";
   if (IS_EMBED) document.body.classList.add("embed-mode");
 
-  // تحضير مسبق للاتصالات لتسريع تحميل الجولة (دومين الفاضي + Matterport)
+  // تحضير مسبق للاتصالات لتسريع تحميل الجولة (Matterport)
   (function preconnect(){
-    const origins = [];
-    try{ origins.push(new URL(EMPTY_SITE, location.href).origin); }catch(e){}
-    origins.push("https://my.matterport.com", "https://static.matterport.com");
+    const origins = ["https://my.matterport.com", "https://static.matterport.com"];
     origins.forEach(o => {
       if(!o || o === "null") return;
       const l = document.createElement("link");
@@ -876,15 +831,6 @@
       document.head.appendChild(l);
     });
   })();
-
-  // يبني رابط الموقع الفاضي من الـ slug (الفاضي يتكفّل بـ Matterport)
-  function buildCoreUrl(proj){
-    if(!proj) return "";
-    const sep = EMPTY_SITE.includes("?") ? "&" : "?";
-    if(proj.slug) return EMPTY_SITE + sep + "p=" + encodeURIComponent(proj.slug);
-    if(proj.tour) return EMPTY_SITE + sep + "tour=" + encodeURIComponent(proj.tour);
-    return "";
-  }
 
   // تحديث شريط تفاصيل العقار أسفل الإطار
   function updatePropInfo(proj){
@@ -937,13 +883,12 @@
 
     const track = (fn, ms) => { const t = setTimeout(fn, ms); viewport._timers.push(t); return t; };
 
-    // رؤى الآن يعشّق الموقع الفاضي (لا Matterport مباشرة).
-    // الفاضي هو من يطبّق normalizeTourUrl ويعرض Matterport الخام.
-    const coreUrl = proj ? buildCoreUrl(proj) : "";
-    if (coreUrl) {
+    // تعشيق Matterport مباشرة: يؤخذ رابط الجولة الخام ويُوحَّد بإعدادات TOUR_PARAMS
+    const tourUrl = (proj && proj.tour && isSafeEmbedUrl(proj.tour)) ? normalizeTourUrl(proj.tour) : "";
+    if (tourUrl) {
     const iframe = document.createElement("iframe");
-    iframe.src = coreUrl;
-    // نمرّر الحركة وVR عبر الطبقة؛ الفل-سكرين الحقيقي يبقى معطّلاً
+    iframe.src = tourUrl;
+    // نمرّر الحركة وVR؛ الفل-سكرين الحقيقي يبقى معطّلاً
     // حتى لا تنهار المربعات والحواجز (نستعمل ملء الشاشة المزيّف)
     iframe.setAttribute("allow", "xr-spatial-tracking; gyroscope; accelerometer");
     iframe.setAttribute("allowfullscreen", "false");
@@ -957,17 +902,11 @@
 
     const coverTopLeft = document.createElement("div"); // أعلى اليسار
     coverTopLeft.className = "cover cover-light cover-topleft";
-    // لوجو البراند: في وضع رؤى = رابط لموقعك؛ في وضع الزبون = صورة فقط بلا رابط
-    if (BRAND.topLeftLink){
-      coverTopLeft.innerHTML =
-        '<a href="'+BRAND.topLeftLink+'" target="_blank" rel="noopener" ' +
-        'style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;pointer-events:auto">' +
-        '<img src="'+BRAND.topLeftLogo+'" alt="رؤى" /></a>';
-    } else {
-      coverTopLeft.innerHTML = '<img src="'+BRAND.topLeftLogo+'" alt="" />';
-    }
-    applyStyle(coverTopLeft, BRAND.style && BRAND.style.topLeft);
-    applyStyle(coverTopLeft.querySelector("img"), BRAND.style && BRAND.style.topLeftImg);
+    // لوجو رؤى فوق-اليسار = رابط يفتح موقعك في تبويب جديد
+    coverTopLeft.innerHTML =
+      '<a href="'+BRAND.topLeftLink+'" target="_blank" rel="noopener" ' +
+      'style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;pointer-events:auto">' +
+      '<img src="'+BRAND.topLeftLogo+'" alt="رؤى" /></a>';
 
     // حاجز شفاف يمنع الضغط على زر التشغيل (يغطي المربع الأحمر تماماً)
     const coverBlock = document.createElement("div");
@@ -989,8 +928,6 @@
     veilFs.className = "mp-veil mp-veil-fs";
     veilFs.innerHTML = VEIL_LINE1 + "<br>" + VEIL_LINE2;
     veilFs.hidden = true;
-    applyStyle(veilNormal, BRAND.style && BRAND.style.veil);
-    applyStyle(veilFs, BRAND.style && BRAND.style.veil);
 
     // --- شاشة التحميل (تغطي الـ viewport) ---
     const loading = document.createElement("div");
@@ -999,7 +936,6 @@
       '<img src="'+BRAND.loadingLogo+'" alt="" />' +
       '<div class="loading-spinner"></div>' +
       '<div class="loading-text">يتم التحميل…</div>';
-    applyStyle(loading.querySelector("img"), BRAND.style && BRAND.style.loadingImg);
 
     viewport.appendChild(coverLogo);
     viewport.appendChild(coverTopBlock);
@@ -1104,13 +1040,10 @@
     };
 
     // ── إخفاء شاشة التحميل ──
-    // تبقى الشاشة حتى تبدأ الجولة فعلاً، لإخفاء مقدمة Matterport ("powered by matterport"):
-    //  • mp-playing (عبر SDK في الفاضي) = كشف فوري ودقيق في لحظة بدء الجولة.
-    //  • mp-loaded  (بلا مفتاح SDK)     = تغطية المقدمة لمدة SPLASH_COVER_MS ثم الكشف.
-    //  • LOAD_TIMEOUT                    = حدّ أقصى احتياطي إن لم تصل أي إشارة.
-    const PLAYING_GRACE_MS = 2000;  // ← مهلة إضافية بعد بدء الجولة (SDK) قبل كشف الشاشة
-    const SPLASH_COVER_MS   = 6000;  // ← تغطية المقدمة بدون SDK: زده لو ظهرت "powered by"
-    const LOAD_TIMEOUT      = 15000; // حدّ أقصى احتياطي
+    // بعد تحميل إطار Matterport ننتظر SPLASH_COVER_MS لتغطية مقدمة "powered by matterport"
+    // ثم نكشف الجولة. LOAD_TIMEOUT حدّ أقصى احتياطي إن لم يصل حدث onload.
+    const SPLASH_COVER_MS = 6000;   // ← تغطية المقدمة: زده لو ظهرت "powered by"
+    const LOAD_TIMEOUT    = 15000;  // حدّ أقصى احتياطي
     let proceeded = false;
 
     const proceed = () => {
@@ -1129,17 +1062,9 @@
       }
     };
 
-    if (viewport._msgHandler) window.removeEventListener("message", viewport._msgHandler);
-    viewport._msgHandler = (e) => {
-      if (!e || !e.data || proceeded) return;
-      if (e.data.roaaCore === "mp-playing") {         // دقيق (SDK): الجولة تعمل الآن + مهلة grace
-        window.removeEventListener("message", viewport._msgHandler);
-        track(proceed, PLAYING_GRACE_MS);
-      } else if (e.data.roaaCore === "mp-loaded") {   // احتياطي (بلا SDK): غطِّ المقدمة ثم اكشف
-        track(proceed, SPLASH_COVER_MS);
-      }
-    };
-    window.addEventListener("message", viewport._msgHandler);
+    // عند تحميل الإطار: انتظر مهلة التغطية ثم اكشف
+    iframe.addEventListener("load", () => track(proceed, SPLASH_COVER_MS), { once: true });
+    // حدّ أقصى احتياطي إن تأخّر أو لم يصل حدث onload
     track(proceed, LOAD_TIMEOUT);
 
     // مجموعة أزرار الجولة (تحت-اليمين): [لوكيشن] [أوبشن] [فل سكرين]
@@ -1186,8 +1111,7 @@
     const ICON_COMPRESS= '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
 
     const base = location.href.split("#")[0].split("?")[0];
-    const tabUrl = base + "?p=" + encodeURIComponent(proj.slug || "") +
-                   (brandKey !== "roaa" ? "&brand=" + encodeURIComponent(brandKey) : "") + "&embed=1";
+    const tabUrl = base + "?p=" + encodeURIComponent(proj.slug || "") + "&embed=1";
 
     // نستعمل <a> ليكون فتح التبويب طبيعياً (غير محجوب) على الأجهزة التي لا تدعم ملء الشاشة
     const el = document.createElement("a");
@@ -1225,9 +1149,7 @@
   // ═══ زر أوبشن رؤى — يُبنى داخل إطار الجولة في كل مرة ═══
   function roaaEmbedCode(proj){
     const base = location.href.split("#")[0].split("?")[0];
-    const q = "?p=" + encodeURIComponent(proj.slug || "") +
-              (brandKey !== "roaa" ? "&brand=" + encodeURIComponent(brandKey) : "");
-    const src = base + q;
+    const src = base + "?p=" + encodeURIComponent(proj.slug || "");
     return '<iframe src="'+src+'" width="100%" height="600" style="border:0;" ' +
            'allow="fullscreen; xr-spatial-tracking; gyroscope; accelerometer" loading="lazy"></iframe>';
   }
@@ -1253,7 +1175,7 @@
       (IS_TOPLEVEL ? '<p class="oc-hint">انسخ الكود وضعه في موقع الزبون لعرض الجولة بشكل رؤى.</p>' : '') +
       embedBlock +
       '<p class="roaa-credit">صُمّمت ونُفّذت بواسطة ' +
-        '<a href="'+BRANDS.roaa.topLeftLink+'" target="_blank" rel="noopener">شركة رؤى</a></p>';
+        '<a href="'+BRAND.topLeftLink+'" target="_blank" rel="noopener">شركة رؤى</a></p>';
 
     btn.addEventListener("click", (e) => { e.stopPropagation(); panel.classList.toggle("open"); });
 
