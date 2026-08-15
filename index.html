@@ -767,14 +767,14 @@
     //  address: العنوان التفصيلي   |   mapLink: رابط الموقع الجغرافي (خرائط جوجل)
     //  tour: رابط matterport الخام   |   image: صورة مصغّرة للبطاقة
     projects: [
-      { slug: "tour-1", title: "الجولة 1", location: "", address: "", mapLink: "", image: "https://my.matterport.com/api/v2/player/models/4SwDcoDxVZk/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=4SwDcoDxVZk" },
+      { slug: "tour-1", title: "الجولة 1", location: "طرابلس، ليبيا", address: "", mapLink: "https://maps.google.com/?q=Tripoli,Libya", image: "https://my.matterport.com/api/v2/player/models/4SwDcoDxVZk/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=4SwDcoDxVZk" },
       { slug: "test-02", title: "الجولة 2", location: "عين زاره، ليبيا", address: "عين زاره، طرابلس", mapLink: "https://maps.google.com/?q=Ain+Zara+Tripoli", image: "https://my.matterport.com/api/v2/player/models/SX1WhWQita6/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=SX1WhWQita6" },
-      { slug: "tour-3", title: "الجولة 3", location: "", address: "", mapLink: "", image: "https://my.matterport.com/api/v2/player/models/6m1W2bQmWnq/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=6m1W2bQmWnq" },
-      { slug: "tour-4", title: "الجولة 4", location: "", address: "", mapLink: "", image: "https://my.matterport.com/api/v2/player/models/6UCJ2mFDuuK/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=6UCJ2mFDuuK" },
-      { slug: "tour-5", title: "الجولة 5", location: "", address: "", mapLink: "", image: "https://my.matterport.com/api/v2/player/models/PGAro8qLnpj/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=PGAro8qLnpj" },
-      { slug: "tour-6", title: "الجولة 6", location: "", address: "", mapLink: "", image: "https://my.matterport.com/api/v2/player/models/3JEECQymK3L/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=3JEECQymK3L" },
-      { slug: "tour-7", title: "الجولة 7", location: "", address: "", mapLink: "", image: "https://my.matterport.com/api/v2/player/models/rFLBrgqeGa9/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=rFLBrgqeGa9" },
-      { slug: "tour-8", title: "الجولة 8", location: "", address: "", mapLink: "", image: "https://my.matterport.com/api/v2/player/models/4SFdEEwpkC2/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=4SFdEEwpkC2" },
+      { slug: "tour-3", title: "الجولة 3", location: "طرابلس، ليبيا", address: "", mapLink: "https://maps.google.com/?q=Tripoli,Libya", image: "https://my.matterport.com/api/v2/player/models/6m1W2bQmWnq/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=6m1W2bQmWnq" },
+      { slug: "tour-4", title: "الجولة 4", location: "طرابلس، ليبيا", address: "", mapLink: "https://maps.google.com/?q=Tripoli,Libya", image: "https://my.matterport.com/api/v2/player/models/6UCJ2mFDuuK/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=6UCJ2mFDuuK" },
+      { slug: "tour-5", title: "الجولة 5", location: "طرابلس، ليبيا", address: "", mapLink: "https://maps.google.com/?q=Tripoli,Libya", image: "https://my.matterport.com/api/v2/player/models/PGAro8qLnpj/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=PGAro8qLnpj" },
+      { slug: "tour-6", title: "الجولة 6", location: "طرابلس، ليبيا", address: "", mapLink: "https://maps.google.com/?q=Tripoli,Libya", image: "https://my.matterport.com/api/v2/player/models/3JEECQymK3L/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=3JEECQymK3L" },
+      { slug: "tour-7", title: "الجولة 7", location: "طرابلس، ليبيا", address: "", mapLink: "https://maps.google.com/?q=Tripoli,Libya", image: "https://my.matterport.com/api/v2/player/models/rFLBrgqeGa9/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=rFLBrgqeGa9" },
+      { slug: "tour-8", title: "الجولة 8", location: "طرابلس، ليبيا", address: "", mapLink: "https://maps.google.com/?q=Tripoli,Libya", image: "https://my.matterport.com/api/v2/player/models/4SFdEEwpkC2/thumb/", tour: "https://my.matterport.com/show?play=1&lang=en-US&m=4SFdEEwpkC2" },
     ]
   };
 
@@ -1205,7 +1205,7 @@
     <a class="project-card" href="${p.tour ? `?p=${encodeURIComponent(p.slug)}` : '#'}"${p.tour ? ` data-tour="${i}"` : ''}>
       <div class="thumb">
         ${p.image
-          ? `<img src="${p.image}" alt="${p.title}" loading="lazy" />`
+          ? `<img src="${p.image}" alt="${p.title}" loading="${i < 3 ? 'eager' : 'lazy'}" decoding="async" fetchpriority="${i < 3 ? 'high' : 'auto'}" style="opacity:0;transition:opacity .35s ease" onload="this.style.opacity=1" />`
           : `<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16l4.5-5 3.5 4 2.5-3L20 16"/><rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/></svg></div>`
         }
       </div>
