@@ -115,8 +115,14 @@
     max-width: 620px;
     margin: -35px auto 0;
     text-align: center;
+    text-wrap: balance;          /* يوزّع الأسطر بالتساوي ويمنع نزول كلمة وحيدة */
     opacity:0; transform: translateY(10px);
     animation: rise 0.9s cubic-bezier(.2,.7,.2,1) 0.56s forwards;
+  }
+  /* على الشاشات الصغيرة نلغي الكسر اليدوي ونخلي النص يتوزّع لوحده */
+  @media (max-width: 700px){
+    .tagline{ max-width: 34ch; }
+    .tagline .tg-br{ display:none; }
   }
 
   @keyframes rise{ to{ opacity:1; transform:none; } }
@@ -670,7 +676,7 @@
       <img class="mark" src="roaa-logo-main.png" alt="شعار رؤى" /> 
       <span class="eyebrow">3D SCAN · VIRTUAL TOUR STUDIO</span>
       <p class="tagline">
-        نرسم رؤيتك رقمياً — جولة افتراضية تنقل مكانك بأدق تفاصيله، <br>
+        نرسم رؤيتك رقمياً — جولة افتراضية تنقل مكانك بأدق تفاصيله،<br class="tg-br">
         بفخامة تليق بيك وبعملائك.
       </p>
     </header>
