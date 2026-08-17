@@ -6,18 +6,6 @@
 <title>رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية</title>
 <meta name="description" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية." />
 
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://roaa.ly/" />
-<meta property="og:title" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية" />
-<meta property="og:description" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية." />
-<meta property="og:image" content="https://roaa.ly/roaa-share.jpg" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية" />
-<meta name="twitter:description" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية." />
-<meta name="twitter:image" content="https://roaa.ly/roaa-share.jpg" />
-
 <link rel="icon" type="image/png" href="roaa-logo-main.png" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -39,7 +27,23 @@
   }
 
   *{ box-sizing: border-box; }
-  html{ scroll-behavior: smooth; }
+
+  /* ---------- أحجام الخطوط — تُتحكَّم من لوحة التحكم ----------
+     كل مقاسات الموقع مبنية على rem، فتغيير الأساس هنا يكبّر أو
+     يصغّر كل شيء بتناسق. القيم تصل من site/public وقت التحميل.
+     الافتراضي 1 = الحجم الأصلي بلا تغيير.                        */
+  html{
+    scroll-behavior: smooth;
+    font-size: calc(16px * var(--fs-desktop, 1));
+  }
+  @media (max-width:1024px){
+    html{ font-size: calc(16px * var(--fs-mobile, 1)); }
+  }
+
+  /* مقاسات مستقلة لعناصر بعينها، فوق المقياس العام */
+  .hero .tagline{ font-size: calc(clamp(0.98rem, 2.1vw, 1.12rem) * var(--fs-tagline, 1)) !important; }
+  .section-head h2{ font-size: calc(1.1rem * var(--fs-heading, 1)) !important; }
+  .project-card .info .name{ font-size: calc(0.9rem * var(--fs-card, 1)) !important; }
 
   body{
     margin:0;
@@ -115,14 +119,8 @@
     max-width: 620px;
     margin: -35px auto 0;
     text-align: center;
-    text-wrap: balance;          /* يوزّع الأسطر بالتساوي ويمنع نزول كلمة وحيدة */
     opacity:0; transform: translateY(10px);
     animation: rise 0.9s cubic-bezier(.2,.7,.2,1) 0.56s forwards;
-  }
-  /* على الشاشات الصغيرة نلغي الكسر اليدوي ونخلي النص يتوزّع لوحده */
-  @media (max-width: 700px){
-    .tagline{ max-width: 34ch; }
-    .tagline .tg-br{ display:none; }
   }
 
   @keyframes rise{ to{ opacity:1; transform:none; } }
@@ -518,7 +516,7 @@
   
   .rua-brand {
     font-family: 'Kufam', sans-serif;
-    font-size: 0،90rem;
+    font-size: 0.90rem;   /* كانت مكتوبة بفاصلة عربية فكان المتصفح يتجاهل السطر */
     font-weight: 800;
     color: var(--paper);
     margin: 0 4px;
@@ -674,10 +672,10 @@
 
     <header class="hero">
       <img class="mark" src="roaa-logo-main.png" alt="شعار رؤى" /> 
-      <span class="eyebrow">3D SCAN · VIRTUAL TOUR STUDIO</span>
+      <span class="eyebrow" data-txt="eyebrow">3D SCAN · VIRTUAL TOUR STUDIO</span>
       <p class="tagline">
-        نرسم رؤيتك رقمياً — جولة افتراضية تنقل مكانك بأدق تفاصيله،<br class="tg-br">
-        بفخامة تليق بك وبعملائك.
+        <span data-txt="tagline1">ادخل لعالم من الواقعية الراقية، وين تبان أدق تفاصيل موقعك بفخامة عصرية.</span> <br>
+        <span data-txt="tagline2">تجربة ترفع من مستوى العرض الخاص بيك وتخلي زباينك يشوفوا الموقع بصورة احترافية.</span>
       </p>
     </header>
 
@@ -687,8 +685,8 @@
       <div class="sheet">
         <span class="c2" aria-hidden="true"></span>
         <div class="sheet-head">
-          <span class="tag">جولة افتراضية ثلاثية الأبعاد</span>
-          <span class="tag mono">SCALE&nbsp;1:1</span>
+          <span class="tag" data-txt="tagTour">جولة افتراضية ثلاثية الأبعاد</span>
+          <span class="tag mono" data-txt="tagScale">SCALE&nbsp;1:1</span>
         </div>
         <div class="viewport" id="tourViewport">
           </div>
@@ -699,7 +697,7 @@
           </div>
           <a class="prop-map" id="propMap" target="_blank" rel="noopener" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-            <span>الموقع الجغرافي</span>
+            <span data-txt="mapLabel">الموقع الجغرافي</span>
           </a>
         </div>
       </div>
@@ -709,11 +707,11 @@
 
     <section class="service-note" aria-label="عن الخدمة">
       <div class="section-head">
-        <h2>خدماتنا</h2>
-        <span class="sub">What we do</span>
-      <p>
-        رؤيتنا الرقمية تسبق زيارتك. نحوّل أي مكان لجولة افتراضية تفاعلية
-        بأبعاده الحقيقية، عميلك يدخلها من هاتفه ويتجول فيها بكل حرية.
+        <h2 data-txt="servicesTitle">خدماتنا</h2>
+        <span class="sub" data-txt="servicesSub">What we do</span>
+      <p data-txt="servicesText">
+        ننقل موقعك إلى عميلك بدل أن ينتقل إليه. نحوّل المكان إلى جولة تفاعلية
+        بأبعاده الحقيقية، يدخلها من هاتفه ويتجول فيها كما لو كان واقفاً بداخلها.
       </p>
       
     </section>
@@ -722,8 +720,8 @@
 
     <section class="portfolio" id="portfolio" aria-label="مكتبة الأعمال">
       <div class="section-head">
-        <h2>مكتبة الأعمال</h2>
-        <span class="sub">SELECTED PROJECTS</span>
+        <h2 data-txt="portfolioTitle">مكتبة الأعمال</h2>
+        <span class="sub" data-txt="portfolioSub">SELECTED PROJECTS</span>
       </div>
       <div class="portfolio-grid" id="portfolioGrid">
         </div>
@@ -732,8 +730,8 @@
     <div class="divider" aria-hidden="true"></div>
 
     <section class="contact" aria-label="تواصل معنا">
-      <h2>تواصل معنا</h2>
-      <span class="sub">GET IN TOUCH</span>
+      <h2 data-txt="contactTitle">تواصل معنا</h2>
+      <span class="sub" data-txt="contactSub">GET IN TOUCH</span>
       <div class="contact-row">
         <a class="icon-btn" id="waLink" href="#" target="_blank" rel="noopener" aria-label="تواصل عبر واتساب">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -765,7 +763,7 @@
     </section>
 
     <footer class="site-foot">
-      <p>© <span id="year"></span> <span class="rua-brand">رؤى</span> — ALL RIGHTS RESERVED</p>
+      <p>© <span id="year"></span> <span class="rua-brand" data-txt="brandName">رؤى</span> <span data-txt="footerText">— ALL RIGHTS RESERVED</span></p>
     </footer>
 
   </main>
@@ -1215,6 +1213,11 @@
     return { btn, panel };
   }
 
+  // ═══════════════════════════════════════════════════════════
+  //  تشغيل الموقع — تُستدعى بعد جلب البيانات المباشرة
+  // ═══════════════════════════════════════════════════════════
+  function startSite(){
+
   // البناء الافتتاحي: يفتح المشروع المطلوب عبر الرابط، أو يعرض الحالة الفارغة
   buildTour(resolveInitialProject());
 
@@ -1267,6 +1270,119 @@
   document.getElementById("liLink").href = CONFIG.linkedinUrl;
   document.getElementById("emailLink").href = `mailto:${CONFIG.email}`;
   document.getElementById("year").textContent = new Date().getFullYear();
+
+  } // ← نهاية startSite
+
+
+  /* ═══════════════════════════════════════════════════════════
+     جلب البيانات المباشرة من لوحة التحكم
+
+     الموقع يقرأ نسخة واحدة منشورة (site/public) بطلب واحد فقط.
+     القراءة عامة ومقصودة — ما فيها إلا الجولات المنشورة.
+     بيانات العمل الكاملة مقفولة ولا تُقرأ إلا بتسجيل دخول.
+
+     لو تعذّر الاتصال لأي سبب، يشتغل الموقع بالنسخة المحفوظة
+     في CONFIG أعلاه. الموقع ما يوقف أبداً.
+     ═══════════════════════════════════════════════════════════ */
+  const LIVE = {
+    projectId: "roaa-415fc",
+    apiKey: "AIzaSyCTcNHv2e6fRFA1i6ZiwAcwv7g6xk3naYs",
+    timeout: 4000
+  };
+
+  // فكّ ترميز قيم Firestore REST إلى قيم جافاسكربت عادية
+  function fsVal(v){
+    if (!v || typeof v !== "object") return null;
+    if ("stringValue"    in v) return v.stringValue;
+    if ("booleanValue"   in v) return v.booleanValue;
+    if ("integerValue"   in v) return Number(v.integerValue);
+    if ("doubleValue"    in v) return v.doubleValue;
+    if ("timestampValue" in v) return v.timestampValue;
+    if ("nullValue"      in v) return null;
+    if ("arrayValue"     in v) return (v.arrayValue.values || []).map(fsVal);
+    if ("mapValue"       in v) return fsMap(v.mapValue.fields || {});
+    return null;
+  }
+  function fsMap(fields){
+    const out = {};
+    for (const k in fields) out[k] = fsVal(fields[k]);
+    return out;
+  }
+
+  /* يستبدل أي نص في الصفحة عليه data-txt بالقيمة القادمة من اللوحة.
+     النص المكتوب في الملف يبقى كما هو لو ما فيه بديل — فالصفحة
+     ما تفضى أبداً حتى لو صار خلل في البيانات. */
+  function applyTexts(texts){
+    if (!texts) return;
+    document.querySelectorAll("[data-txt]").forEach(el => {
+      const v = texts[el.getAttribute("data-txt")];
+      if (typeof v === "string" && v.trim() !== "") el.textContent = v;
+    });
+    if (texts.pageTitle && texts.pageTitle.trim()){
+      document.title = texts.pageTitle;
+    }
+    if (texts.pageDescription && texts.pageDescription.trim()){
+      const m = document.querySelector('meta[name="description"]');
+      if (m) m.setAttribute("content", texts.pageDescription);
+    }
+  }
+
+  /* أحجام الخطوط: مقياس عام للابتوب وآخر للجوال، وثلاثة مقاييس
+     مستقلة لعناصر بعينها. القيمة 1 تعني الحجم الأصلي. */
+  function applyType(type){
+    if (!type) return;
+    const VARS = {
+      desktop:"--fs-desktop", mobile:"--fs-mobile",
+      tagline:"--fs-tagline", heading:"--fs-heading", card:"--fs-card"
+    };
+    const root = document.documentElement;
+    for (const k in VARS){
+      const n = Number(type[k]);
+      if (isFinite(n) && n >= 0.6 && n <= 1.8) root.style.setProperty(VARS[k], String(n));
+    }
+  }
+
+  async function fetchLive(){
+    const url = "https://firestore.googleapis.com/v1/projects/" + LIVE.projectId +
+                "/databases/(default)/documents/site/public?key=" + LIVE.apiKey;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), LIVE.timeout);
+    try{
+      const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const json = await res.json();
+      return fsMap(json.fields || {});
+    }finally{
+      clearTimeout(timer);
+    }
+  }
+
+  (async function boot(){
+    try{
+      const live = await fetchLive();
+
+      if (live && Array.isArray(live.tours) && live.tours.length){
+        CONFIG.projects = live.tours.filter(t => t && t.tour);
+      }
+
+      const s = live && live.settings;
+      if (s){
+        ["whatsappNumber","whatsappMessage","facebookUrl","linkedinUrl","email"]
+          .forEach(k => { if (s[k]) CONFIG[k] = s[k]; });
+        if (s.veil1)       BRAND.veil1 = s.veil1;
+        if (s.veil2)       BRAND.veil2 = s.veil2;
+        if (s.topLeftLink) BRAND.topLeftLink = s.topLeftLink;
+      }
+
+      applyTexts(live && live.texts);
+      applyType(live && live.type);
+
+      console.log("[رؤى] البيانات محمّلة من لوحة التحكم:", CONFIG.projects.length, "جولة");
+    }catch(err){
+      console.warn("[رؤى] تعذّر جلب البيانات المباشرة — سيتم العرض بالنسخة المحفوظة في الملف.", err);
+    }
+    startSite();
+  })();
 </script>
 </body>
 </html>

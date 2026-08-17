@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>رؤى — لوحة التحكم</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" type="image/png" href="roaa-logo-main.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=Tajawal:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --ink:#17181a; --ink-2:#1d1e21; --panel:#232427; --panel-line:#38393d;
+    --gold:#c6a35d; --gold-soft:#a98c52; --gold-dim:rgba(198,163,93,0.14);
+    --paper:#f3efe6; --muted:#9a978d; --radius:2px;
+    --ok:#5da36f; --bad:#c05c52; --warn:#c9a227;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--ink); color:var(--paper);
+    font-family:'Tajawal',sans-serif; min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-family:'Cairo',sans-serif; margin:0; }
+  .mono{ font-family:'JetBrains Mono',monospace; }
+  a{ color:var(--gold); }
+  button{ font-family:'Tajawal',sans-serif; cursor:pointer; }
+  input,select,textarea{ font-family:'Tajawal',sans-serif; }
+
+  /* ---------- عناصر مشتركة ---------- */
+  .btn{
+    background:var(--panel); color:var(--paper); border:1px solid var(--panel-line);
+    border-radius:var(--radius); padding:9px 16px; font-size:.85rem; font-weight:500;
+    transition:.18s; display:inline-flex; align-items:center; gap:7px; white-space:nowrap;
+  }
+  .btn:hover{ border-color:var(--gold); color:var(--gold); }
+  .btn.primary{ background:var(--gold); border-color:var(--gold); color:#17181a; font-weight:700; }
+  .btn.primary:hover{ background:var(--gold-soft); border-color:var(--gold-soft); color:#17181a; }
+  .btn.danger:hover{ border-color:var(--bad); color:var(--bad); }
+  .btn.icon{ padding:7px 10px; font-size:.95rem; line-height:1; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn:disabled:hover{ border-color:var(--panel-line); color:var(--paper); }
+
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block; font-size:.78rem; font-family:'Tajawal',sans-serif; font-weight:500;
+    color:var(--muted); margin-bottom:6px;
+  }
+  .field label .req{ color:var(--gold); }
+  .field input[type=text], .field input[type=email], .field input[type=password], .field textarea{
+    width:100%; background:var(--ink-2); border:1px solid var(--panel-line);
+    border-radius:var(--radius); color:var(--paper); padding:10px 12px; font-size:.88rem;
+    transition:.18s;
+  }
+  .field input:focus, .field textarea:focus{ outline:none; border-color:var(--gold); }
+  .field .hint{ font-size:.72rem; color:var(--muted); margin-top:5px; line-height:1.7; }
+  .field .err{ font-size:.75rem; color:var(--bad); margin-top:5px; }
+  .field input.ltr{ direction:ltr; text-align:left; font-family:'JetBrains Mono',monospace; font-size:.8rem; }
+
+  /* ---------- شاشة الدخول ---------- */
+  #login{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  #login .box{
+    width:100%; max-width:380px; background:var(--panel);
+    border:1px solid var(--panel-line); border-radius:var(--radius); padding:34px 28px;
+  }
+  #login .brand{ text-align:center; margin-bottom:26px; }
+  #login .brand img{ height:44px; margin-bottom:12px; }
+  #login .brand h1{ font-size:1.3rem; color:var(--gold); letter-spacing:.02em; }
+  #login .brand p{
+    font-family:'JetBrains Mono',monospace; font-size:.68rem;
+    color:var(--muted); margin:6px 0 0; letter-spacing:.08em;
+  }
+  #login .btn{ width:100%; justify-content:center; margin-top:6px; padding:12px; }
+  #loginErr{
+    background:rgba(192,92,82,.12); border:1px solid rgba(192,92,82,.4);
+    border-radius:var(--radius); padding:11px 13px; font-size:.8rem; color:#e0a8a2;
+    margin-bottom:16px; line-height:1.8;
+  }
+
+  /* ---------- الهيكل ---------- */
+  #app{ display:none; }
+  header.top{
+    position:sticky; top:0; z-index:50; background:var(--ink-2);
+    border-bottom:1px solid var(--panel-line); padding:0 20px;
+  }
+  .top-in{
+    max-width:1080px; margin:0 auto; height:62px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .top .logo{ display:flex; align-items:center; gap:10px; }
+  .top .logo img{ height:26px; }
+  .top .logo span{ font-family:'Cairo',sans-serif; font-weight:700; color:var(--gold); font-size:.95rem; }
+  .top .spacer{ flex:1; }
+  .top .who{ font-size:.75rem; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+  @media(max-width:700px){ .top .who{ display:none; } }
+
+  nav.tabs{ background:var(--ink-2); border-bottom:1px solid var(--panel-line); padding:0 20px; }
+  .tabs-in{ max-width:1080px; margin:0 auto; display:flex; gap:2px; }
+  .tab{
+    background:none; border:none; border-bottom:2px solid transparent;
+    color:var(--muted); padding:13px 18px; font-size:.85rem; font-weight:500; transition:.18s;
+  }
+  .tab:hover{ color:var(--paper); }
+  .tab.on{ color:var(--gold); border-bottom-color:var(--gold); }
+
+  main{ max-width:1080px; margin:0 auto; padding:26px 20px 80px; }
+  .pane{ display:none; }
+  .pane.on{ display:block; }
+
+  .bar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+  .bar .spacer{ flex:1; }
+  .status{
+    font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--muted);
+    display:flex; align-items:center; gap:6px;
+  }
+  .status .dot{ width:6px; height:6px; border-radius:50%; background:var(--muted); }
+  .status.live .dot{ background:var(--ok); }
+  .status.dirty .dot{ background:var(--warn); }
+
+  /* ---------- بطاقات الجولات ---------- */
+  .tour-row{
+    display:flex; align-items:center; gap:14px; background:var(--panel);
+    border:1px solid var(--panel-line); border-radius:var(--radius);
+    padding:12px 14px; margin-bottom:9px; transition:.18s;
+  }
+  .tour-row:hover{ border-color:rgba(198,163,93,.45); }
+  .tour-row.hidden-t{ opacity:.5; }
+  .tour-row .thumb{
+    width:76px; height:52px; flex:none; background:var(--ink);
+    border:1px solid var(--panel-line); border-radius:var(--radius); overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tour-row .thumb img{ width:100%; height:100%; object-fit:cover; }
+  .tour-row .thumb .ph{ font-size:1.1rem; color:var(--panel-line); }
+  .tour-row .meta{ flex:1; min-width:0; }
+  .tour-row .meta .name{
+    font-family:'Cairo',sans-serif; font-weight:700; font-size:.92rem;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .tour-row .meta .sub{
+    font-size:.75rem; color:var(--muted); margin-top:3px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .tour-row .meta .sub .slug{
+    font-family:'JetBrains Mono',monospace; font-size:.68rem;
+    color:var(--gold-soft); direction:ltr; display:inline-block;
+  }
+  .tour-row .acts{ display:flex; gap:5px; flex:none; }
+  .badge{
+    font-family:'JetBrains Mono',monospace; font-size:.62rem; padding:2px 7px;
+    border-radius:var(--radius); border:1px solid; letter-spacing:.04em;
+  }
+  .badge.pub{ color:var(--ok); border-color:rgba(93,163,111,.45); }
+  .badge.hid{ color:var(--muted); border-color:var(--panel-line); }
+  @media(max-width:640px){
+    .tour-row{ flex-wrap:wrap; }
+    .tour-row .meta{ flex-basis:calc(100% - 90px); }
+    .tour-row .acts{ width:100%; justify-content:flex-end; }
+  }
+
+  .empty{
+    text-align:center; padding:56px 24px; background:var(--panel);
+    border:1px dashed var(--panel-line); border-radius:var(--radius);
+  }
+  .empty h3{ font-size:1.05rem; margin-bottom:8px; }
+  .empty p{ color:var(--muted); font-size:.85rem; line-height:1.9; margin:0 auto 20px; max-width:420px; }
+
+  /* ---------- المحرّر ---------- */
+  .modal{
+    position:fixed; inset:0; z-index:200; background:rgba(10,11,12,.82);
+    display:none; align-items:flex-start; justify-content:center;
+    padding:24px 16px; overflow-y:auto; backdrop-filter:blur(3px);
+  }
+  .modal.on{ display:flex; }
+  .modal .sheet{
+    width:100%; max-width:620px; background:var(--panel);
+    border:1px solid var(--panel-line); border-radius:var(--radius); margin:auto;
+  }
+  .modal .sheet-head{
+    padding:18px 22px; border-bottom:1px solid var(--panel-line);
+    display:flex; align-items:center; gap:12px;
+  }
+  .modal .sheet-head h2{ font-size:1.05rem; flex:1; }
+  .modal .sheet-body{ padding:22px; }
+  .modal .sheet-foot{
+    padding:16px 22px; border-top:1px solid var(--panel-line);
+    display:flex; gap:9px; justify-content:flex-end;
+  }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:560px){ .row2{ grid-template-columns:1fr; gap:0; } }
+
+  .segs{ display:flex; gap:0; border:1px solid var(--panel-line); border-radius:var(--radius); overflow:hidden; margin-bottom:12px; }
+  .seg{
+    flex:1; background:var(--ink-2); border:none; color:var(--muted);
+    padding:9px 6px; font-size:.78rem; transition:.18s; border-left:1px solid var(--panel-line);
+  }
+  .seg:last-child{ border-left:none; }
+  .seg.on{ background:var(--gold-dim); color:var(--gold); font-weight:700; }
+
+  .imgprev{
+    width:100%; height:150px; background:var(--ink-2); border:1px solid var(--panel-line);
+    border-radius:var(--radius); overflow:hidden; display:flex;
+    align-items:center; justify-content:center; margin-top:10px;
+  }
+  .imgprev img{ width:100%; height:100%; object-fit:cover; }
+  .imgprev .ph{ color:var(--muted); font-size:.78rem; }
+
+  /* لا بد من رفع التخصيص هنا، وإلا غلبته قاعدة .field label أعلاه */
+  .field label.toggle, .toggle{
+    display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;
+    margin-bottom:0; color:var(--paper); font-size:.85rem;
+  }
+  .toggle input{ display:none; }
+  .toggle .track{
+    width:40px; height:22px; background:var(--ink-2); border:1px solid var(--panel-line);
+    border-radius:11px; position:relative; transition:.18s; flex:none;
+  }
+  .toggle .track::after{
+    content:''; position:absolute; top:2px; right:2px; width:16px; height:16px;
+    border-radius:50%; background:var(--muted); transition:.18s;
+  }
+  .toggle input:checked + .track{ background:var(--gold-dim); border-color:var(--gold); }
+  .toggle input:checked + .track::after{ right:20px; background:var(--gold); }
+  .toggle .lbl{ font-size:.85rem; }
+
+  /* ---------- تنبيهات ---------- */
+  #toasts{ position:fixed; bottom:20px; left:20px; z-index:400; display:flex; flex-direction:column; gap:8px; }
+  .toast{
+    background:var(--panel); border:1px solid var(--panel-line); border-right:3px solid var(--gold);
+    border-radius:var(--radius); padding:12px 16px; font-size:.83rem; max-width:340px;
+    animation:pop .2s ease; line-height:1.7;
+  }
+  .toast.ok{ border-right-color:var(--ok); }
+  .toast.bad{ border-right-color:var(--bad); }
+  @keyframes pop{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
+
+  .note{
+    background:var(--ink-2); border:1px solid var(--panel-line); border-right:3px solid var(--gold);
+    border-radius:var(--radius); padding:13px 16px; font-size:.8rem;
+    color:var(--muted); line-height:1.9; margin-bottom:20px;
+  }
+  .note b{ color:var(--paper); font-weight:500; }
+
+  #loader{ text-align:center; padding:70px 20px; color:var(--muted); font-size:.85rem; }
+
+  /* ---------- مجموعات الحقول ---------- */
+  .group{ margin:26px 0 14px; border-bottom:1px solid var(--panel-line); padding-bottom:8px; }
+  .group:first-child{ margin-top:0; }
+  .group h3{ font-size:.9rem; color:var(--gold); font-weight:700; }
+  .field textarea{ resize:vertical; line-height:1.9; }
+
+  /* ---------- المزالق ---------- */
+  .slider{
+    background:var(--panel); border:1px solid var(--panel-line);
+    border-radius:var(--radius); padding:14px 16px; margin-bottom:10px;
+  }
+  .slider-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .slider-head span{ font-size:.85rem; }
+  .slider-head b{
+    font-family:'JetBrains Mono',monospace; font-size:.8rem; color:var(--gold);
+    background:var(--gold-dim); padding:2px 9px; border-radius:var(--radius);
+  }
+  .slider input[type=range]{
+    width:100%; -webkit-appearance:none; appearance:none; height:3px;
+    background:var(--panel-line); border-radius:2px; outline:none;
+  }
+  .slider input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:16px; height:16px;
+    border-radius:50%; background:var(--gold); cursor:pointer; border:none;
+  }
+  .slider input[type=range]::-moz-range-thumb{
+    width:16px; height:16px; border-radius:50%; background:var(--gold);
+    cursor:pointer; border:none;
+  }
+
+  /* ---------- معاينة الخطوط ---------- */
+  .tprev{
+    background:var(--ink); border:1px solid var(--panel-line);
+    border-radius:var(--radius); padding:26px 22px; text-align:center;
+  }
+  .tp-eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:calc(.65rem * var(--p-base,1));
+    color:var(--gold); letter-spacing:.14em; margin-bottom:12px;
+  }
+  .tp-tagline{
+    font-size:calc(1.05rem * var(--p-base,1) * var(--p-tagline,1));
+    color:var(--muted); line-height:1.9; margin-bottom:22px;
+  }
+  .tp-h2{
+    font-family:'Cairo',sans-serif; font-weight:700;
+    font-size:calc(1.1rem * var(--p-base,1) * var(--p-heading,1)); margin-bottom:16px;
+  }
+  .tp-card{
+    display:inline-block; text-align:right; border:1px solid var(--panel-line);
+    border-radius:var(--radius); padding:11px 16px;
+    font-family:'Cairo',sans-serif; font-weight:700;
+    font-size:calc(.9rem * var(--p-base,1) * var(--p-card,1));
+  }
+  .tp-card span{
+    display:block; font-family:'Tajawal',sans-serif; font-weight:400;
+    font-size:calc(.72rem * var(--p-base,1)); color:var(--muted); margin-top:3px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ شاشة تسجيل الدخول ============ -->
+<div id="login">
+  <div class="box">
+    <div class="brand">
+      <img src="roaa-logo-main.png" alt="رؤى" onerror="this.style.display='none'" />
+      <h1>لوحة التحكم</h1>
+      <p>ROAA CONTROL PANEL</p>
+    </div>
+    <div id="loginErr" style="display:none"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="lEmail" class="ltr" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="lPass" class="ltr" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn primary" id="lBtn">دخول</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============ اللوحة ============ -->
+<div id="app">
+  <header class="top">
+    <div class="top-in">
+      <div class="logo">
+        <img src="roaa-logo-main.png" alt="" onerror="this.style.display='none'" />
+        <span>لوحة التحكم</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="who" id="who"></div>
+      <button class="btn" id="btnOut">خروج</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <div class="tabs-in">
+      <button class="tab on" data-pane="tours">الجولات</button>
+      <button class="tab" data-pane="texts">نصوص الموقع</button>
+      <button class="tab" data-pane="type">أحجام الخطوط</button>
+      <button class="tab" data-pane="settings">التواصل والعلامة</button>
+    </div>
+  </nav>
+
+  <main>
+    <div id="loader">جارٍ التحميل…</div>
+
+    <!-- ---- الجولات ---- -->
+    <section class="pane" id="pane-tours">
+      <div class="bar">
+        <button class="btn primary" id="btnNew">+ جولة جديدة</button>
+        <a class="btn" id="btnPreview" href="index.html" target="_blank">معاينة الموقع</a>
+        <div class="spacer"></div>
+        <div class="status" id="pubStatus"><span class="dot"></span><span class="txt"></span></div>
+        <button class="btn" id="btnPublish">إعادة نشر</button>
+      </div>
+      <div id="toursList"></div>
+    </section>
+
+    <!-- ---- نصوص الموقع ---- -->
+    <section class="pane" id="pane-texts">
+      <div class="note">
+        كل سطر مكتوب في الموقع تقدر تغيّره من هنا.
+        <b>اترك أي خانة فاضية وبيرجع النص الأصلي المكتوب في الملف.</b>
+      </div>
+
+      <div class="group"><h3>الترويسة</h3></div>
+      <div class="field">
+        <label>السطر الصغير فوق</label>
+        <input type="text" data-t="eyebrow" />
+      </div>
+      <div class="field">
+        <label>الوصف — السطر الأول</label>
+        <input type="text" data-t="tagline1" />
+      </div>
+      <div class="field">
+        <label>الوصف — السطر الثاني</label>
+        <input type="text" data-t="tagline2" />
+      </div>
+
+      <div class="group"><h3>إطار الجولة</h3></div>
+      <div class="row2">
+        <div class="field">
+          <label>وسم الجولة (يمين)</label>
+          <input type="text" data-t="tagTour" />
+        </div>
+        <div class="field">
+          <label>وسم المقياس (يسار)</label>
+          <input type="text" data-t="tagScale" />
+        </div>
+      </div>
+      <div class="field">
+        <label>نص زر الخريطة</label>
+        <input type="text" data-t="mapLabel" />
+      </div>
+
+      <div class="group"><h3>قسم الخدمات</h3></div>
+      <div class="row2">
+        <div class="field">
+          <label>العنوان</label>
+          <input type="text" data-t="servicesTitle" />
+        </div>
+        <div class="field">
+          <label>العنوان الإنجليزي الصغير</label>
+          <input type="text" data-t="servicesSub" class="ltr" />
+        </div>
+      </div>
+      <div class="field">
+        <label>نص الفقرة</label>
+        <textarea data-t="servicesText" rows="3"></textarea>
+      </div>
+
+      <div class="group"><h3>مكتبة الأعمال</h3></div>
+      <div class="row2">
+        <div class="field">
+          <label>العنوان</label>
+          <input type="text" data-t="portfolioTitle" />
+        </div>
+        <div class="field">
+          <label>العنوان الإنجليزي الصغير</label>
+          <input type="text" data-t="portfolioSub" class="ltr" />
+        </div>
+      </div>
+
+      <div class="group"><h3>قسم التواصل</h3></div>
+      <div class="row2">
+        <div class="field">
+          <label>العنوان</label>
+          <input type="text" data-t="contactTitle" />
+        </div>
+        <div class="field">
+          <label>العنوان الإنجليزي الصغير</label>
+          <input type="text" data-t="contactSub" class="ltr" />
+        </div>
+      </div>
+
+      <div class="group"><h3>التذييل</h3></div>
+      <div class="row2">
+        <div class="field">
+          <label>اسم العلامة</label>
+          <input type="text" data-t="brandName" />
+        </div>
+        <div class="field">
+          <label>نص الحقوق</label>
+          <input type="text" data-t="footerText" />
+        </div>
+      </div>
+
+      <div class="group"><h3>معلومات الصفحة</h3></div>
+      <div class="field">
+        <label>عنوان التبويب في المتصفح</label>
+        <input type="text" data-t="pageTitle" />
+      </div>
+      <div class="field">
+        <label>وصف الموقع لمحركات البحث</label>
+        <textarea data-t="pageDescription" rows="2"></textarea>
+      </div>
+
+      <button class="btn primary" id="btnSaveTexts">حفظ ونشر</button>
+    </section>
+
+    <!-- ---- أحجام الخطوط ---- -->
+    <section class="pane" id="pane-type">
+      <div class="note">
+        <b>١٠٠٪ هو الحجم الأصلي.</b> المقياس العام يكبّر أو يصغّر كل شيء بتناسق،
+        والمقاييس تحته تعدّل عناصر بعينها فوق العام. غيّر شوية شوية — خمسة بالمية فرق واضح.
+      </div>
+
+      <div class="group"><h3>المقياس العام</h3></div>
+      <div class="slider" data-y="desktop">
+        <div class="slider-head"><span>اللابتوب والشاشات الكبيرة</span><b class="val"></b></div>
+        <input type="range" min="70" max="140" step="1" />
+      </div>
+      <div class="slider" data-y="mobile">
+        <div class="slider-head"><span>الجوال والتابلت</span><b class="val"></b></div>
+        <input type="range" min="70" max="140" step="1" />
+      </div>
+
+      <div class="group"><h3>عناصر محددة</h3></div>
+      <div class="slider" data-y="tagline">
+        <div class="slider-head"><span>وصف الترويسة</span><b class="val"></b></div>
+        <input type="range" min="70" max="150" step="1" />
+      </div>
+      <div class="slider" data-y="heading">
+        <div class="slider-head"><span>عناوين الأقسام</span><b class="val"></b></div>
+        <input type="range" min="70" max="150" step="1" />
+      </div>
+      <div class="slider" data-y="card">
+        <div class="slider-head"><span>أسماء الجولات في المكتبة</span><b class="val"></b></div>
+        <input type="range" min="70" max="150" step="1" />
+      </div>
+
+      <div class="group"><h3>معاينة</h3></div>
+      <div class="tprev">
+        <div class="tp-eyebrow">3D SCAN · VIRTUAL TOUR STUDIO</div>
+        <div class="tp-tagline" id="tpTag">ادخل لعالم من الواقعية الراقية، وين تبان أدق تفاصيل موقعك.</div>
+        <div class="tp-h2" id="tpH2">مكتبة الأعمال</div>
+        <div class="tp-card" id="tpCard">فيلا الأندلس<span>جنزور، ليبيا</span></div>
+      </div>
+
+      <div class="bar" style="margin-top:22px">
+        <button class="btn primary" id="btnSaveType">حفظ ونشر</button>
+        <button class="btn" id="btnResetType">رجّع الأحجام الأصلية</button>
+      </div>
+    </section>
+
+    <!-- ---- الإعدادات ---- -->
+    <section class="pane" id="pane-settings">
+      <div class="note">
+        هذي القيم تظهر للزوار في أزرار التواصل وفي شريط العلامة داخل الجولة.
+        <b>أي تعديل يبان على الموقع فوراً بعد الحفظ.</b>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>رقم الواتساب <span class="req">*</span></label>
+          <input type="text" id="sWa" class="ltr" placeholder="218912345678" />
+          <div class="hint">بالصيغة الدولية بدون + وبدون أصفار في البداية.</div>
+        </div>
+        <div class="field">
+          <label>البريد الإلكتروني</label>
+          <input type="text" id="sEmail" class="ltr" placeholder="info@roaa.ly" />
+        </div>
+      </div>
+      <div class="field">
+        <label>رسالة الواتساب الجاهزة</label>
+        <input type="text" id="sWaMsg" />
+        <div class="hint">النص اللي يلقاه الزائر مكتوب له في المحادثة.</div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>رابط فيسبوك</label>
+          <input type="text" id="sFb" class="ltr" />
+        </div>
+        <div class="field">
+          <label>رابط لينكدإن</label>
+          <input type="text" id="sLi" class="ltr" />
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>نص الشريط — السطر الأول</label>
+          <input type="text" id="sV1" />
+        </div>
+        <div class="field">
+          <label>نص الشريط — السطر الثاني</label>
+          <input type="text" id="sV2" />
+        </div>
+      </div>
+      <div class="field">
+        <label>رابط موقعك (لوجو أعلى اليسار داخل الجولة)</label>
+        <input type="text" id="sLink" class="ltr" />
+      </div>
+      <button class="btn primary" id="btnSaveSettings">حفظ ونشر</button>
+    </section>
+  </main>
+</div>
+
+<!-- ============ محرّر الجولة ============ -->
+<div class="modal" id="editor">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="edTitle">جولة جديدة</h2>
+      <button class="btn icon" id="edClose">&times;</button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <label>اسم الجولة <span class="req">*</span></label>
+        <input type="text" id="fTitle" placeholder="فيلا الأندلس" />
+      </div>
+
+      <div class="field">
+        <label>رابط الجولة من Matterport <span class="req">*</span></label>
+        <input type="text" id="fTour" class="ltr" placeholder="https://my.matterport.com/show?m=XXXXXXXX" />
+        <div class="hint">الصق الرابط زي ما هو. اللوحة تنظّفه وتوحّد إعدادات العرض تلقائياً.</div>
+        <div class="err" id="eTour" style="display:none"></div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>المدينة / المنطقة</label>
+          <input type="text" id="fLocation" placeholder="طرابلس، ليبيا" />
+        </div>
+        <div class="field">
+          <label>العنوان التفصيلي</label>
+          <input type="text" id="fAddress" placeholder="عين زارة، طرابلس" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>رابط الموقع على الخريطة</label>
+        <input type="text" id="fMap" class="ltr" placeholder="https://maps.google.com/?q=..." />
+        <div class="hint">
+          اتركه فاضي وبيتولّد تلقائياً من العنوان.
+          <a href="#" id="genMap">توليد الآن</a>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>المعرّف في الرابط (slug) <span class="req">*</span></label>
+        <input type="text" id="fSlug" class="ltr" placeholder="villa-andalus" />
+        <div class="hint">
+          الرابط المستقل للجولة بيكون: <span class="mono" id="slugPreview" style="color:var(--gold-soft)"></span>
+        </div>
+        <div class="err" id="eSlug" style="display:none"></div>
+      </div>
+
+      <div class="field">
+        <label>صورة البطاقة</label>
+        <div class="segs">
+          <button class="seg on" data-img="auto">تلقائي من الجولة</button>
+          <button class="seg" data-img="url">رابط صورة</button>
+          <button class="seg" data-img="file">رفع من الجهاز</button>
+        </div>
+        <input type="text" id="fImgUrl" class="ltr" placeholder="https://..." style="display:none" />
+        <input type="file" id="fImgFile" accept="image/*" style="display:none" />
+        <div class="imgprev" id="imgPrev"><div class="ph">لا توجد صورة</div></div>
+        <div class="hint" id="imgHint">تُسحب الصورة المصغّرة من Matterport تلقائياً — بدون رفع ولا مساحة تخزين.</div>
+      </div>
+
+      <div class="field" style="margin-bottom:0">
+        <label class="toggle">
+          <input type="checkbox" id="fPub" checked />
+          <span class="track"></span>
+          <span class="lbl">ظاهرة للزوار في مكتبة الأعمال</span>
+        </label>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" id="edCancel">إلغاء</button>
+      <button class="btn primary" id="edSave">حفظ ونشر</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ تأكيد الحذف ============ -->
+<div class="modal" id="confirm">
+  <div class="sheet" style="max-width:400px">
+    <div class="sheet-head"><h2>تأكيد الحذف</h2></div>
+    <div class="sheet-body" style="font-size:.88rem; line-height:1.9; color:var(--muted)">
+      <span id="cfMsg"></span>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" id="cfNo">تراجع</button>
+      <button class="btn danger" id="cfYes">نعم، احذف</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+import { getFirestore, collection, getDocs, doc, addDoc, updateDoc,
+         deleteDoc, setDoc, writeBatch, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+/* ============================================================
+   إعدادات مشروع رؤى على Firebase
+   هذي القيم علنية بطبيعتها وتصل لأي زائر — الحماية في قواعد
+   Firestore المحفوظة عند جوجل، مش في إخفاء هذا الكود.
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyCTcNHv2e6fRFA1i6ZiwAcwv7g6xk3naYs",
+  authDomain: "roaa-415fc.firebaseapp.com",
+  projectId: "roaa-415fc",
+  storageBucket: "roaa-415fc.firebasestorage.app",
+  messagingSenderId: "143783252588",
+  appId: "1:143783252588:web:c7c98447f1304ec3427e49"
+};
+
+const app  = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+/* ---------- أدوات صغيرة ---------- */
+const $  = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+function toast(msg, kind){
+  const t = document.createElement("div");
+  t.className = "toast" + (kind ? " " + kind : "");
+  t.textContent = msg;
+  $("#toasts").appendChild(t);
+  setTimeout(() => { t.style.opacity = "0"; t.style.transition = ".3s"; }, 3200);
+  setTimeout(() => t.remove(), 3600);
+}
+
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+/* يستخرج معرّف Matterport من أي شكل رابط */
+function matterportId(url){
+  try{
+    const u = new URL(url);
+    if (!/matterport\.com$/i.test(u.hostname.replace(/^www\./, ""))) return "";
+    return u.searchParams.get("m") || "";
+  }catch(e){ return ""; }
+}
+
+function autoThumb(tourUrl){
+  const id = matterportId(tourUrl);
+  return id ? `https://my.matterport.com/api/v2/player/models/${id}/thumb/` : "";
+}
+
+function slugify(s){
+  return String(s || "")
+    .trim().toLowerCase()
+    .replace(/[؀-ۿ]/g, "")          // الحروف العربية لا تصلح في الرابط
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/* ---------- الحالة ---------- */
+let TOURS = [];        // كل الجولات (منشورة ومخفية)
+let SETTINGS = {};     // بيانات التواصل والعلامة
+let TEXTS = {};        // نصوص صفحات الموقع
+let TYPE = {};         // أحجام الخطوط
+let editingId = null;  // معرّف الجولة تحت التعديل، أو null للجديدة
+let imgMode = "auto";
+let imgData = "";      // القيمة النهائية للصورة (رابط أو data URL)
+
+const DEFAULT_SETTINGS = {
+  whatsappNumber:  "218xxxxxxxxx",
+  whatsappMessage: "مرحباً، أرغب بمعرفة المزيد عن خدمات رؤى",
+  facebookUrl:     "https://facebook.com/roaa",
+  linkedinUrl:     "https://linkedin.com/company/roaa",
+  email:           "info@roaa.com",
+  veil1:           "استكشف المكان",
+  veil2:           "بتقنية رؤى",
+  topLeftLink:     "https://roaa.ly"
+};
+
+/* النصوص كما هي مكتوبة في index.html — تظهر في الخانات كنقطة بداية */
+const DEFAULT_TEXTS = {
+  eyebrow:        "3D SCAN · VIRTUAL TOUR STUDIO",
+  tagline1:       "ادخل لعالم من الواقعية الراقية، وين تبان أدق تفاصيل موقعك بفخامة عصرية.",
+  tagline2:       "تجربة ترفع من مستوى العرض الخاص بيك وتخلي زباينك يشوفوا الموقع بصورة احترافية.",
+  tagTour:        "جولة افتراضية ثلاثية الأبعاد",
+  tagScale:       "SCALE 1:1",
+  mapLabel:       "الموقع الجغرافي",
+  servicesTitle:  "خدماتنا",
+  servicesSub:    "What we do",
+  servicesText:   "ننقل موقعك إلى عميلك بدل أن ينتقل إليه. نحوّل المكان إلى جولة تفاعلية بأبعاده الحقيقية، يدخلها من هاتفه ويتجول فيها كما لو كان واقفاً بداخلها.",
+  portfolioTitle: "مكتبة الأعمال",
+  portfolioSub:   "SELECTED PROJECTS",
+  contactTitle:   "تواصل معنا",
+  contactSub:     "GET IN TOUCH",
+  brandName:      "رؤى",
+  footerText:     "— ALL RIGHTS RESERVED",
+  pageTitle:      "رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية",
+  pageDescription:"رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية."
+};
+
+/* 1 = الحجم الأصلي */
+const DEFAULT_TYPE = { desktop:1, mobile:1, tagline:1, heading:1, card:1 };
+
+/* الجولات الثمانية الموجودة حالياً في index.html — للاستيراد بضغطة */
+const SEED = [
+  { slug:"tour-1",  title:"الجولة 1", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=4SwDcoDxVZk" },
+  { slug:"test-02", title:"الجولة 2", location:"عين زاره، ليبيا", address:"عين زاره، طرابلس", mapLink:"https://maps.google.com/?q=Ain+Zara+Tripoli",   tour:"https://my.matterport.com/show?m=SX1WhWQita6" },
+  { slug:"tour-3",  title:"الجولة 3", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=6m1W2bQmWnq" },
+  { slug:"tour-4",  title:"الجولة 4", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=6UCJ2mFDuuK" },
+  { slug:"tour-5",  title:"الجولة 5", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=PGAro8qLnpj" },
+  { slug:"tour-6",  title:"الجولة 6", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=3JEECQymK3L" },
+  { slug:"tour-7",  title:"الجولة 7", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=rFLBrgqeGa9" },
+  { slug:"tour-8",  title:"الجولة 8", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=4SFdEEwpkC2" }
+];
+
+/* ============================================================
+   تسجيل الدخول
+   ============================================================ */
+$("#loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("#lBtn");
+  btn.disabled = true; btn.textContent = "جارٍ الدخول…";
+  $("#loginErr").style.display = "none";
+  try{
+    await signInWithEmailAndPassword(auth, $("#lEmail").value.trim(), $("#lPass").value);
+  }catch(err){
+    const map = {
+      "auth/invalid-credential": "البريد أو كلمة المرور غير صحيحة.",
+      "auth/invalid-email":      "صيغة البريد الإلكتروني غير صحيحة.",
+      "auth/user-not-found":     "لا يوجد حساب بهذا البريد.",
+      "auth/wrong-password":     "كلمة المرور غير صحيحة.",
+      "auth/too-many-requests":  "محاولات كثيرة متتالية. انتظر دقيقة وأعد المحاولة.",
+      "auth/network-request-failed": "تعذّر الاتصال بالإنترنت."
+    };
+    $("#loginErr").textContent = map[err.code] || ("تعذّر تسجيل الدخول: " + err.code);
+    $("#loginErr").style.display = "block";
+  }finally{
+    btn.disabled = false; btn.textContent = "دخول";
+  }
+});
+
+$("#btnOut").addEventListener("click", () => signOut(auth));
+
+onAuthStateChanged(auth, (user) => {
+  if (user){
+    $("#login").style.display = "none";
+    $("#app").style.display   = "block";
+    $("#who").textContent     = user.email;
+    loadAll();
+  }else{
+    $("#login").style.display = "flex";
+    $("#app").style.display   = "none";
+    $("#lPass").value = "";
+  }
+});
+
+/* ============================================================
+   التبويبات
+   ============================================================ */
+$$(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    $$(".tab").forEach(t => t.classList.remove("on"));
+    $$(".pane").forEach(p => p.classList.remove("on"));
+    tab.classList.add("on");
+    $("#pane-" + tab.dataset.pane).classList.add("on");
+  });
+});
+
+/* ============================================================
+   تحميل البيانات
+   ============================================================ */
+async function loadAll(){
+  $("#loader").style.display = "block";
+  $$(".pane").forEach(p => p.classList.remove("on"));
+  try{
+    const snap = await getDocs(collection(db, "tours"));
+    TOURS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    TOURS.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    let sSnap;
+    try{
+      const sDocs = await getDocs(collection(db, "site"));
+      const pub = sDocs.docs.find(d => d.id === "public");
+      sSnap = pub ? pub.data() : null;
+    }catch(e){ sSnap = null; }
+
+    SETTINGS = Object.assign({}, DEFAULT_SETTINGS, (sSnap && sSnap.settings) || {});
+    TEXTS    = Object.assign({}, DEFAULT_TEXTS,    (sSnap && sSnap.texts)    || {});
+    TYPE     = Object.assign({}, DEFAULT_TYPE,     (sSnap && sSnap.type)     || {});
+    fillSettings();
+    fillTexts();
+    fillType();
+    renderTours();
+    setStatus(sSnap ? "live" : "dirty", sSnap ? "منشور" : "لم يُنشر بعد");
+  }catch(err){
+    console.error(err);
+    toast("تعذّر تحميل البيانات: " + err.code, "bad");
+  }finally{
+    $("#loader").style.display = "none";
+    $("#pane-tours").classList.add("on");
+    $$(".tab").forEach(t => t.classList.remove("on"));
+    $$(".tab")[0].classList.add("on");
+  }
+}
+
+function setStatus(kind, txt){
+  const el = $("#pubStatus");
+  el.className = "status " + kind;
+  el.querySelector(".txt").textContent = txt;
+}
+
+/* ============================================================
+   عرض قائمة الجولات
+   ============================================================ */
+function renderTours(){
+  const box = $("#toursList");
+
+  if (!TOURS.length){
+    box.innerHTML = `
+      <div class="empty">
+        <h3>ما فيه جولات بعد</h3>
+        <p>تقدر تستورد الجولات الثمانية الموجودة في موقعك الحالي بضغطة واحدة،
+           أو تضيف جولة جديدة من الصفر.</p>
+        <button class="btn primary" id="btnSeed">استيراد الجولات الثمانية الحالية</button>
+      </div>`;
+    $("#btnSeed").addEventListener("click", seedTours);
+    return;
+  }
+
+  box.innerHTML = TOURS.map((t, i) => `
+    <div class="tour-row ${t.published === false ? "hidden-t" : ""}">
+      <div class="thumb">
+        ${t.image ? `<img src="${esc(t.image)}" alt="" onerror="this.parentNode.innerHTML='<div class=ph>—</div>'" />`
+                  : `<div class="ph">—</div>`}
+      </div>
+      <div class="meta">
+        <div class="name">${esc(t.title || "بلا اسم")}
+          <span class="badge ${t.published === false ? "hid" : "pub"}">${t.published === false ? "مخفية" : "منشورة"}</span>
+        </div>
+        <div class="sub">${esc(t.location || "—")} · <span class="slug">?p=${esc(t.slug)}</span></div>
+      </div>
+      <div class="acts">
+        <button class="btn icon" data-up="${i}"   ${i === 0 ? "disabled" : ""} title="أعلى">▲</button>
+        <button class="btn icon" data-down="${i}" ${i === TOURS.length - 1 ? "disabled" : ""} title="أسفل">▼</button>
+        <button class="btn" data-edit="${t.id}">تعديل</button>
+        <button class="btn danger icon" data-del="${t.id}" title="حذف">🗑</button>
+      </div>
+    </div>`).join("");
+
+  box.querySelectorAll("[data-edit]").forEach(b =>
+    b.addEventListener("click", () => openEditor(b.dataset.edit)));
+  box.querySelectorAll("[data-del]").forEach(b =>
+    b.addEventListener("click", () => askDelete(b.dataset.del)));
+  box.querySelectorAll("[data-up]").forEach(b =>
+    b.addEventListener("click", () => move(+b.dataset.up, -1)));
+  box.querySelectorAll("[data-down]").forEach(b =>
+    b.addEventListener("click", () => move(+b.dataset.down, +1)));
+}
+
+/* ============================================================
+   الترتيب
+   ============================================================ */
+async function move(i, dir){
+  const j = i + dir;
+  if (j < 0 || j >= TOURS.length) return;
+  [TOURS[i], TOURS[j]] = [TOURS[j], TOURS[i]];
+  renderTours();
+  try{
+    const batch = writeBatch(db);
+    TOURS.forEach((t, idx) => {
+      t.order = idx;
+      batch.update(doc(db, "tours", t.id), { order: idx });
+    });
+    await batch.commit();
+    await publish();
+  }catch(err){
+    toast("تعذّر حفظ الترتيب: " + err.code, "bad");
+  }
+}
+
+/* ============================================================
+   استيراد الجولات الحالية
+   ============================================================ */
+async function seedTours(){
+  const btn = $("#btnSeed");
+  btn.disabled = true; btn.textContent = "جارٍ الاستيراد…";
+  try{
+    for (let i = 0; i < SEED.length; i++){
+      const s = SEED[i];
+      await addDoc(collection(db, "tours"), {
+        slug: s.slug, title: s.title, location: s.location, address: s.address,
+        mapLink: s.mapLink, tour: s.tour, image: autoThumb(s.tour),
+        imageMode: "auto", order: i, published: true, updatedAt: serverTimestamp()
+      });
+    }
+    toast("تم استيراد " + SEED.length + " جولات", "ok");
+    await loadAll();
+    await publish();
+  }catch(err){
+    toast("فشل الاستيراد: " + err.code, "bad");
+    btn.disabled = false; btn.textContent = "استيراد الجولات الثمانية الحالية";
+  }
+}
+
+/* ============================================================
+   محرّر الجولة
+   ============================================================ */
+function openEditor(id){
+  editingId = id || null;
+  const t = id ? TOURS.find(x => x.id === id) : null;
+
+  $("#edTitle").textContent = t ? "تعديل الجولة" : "جولة جديدة";
+  $("#fTitle").value    = t ? (t.title    || "") : "";
+  $("#fTour").value     = t ? (t.tour     || "") : "";
+  $("#fLocation").value = t ? (t.location || "") : "";
+  $("#fAddress").value  = t ? (t.address  || "") : "";
+  $("#fMap").value      = t ? (t.mapLink  || "") : "";
+  $("#fSlug").value     = t ? (t.slug     || "") : "";
+  $("#fPub").checked    = t ? (t.published !== false) : true;
+
+  imgMode = t ? (t.imageMode || "auto") : "auto";
+  imgData = t ? (t.image || "") : "";
+  $("#fImgUrl").value = (imgMode === "url") ? imgData : "";
+  syncImgMode();
+  updateSlugPreview();
+  clearErrors();
+
+  $("#editor").classList.add("on");
+  setTimeout(() => $("#fTitle").focus(), 60);
+}
+
+function closeEditor(){ $("#editor").classList.remove("on"); }
+$("#edClose").addEventListener("click", closeEditor);
+$("#edCancel").addEventListener("click", closeEditor);
+$("#btnNew").addEventListener("click", () => openEditor(null));
+$("#editor").addEventListener("click", (e) => { if (e.target.id === "editor") closeEditor(); });
+
+/* توليد slug تلقائياً من الاسم للجولات الجديدة فقط */
+$("#fTitle").addEventListener("input", () => {
+  if (!editingId && !$("#fSlug").dataset.touched){
+    const auto = slugify($("#fTitle").value);
+    $("#fSlug").value = auto || nextFreeSlug();
+    updateSlugPreview();
+  }
+});
+$("#fSlug").addEventListener("input", () => {
+  $("#fSlug").dataset.touched = "1";
+  updateSlugPreview();
+});
+$("#fTour").addEventListener("input", () => { if (imgMode === "auto") syncImgMode(); });
+
+/* أول معرّف من شكل tour-N غير مستخدم — للأسماء العربية اللي ما تصلح للرابط */
+function nextFreeSlug(){
+  let n = TOURS.length + 1;
+  while (TOURS.some(t => t.slug === "tour-" + n)) n++;
+  return "tour-" + n;
+}
+
+function updateSlugPreview(){
+  const s = $("#fSlug").value.trim() || "…";
+  $("#slugPreview").textContent = "index.html?p=" + s;
+}
+
+$("#genMap").addEventListener("click", (e) => {
+  e.preventDefault();
+  const q = ($("#fAddress").value.trim() || $("#fLocation").value.trim());
+  if (!q) return toast("اكتب العنوان أو المدينة أولاً");
+  $("#fMap").value = "https://maps.google.com/?q=" + encodeURIComponent(q);
+});
+
+/* ---------- الصورة ---------- */
+$$(".seg[data-img]").forEach(b => b.addEventListener("click", () => {
+  imgMode = b.dataset.img;
+  if (imgMode === "url")  imgData = $("#fImgUrl").value.trim();
+  if (imgMode === "auto") imgData = "";
+  syncImgMode();
+}));
+
+function syncImgMode(){
+  $$(".seg[data-img]").forEach(b => b.classList.toggle("on", b.dataset.img === imgMode));
+  $("#fImgUrl").style.display  = (imgMode === "url")  ? "block" : "none";
+  $("#fImgFile").style.display = (imgMode === "file") ? "block" : "none";
+
+  const hints = {
+    auto: "تُسحب الصورة المصغّرة من Matterport تلقائياً — بدون رفع ولا مساحة تخزين.",
+    url:  "أي رابط صورة مباشر ينتهي بـ jpg أو png أو webp.",
+    file: "الصورة تُضغط تلقائياً قبل الحفظ. الأفضل تستعمل الوضع التلقائي إلا لو تبي صورة مختلفة."
+  };
+  $("#imgHint").textContent = hints[imgMode];
+
+  let src = "";
+  if (imgMode === "auto") src = autoThumb($("#fTour").value.trim());
+  else if (imgMode === "url") src = $("#fImgUrl").value.trim();
+  else src = imgData;
+
+  $("#imgPrev").innerHTML = src
+    ? `<img src="${esc(src)}" onerror="this.parentNode.innerHTML='<div class=ph>تعذّر تحميل الصورة</div>'" />`
+    : `<div class="ph">لا توجد صورة</div>`;
+}
+
+$("#fImgUrl").addEventListener("input", () => { imgData = $("#fImgUrl").value.trim(); syncImgMode(); });
+
+$("#fImgFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try{
+    imgData = await compressImage(file, 900, 0.72);
+    const kb = Math.round(imgData.length * 0.75 / 1024);
+    toast("تم تجهيز الصورة (" + kb + " كيلوبايت)", "ok");
+    syncImgMode();
+  }catch(err){
+    toast("تعذّرت معالجة الصورة", "bad");
+  }
+});
+
+/* يضغط الصورة في المتصفح قبل الحفظ — يوفّر مساحة ويسرّع الموقع */
+function compressImage(file, maxW, quality){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxW / img.width);
+        const cv = document.createElement("canvas");
+        cv.width  = Math.round(img.width  * scale);
+        cv.height = Math.round(img.height * scale);
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        let out = cv.toDataURL("image/webp", quality);
+        if (out.length > 260000) out = cv.toDataURL("image/webp", 0.5);
+        resolve(out);
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---------- التحقق والحفظ ---------- */
+function clearErrors(){
+  $("#eSlug").style.display = "none";
+  $("#eTour").style.display = "none";
+}
+
+$("#edSave").addEventListener("click", async () => {
+  clearErrors();
+  const title = $("#fTitle").value.trim();
+  const tour  = $("#fTour").value.trim();
+  const slug  = $("#fSlug").value.trim();
+  let ok = true;
+
+  if (!title){ toast("اسم الجولة مطلوب", "bad"); ok = false; }
+
+  if (!tour || !matterportId(tour)){
+    $("#eTour").textContent = "الرابط لازم يكون رابط Matterport فيه معرّف الجولة (m=...).";
+    $("#eTour").style.display = "block"; ok = false;
+  }
+  if (!slug || !/^[a-z0-9-]+$/.test(slug)){
+    $("#eSlug").textContent = "المعرّف يقبل حروف إنجليزية صغيرة وأرقام وشرطة فقط.";
+    $("#eSlug").style.display = "block"; ok = false;
+  }else if (TOURS.some(t => t.slug === slug && t.id !== editingId)){
+    $("#eSlug").textContent = "المعرّف مستخدم في جولة أخرى — اختر واحد غيره.";
+    $("#eSlug").style.display = "block"; ok = false;
+  }
+  if (!ok) return;
+
+  let image = "";
+  if (imgMode === "auto")      image = autoThumb(tour);
+  else if (imgMode === "url")  image = $("#fImgUrl").value.trim();
+  else                         image = imgData;
+
+  const data = {
+    title, slug, tour, image,
+    imageMode: imgMode,
+    location: $("#fLocation").value.trim(),
+    address:  $("#fAddress").value.trim(),
+    mapLink:  $("#fMap").value.trim(),
+    published: $("#fPub").checked,
+    updatedAt: serverTimestamp()
+  };
+
+  const btn = $("#edSave");
+  btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
+  try{
+    if (editingId){
+      await updateDoc(doc(db, "tours", editingId), data);
+    }else{
+      data.order = TOURS.length;
+      await addDoc(collection(db, "tours"), data);
+    }
+    closeEditor();
+    await loadAll();
+    await publish();
+    toast("تم الحفظ والنشر", "ok");
+  }catch(err){
+    toast("تعذّر الحفظ: " + err.code, "bad");
+  }finally{
+    btn.disabled = false; btn.textContent = "حفظ ونشر";
+  }
+});
+
+/* ---------- الحذف ---------- */
+let pendingDelete = null;
+function askDelete(id){
+  const t = TOURS.find(x => x.id === id);
+  pendingDelete = id;
+  $("#cfMsg").innerHTML = `سيتم حذف <b style="color:var(--paper)">${esc(t.title)}</b> نهائياً من القاعدة ومن الموقع. ما فيه تراجع بعد الحذف.`;
+  $("#confirm").classList.add("on");
+}
+$("#cfNo").addEventListener("click", () => { pendingDelete = null; $("#confirm").classList.remove("on"); });
+$("#cfYes").addEventListener("click", async () => {
+  if (!pendingDelete) return;
+  const btn = $("#cfYes");
+  btn.disabled = true; btn.textContent = "جارٍ الحذف…";
+  try{
+    await deleteDoc(doc(db, "tours", pendingDelete));
+    $("#confirm").classList.remove("on");
+    await loadAll();
+    await publish();
+    toast("تم الحذف", "ok");
+  }catch(err){
+    toast("تعذّر الحذف: " + err.code, "bad");
+  }finally{
+    pendingDelete = null;
+    btn.disabled = false; btn.textContent = "نعم، احذف";
+  }
+});
+
+/* ============================================================
+   الإعدادات
+   ============================================================ */
+const SFIELDS = {
+  whatsappNumber:"#sWa", whatsappMessage:"#sWaMsg", facebookUrl:"#sFb",
+  linkedinUrl:"#sLi", email:"#sEmail", veil1:"#sV1", veil2:"#sV2", topLeftLink:"#sLink"
+};
+
+function fillSettings(){
+  for (const k in SFIELDS) $(SFIELDS[k]).value = SETTINGS[k] || "";
+}
+
+$("#btnSaveSettings").addEventListener("click", async () => {
+  for (const k in SFIELDS) SETTINGS[k] = $(SFIELDS[k]).value.trim();
+  const btn = $("#btnSaveSettings");
+  btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
+  try{
+    await publish();
+    toast("تم حفظ الإعدادات ونشرها", "ok");
+  }catch(err){
+    toast("تعذّر الحفظ: " + err.code, "bad");
+  }finally{
+    btn.disabled = false; btn.textContent = "حفظ ونشر";
+  }
+});
+
+/* ============================================================
+   نصوص الموقع
+   ============================================================ */
+function fillTexts(){
+  $$("[data-t]").forEach(el => { el.value = TEXTS[el.dataset.t] || ""; });
+}
+
+$("#btnSaveTexts").addEventListener("click", async () => {
+  $$("[data-t]").forEach(el => {
+    const v = el.value.trim();
+    // الخانة الفاضية ترجّع النص الأصلي المكتوب في الملف
+    TEXTS[el.dataset.t] = v || DEFAULT_TEXTS[el.dataset.t] || "";
+  });
+  fillTexts();
+  const btn = $("#btnSaveTexts");
+  btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
+  try{
+    await publish();
+    toast("تم حفظ النصوص ونشرها", "ok");
+  }catch(err){
+    if (err.code) toast("تعذّر الحفظ: " + err.code, "bad");
+  }finally{
+    btn.disabled = false; btn.textContent = "حفظ ونشر";
+  }
+});
+
+/* ============================================================
+   أحجام الخطوط
+   ============================================================ */
+const PREV_VARS = { desktop:"--p-base", tagline:"--p-tagline", heading:"--p-heading", card:"--p-card" };
+
+function fillType(){
+  $$(".slider").forEach(box => {
+    const key = box.dataset.y;
+    const pct = Math.round((Number(TYPE[key]) || 1) * 100);
+    box.querySelector("input").value = pct;
+    box.querySelector(".val").textContent = pct + "٪";
+  });
+  paintPreview();
+}
+
+function paintPreview(){
+  const prev = $(".tprev");
+  for (const k in PREV_VARS) prev.style.setProperty(PREV_VARS[k], String(Number(TYPE[k]) || 1));
+}
+
+$$(".slider input").forEach(inp => {
+  inp.addEventListener("input", () => {
+    const box = inp.closest(".slider");
+    const key = box.dataset.y;
+    TYPE[key] = Number(inp.value) / 100;
+    box.querySelector(".val").textContent = inp.value + "٪";
+    paintPreview();
+  });
+});
+
+$("#btnResetType").addEventListener("click", () => {
+  TYPE = Object.assign({}, DEFAULT_TYPE);
+  fillType();
+  toast("رجّعت الأحجام الأصلية — اضغط حفظ ونشر لتثبيتها");
+});
+
+$("#btnSaveType").addEventListener("click", async () => {
+  const btn = $("#btnSaveType");
+  btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
+  try{
+    await publish();
+    toast("تم حفظ الأحجام ونشرها", "ok");
+  }catch(err){
+    if (err.code) toast("تعذّر الحفظ: " + err.code, "bad");
+  }finally{
+    btn.disabled = false; btn.textContent = "حفظ ونشر";
+  }
+});
+
+/* ============================================================
+   النشر — يبني النسخة العلنية اللي يقراها الموقع
+   ============================================================ */
+async function publish(){
+  const pub = TOURS
+    .filter(t => t.published !== false)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map(t => ({
+      slug: t.slug || "", title: t.title || "", location: t.location || "",
+      address: t.address || "", mapLink: t.mapLink || "",
+      image: t.image || "", tour: t.tour || ""
+    }));
+
+  const payload = {
+    tours: pub, settings: SETTINGS, texts: TEXTS, type: TYPE,
+    updatedAt: serverTimestamp()
+  };
+
+  const size = JSON.stringify({ tours: pub, settings: SETTINGS, texts: TEXTS }).length;
+  if (size > 900000){
+    toast("حجم البيانات كبير جداً بسبب الصور المرفوعة. استعمل الوضع التلقائي أو روابط صور بدل الرفع.", "bad");
+    setStatus("dirty", "النشر متوقف — الحجم كبير");
+    throw new Error("payload too large");
+  }
+
+  await setDoc(doc(db, "site", "public"), payload);
+  setStatus("live", "منشور · " + pub.length + " جولة");
+}
+
+$("#btnPublish").addEventListener("click", async () => {
+  const btn = $("#btnPublish");
+  btn.disabled = true; btn.textContent = "جارٍ النشر…";
+  try{
+    await publish();
+    toast("تم النشر", "ok");
+  }catch(err){
+    if (err.code) toast("تعذّر النشر: " + err.code, "bad");
+  }finally{
+    btn.disabled = false; btn.textContent = "إعادة نشر";
+  }
+});
+
+/* إغلاق النوافذ بمفتاح Esc */
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape"){
+    $("#editor").classList.remove("on");
+    $("#confirm").classList.remove("on");
+  }
+});
+</script>
+</body>
+</html>
