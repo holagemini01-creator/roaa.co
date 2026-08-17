@@ -6,6 +6,18 @@
 <title>رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية</title>
 <meta name="description" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية." />
 
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://roaa.ly/" />
+<meta property="og:title" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية" />
+<meta property="og:description" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية." />
+<meta property="og:image" content="https://roaa.ly/roaa-share.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية" />
+<meta name="twitter:description" content="رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية." />
+<meta name="twitter:image" content="https://roaa.ly/roaa-share.jpg" />
+
 <link rel="icon" type="image/png" href="roaa-logo-main.png" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -119,8 +131,14 @@
     max-width: 620px;
     margin: -35px auto 0;
     text-align: center;
+    text-wrap: balance;          /* يوزّع الأسطر بالتساوي ويمنع نزول كلمة وحيدة */
     opacity:0; transform: translateY(10px);
     animation: rise 0.9s cubic-bezier(.2,.7,.2,1) 0.56s forwards;
+  }
+  /* على الشاشات الصغيرة نلغي الكسر اليدوي ونخلي النص يتوزّع لوحده */
+  @media (max-width: 700px){
+    .tagline{ max-width: 34ch; }
+    .tagline .tg-br{ display:none; }
   }
 
   @keyframes rise{ to{ opacity:1; transform:none; } }
@@ -674,8 +692,8 @@
       <img class="mark" src="roaa-logo-main.png" alt="شعار رؤى" /> 
       <span class="eyebrow" data-txt="eyebrow">3D SCAN · VIRTUAL TOUR STUDIO</span>
       <p class="tagline">
-        <span data-txt="tagline1">ادخل لعالم من الواقعية الراقية، وين تبان أدق تفاصيل موقعك بفخامة عصرية.</span> <br>
-        <span data-txt="tagline2">تجربة ترفع من مستوى العرض الخاص بيك وتخلي زباينك يشوفوا الموقع بصورة احترافية.</span>
+        <span data-txt="tagline1">نرسم رؤيتك رقمياً — جولة افتراضية تنقل مكانك بأدق تفاصيله،</span><br class="tg-br">
+        <span data-txt="tagline2">بفخامة تليق بيك وبعملائك.</span>
       </p>
     </header>
 
@@ -710,8 +728,8 @@
         <h2 data-txt="servicesTitle">خدماتنا</h2>
         <span class="sub" data-txt="servicesSub">What we do</span>
       <p data-txt="servicesText">
-        ننقل موقعك إلى عميلك بدل أن ينتقل إليه. نحوّل المكان إلى جولة تفاعلية
-        بأبعاده الحقيقية، يدخلها من هاتفه ويتجول فيها كما لو كان واقفاً بداخلها.
+        رؤيتنا الرقمية تسبق زيارتك. نحوّل أي مكان لجولة افتراضية تفاعلية
+        بأبعاده الحقيقية، عميلك يدخلها من هاتفه ويتجول فيها بكل حرية.
       </p>
       
     </section>
@@ -1275,14 +1293,14 @@
 
 
   /* ═══════════════════════════════════════════════════════════
-     جلب البيانات المباشرة من لوحة التحكم
+     جلب المحتوى المباشر من لوحة التحكم
 
      الموقع يقرأ نسخة واحدة منشورة (site/public) بطلب واحد فقط.
      القراءة عامة ومقصودة — ما فيها إلا الجولات المنشورة.
      بيانات العمل الكاملة مقفولة ولا تُقرأ إلا بتسجيل دخول.
 
      لو تعذّر الاتصال لأي سبب، يشتغل الموقع بالنسخة المحفوظة
-     في CONFIG أعلاه. الموقع ما يوقف أبداً.
+     في CONFIG وبالنصوص المكتوبة في الصفحة. الموقع ما يوقف أبداً.
      ═══════════════════════════════════════════════════════════ */
   const LIVE = {
     projectId: "roaa-415fc",
@@ -1318,12 +1336,23 @@
       const v = texts[el.getAttribute("data-txt")];
       if (typeof v === "string" && v.trim() !== "") el.textContent = v;
     });
+
+    const setMeta = (sel, val) => {
+      const m = document.querySelector(sel);
+      if (m && val) m.setAttribute("content", val);
+    };
+
+    // العنوان والوصف يتزامنان مع وسوم المشاركة حتى يبقى شكل
+    // الرابط في واتساب وفيسبوك مطابقاً للموقع
     if (texts.pageTitle && texts.pageTitle.trim()){
       document.title = texts.pageTitle;
+      setMeta('meta[property="og:title"]',   texts.pageTitle);
+      setMeta('meta[name="twitter:title"]',  texts.pageTitle);
     }
     if (texts.pageDescription && texts.pageDescription.trim()){
-      const m = document.querySelector('meta[name="description"]');
-      if (m) m.setAttribute("content", texts.pageDescription);
+      setMeta('meta[name="description"]',         texts.pageDescription);
+      setMeta('meta[property="og:description"]',  texts.pageDescription);
+      setMeta('meta[name="twitter:description"]', texts.pageDescription);
     }
   }
 
@@ -1377,9 +1406,9 @@
       applyTexts(live && live.texts);
       applyType(live && live.type);
 
-      console.log("[رؤى] البيانات محمّلة من لوحة التحكم:", CONFIG.projects.length, "جولة");
+      console.log("[رؤى] المحتوى محمّل من لوحة التحكم:", CONFIG.projects.length, "جولة");
     }catch(err){
-      console.warn("[رؤى] تعذّر جلب البيانات المباشرة — سيتم العرض بالنسخة المحفوظة في الملف.", err);
+      console.warn("[رؤى] تعذّر جلب المحتوى المباشر — سيتم العرض بالنسخة المحفوظة في الملف.", err);
     }
     startSite();
   })();
