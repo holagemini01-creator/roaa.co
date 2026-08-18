@@ -2,9 +2,10 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>رؤى — لوحة التحكم</title>
 <meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#17181a" />
 <link rel="icon" type="image/png" href="roaa-logo-main.png" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,31 +18,36 @@
     --gold:#c6a35d; --gold-soft:#a98c52; --gold-dim:rgba(198,163,93,0.14);
     --paper:#f3efe6; --muted:#9a978d; --radius:2px;
     --ok:#5da36f; --bad:#c05c52; --warn:#c9a227;
+    --safe-b: env(safe-area-inset-bottom, 0px);
   }
-  *{ box-sizing:border-box; }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ overscroll-behavior-y:none; }
   body{
     margin:0; background:var(--ink); color:var(--paper);
     font-family:'Tajawal',sans-serif; min-height:100vh;
-    -webkit-font-smoothing:antialiased;
+    -webkit-font-smoothing:antialiased; font-size:16px;
   }
   h1,h2,h3{ font-family:'Cairo',sans-serif; margin:0; }
   .mono{ font-family:'JetBrains Mono',monospace; }
   a{ color:var(--gold); }
   button{ font-family:'Tajawal',sans-serif; cursor:pointer; }
-  input,select,textarea{ font-family:'Tajawal',sans-serif; }
+  input,select,textarea{ font-family:'Tajawal',sans-serif; font-size:16px; }
 
-  /* ---------- عناصر مشتركة ---------- */
+  /* ═══════════ عناصر مشتركة ═══════════ */
   .btn{
     background:var(--panel); color:var(--paper); border:1px solid var(--panel-line);
-    border-radius:var(--radius); padding:9px 16px; font-size:.85rem; font-weight:500;
-    transition:.18s; display:inline-flex; align-items:center; gap:7px; white-space:nowrap;
+    border-radius:var(--radius); padding:10px 16px; font-size:.85rem; font-weight:500;
+    transition:.18s; display:inline-flex; align-items:center; justify-content:center;
+    gap:7px; white-space:nowrap; min-height:42px;
   }
   .btn:hover{ border-color:var(--gold); color:var(--gold); }
   .btn.primary{ background:var(--gold); border-color:var(--gold); color:#17181a; font-weight:700; }
   .btn.primary:hover{ background:var(--gold-soft); border-color:var(--gold-soft); color:#17181a; }
   .btn.danger:hover{ border-color:var(--bad); color:var(--bad); }
-  .btn.icon{ padding:7px 10px; font-size:.95rem; line-height:1; }
-  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn.sm{ padding:6px 11px; font-size:.78rem; min-height:34px; }
+  .btn.icon{ padding:8px 11px; font-size:.95rem; line-height:1; min-width:42px; }
+  .btn.on{ background:var(--gold-dim); border-color:var(--gold); color:var(--gold); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
   .btn:disabled:hover{ border-color:var(--panel-line); color:var(--paper); }
 
   .field{ margin-bottom:16px; }
@@ -50,94 +56,115 @@
     color:var(--muted); margin-bottom:6px;
   }
   .field label .req{ color:var(--gold); }
-  .field input[type=text], .field input[type=email], .field input[type=password], .field textarea{
+  .field input[type=text], .field input[type=email], .field input[type=password],
+  .field input[type=number], .field textarea, .field select{
     width:100%; background:var(--ink-2); border:1px solid var(--panel-line);
-    border-radius:var(--radius); color:var(--paper); padding:10px 12px; font-size:.88rem;
+    border-radius:var(--radius); color:var(--paper); padding:11px 12px; font-size:.9rem;
     transition:.18s;
   }
-  .field input:focus, .field textarea:focus{ outline:none; border-color:var(--gold); }
-  .field .hint{ font-size:.72rem; color:var(--muted); margin-top:5px; line-height:1.7; }
-  .field .err{ font-size:.75rem; color:var(--bad); margin-top:5px; }
-  .field input.ltr{ direction:ltr; text-align:left; font-family:'JetBrains Mono',monospace; font-size:.8rem; }
+  .field input:focus, .field textarea:focus, .field select:focus{ outline:none; border-color:var(--gold); }
+  .field .hint{ font-size:.74rem; color:var(--muted); margin-top:5px; line-height:1.7; }
+  .field .err{ font-size:.76rem; color:var(--bad); margin-top:5px; }
+  .field input.ltr{ direction:ltr; text-align:left; font-family:'JetBrains Mono',monospace; font-size:.82rem; }
+  .field textarea{ resize:vertical; line-height:1.9; }
 
-  /* ---------- شاشة الدخول ---------- */
+  .group{ margin:26px 0 14px; border-bottom:1px solid var(--panel-line); padding-bottom:8px; }
+  .group:first-child{ margin-top:0; }
+  .group h3{ font-size:.92rem; color:var(--gold); font-weight:700; }
+
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:600px){ .row2{ grid-template-columns:1fr; gap:0; } }
+
+  .note{
+    background:var(--ink-2); border:1px solid var(--panel-line); border-right:3px solid var(--gold);
+    border-radius:var(--radius); padding:13px 16px; font-size:.82rem;
+    color:var(--muted); line-height:1.9; margin-bottom:20px;
+  }
+  .note b{ color:var(--paper); font-weight:500; }
+
+  /* ═══════════ شاشة الدخول ═══════════ */
   #login{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
   #login .box{
     width:100%; max-width:380px; background:var(--panel);
-    border:1px solid var(--panel-line); border-radius:var(--radius); padding:34px 28px;
+    border:1px solid var(--panel-line); border-radius:var(--radius); padding:34px 26px;
   }
   #login .brand{ text-align:center; margin-bottom:26px; }
   #login .brand img{ height:44px; margin-bottom:12px; }
-  #login .brand h1{ font-size:1.3rem; color:var(--gold); letter-spacing:.02em; }
+  #login .brand h1{ font-size:1.3rem; color:var(--gold); }
   #login .brand p{
-    font-family:'JetBrains Mono',monospace; font-size:.68rem;
+    font-family:'JetBrains Mono',monospace; font-size:.66rem;
     color:var(--muted); margin:6px 0 0; letter-spacing:.08em;
   }
-  #login .btn{ width:100%; justify-content:center; margin-top:6px; padding:12px; }
+  #login .btn{ width:100%; margin-top:6px; padding:13px; }
   #loginErr{
     background:rgba(192,92,82,.12); border:1px solid rgba(192,92,82,.4);
-    border-radius:var(--radius); padding:11px 13px; font-size:.8rem; color:#e0a8a2;
+    border-radius:var(--radius); padding:11px 13px; font-size:.82rem; color:#e0a8a2;
     margin-bottom:16px; line-height:1.8;
   }
 
-  /* ---------- الهيكل ---------- */
+  /* ═══════════ الهيكل ═══════════ */
   #app{ display:none; }
   header.top{
-    position:sticky; top:0; z-index:50; background:var(--ink-2);
-    border-bottom:1px solid var(--panel-line); padding:0 20px;
+    position:sticky; top:0; z-index:60; background:var(--ink-2);
+    border-bottom:1px solid var(--panel-line); padding:0 16px;
   }
-  .top-in{
-    max-width:1080px; margin:0 auto; height:62px;
-    display:flex; align-items:center; gap:14px;
-  }
-  .top .logo{ display:flex; align-items:center; gap:10px; }
-  .top .logo img{ height:26px; }
-  .top .logo span{ font-family:'Cairo',sans-serif; font-weight:700; color:var(--gold); font-size:.95rem; }
+  .top-in{ max-width:1240px; margin:0 auto; height:56px; display:flex; align-items:center; gap:12px; }
+  .top .logo{ display:flex; align-items:center; gap:9px; min-width:0; }
+  .top .logo img{ height:24px; }
+  .top .logo span{ font-family:'Cairo',sans-serif; font-weight:700; color:var(--gold); font-size:.92rem; }
   .top .spacer{ flex:1; }
-  .top .who{ font-size:.75rem; color:var(--muted); font-family:'JetBrains Mono',monospace; }
-  @media(max-width:700px){ .top .who{ display:none; } }
+  .top .who{ font-size:.74rem; color:var(--muted); font-family:'JetBrains Mono',monospace; }
 
-  nav.tabs{ background:var(--ink-2); border-bottom:1px solid var(--panel-line); padding:0 20px; }
-  .tabs-in{ max-width:1080px; margin:0 auto; display:flex; gap:2px; }
+  nav.tabs{
+    background:var(--ink-2); border-bottom:1px solid var(--panel-line);
+    position:sticky; top:56px; z-index:55;
+  }
+  .tabs-in{
+    max-width:1240px; margin:0 auto; display:flex; gap:2px;
+    overflow-x:auto; scrollbar-width:none; padding:0 8px;
+  }
+  .tabs-in::-webkit-scrollbar{ display:none; }
   .tab{
     background:none; border:none; border-bottom:2px solid transparent;
-    color:var(--muted); padding:13px 18px; font-size:.85rem; font-weight:500; transition:.18s;
+    color:var(--muted); padding:14px 15px; font-size:.85rem; font-weight:500;
+    transition:.18s; white-space:nowrap; flex:none;
   }
-  .tab:hover{ color:var(--paper); }
   .tab.on{ color:var(--gold); border-bottom-color:var(--gold); }
 
-  main{ max-width:1080px; margin:0 auto; padding:26px 20px 80px; }
+  main{ max-width:1240px; margin:0 auto; padding:22px 16px calc(90px + var(--safe-b)); }
   .pane{ display:none; }
   .pane.on{ display:block; }
 
-  .bar{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+  .bar{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:18px; }
   .bar .spacer{ flex:1; }
-  .status{
-    font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--muted);
-    display:flex; align-items:center; gap:6px;
-  }
+  .status{ font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--muted);
+           display:flex; align-items:center; gap:6px; }
   .status .dot{ width:6px; height:6px; border-radius:50%; background:var(--muted); }
   .status.live .dot{ background:var(--ok); }
   .status.dirty .dot{ background:var(--warn); }
 
-  /* ---------- بطاقات الجولات ---------- */
-  .tour-row{
-    display:flex; align-items:center; gap:14px; background:var(--panel);
-    border:1px solid var(--panel-line); border-radius:var(--radius);
-    padding:12px 14px; margin-bottom:9px; transition:.18s;
+  @media(max-width:700px){
+    .top .who{ display:none; }
+    main{ padding:16px 12px calc(90px + var(--safe-b)); }
   }
-  .tour-row:hover{ border-color:rgba(198,163,93,.45); }
+
+  /* ═══════════ بطاقات الجولات ═══════════ */
+  .tour-row{
+    display:flex; align-items:center; gap:13px; background:var(--panel);
+    border:1px solid var(--panel-line); border-radius:var(--radius);
+    padding:12px; margin-bottom:9px; transition:.18s;
+  }
   .tour-row.hidden-t{ opacity:.5; }
   .tour-row .thumb{
-    width:76px; height:52px; flex:none; background:var(--ink);
+    width:72px; height:50px; flex:none; background:var(--ink);
     border:1px solid var(--panel-line); border-radius:var(--radius); overflow:hidden;
     display:flex; align-items:center; justify-content:center;
   }
   .tour-row .thumb img{ width:100%; height:100%; object-fit:cover; }
-  .tour-row .thumb .ph{ font-size:1.1rem; color:var(--panel-line); }
+  .tour-row .thumb .ph{ font-size:1rem; color:var(--panel-line); }
   .tour-row .meta{ flex:1; min-width:0; }
   .tour-row .meta .name{
-    font-family:'Cairo',sans-serif; font-weight:700; font-size:.92rem;
+    font-family:'Cairo',sans-serif; font-weight:700; font-size:.9rem;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .tour-row .meta .sub{
@@ -150,29 +177,29 @@
   }
   .tour-row .acts{ display:flex; gap:5px; flex:none; }
   .badge{
-    font-family:'JetBrains Mono',monospace; font-size:.62rem; padding:2px 7px;
-    border-radius:var(--radius); border:1px solid; letter-spacing:.04em;
+    font-family:'JetBrains Mono',monospace; font-size:.6rem; padding:2px 7px;
+    border-radius:var(--radius); border:1px solid;
   }
   .badge.pub{ color:var(--ok); border-color:rgba(93,163,111,.45); }
   .badge.hid{ color:var(--muted); border-color:var(--panel-line); }
-  @media(max-width:640px){
+  @media(max-width:620px){
     .tour-row{ flex-wrap:wrap; }
-    .tour-row .meta{ flex-basis:calc(100% - 90px); }
+    .tour-row .meta{ flex-basis:calc(100% - 85px); }
     .tour-row .acts{ width:100%; justify-content:flex-end; }
   }
 
   .empty{
-    text-align:center; padding:56px 24px; background:var(--panel);
+    text-align:center; padding:50px 20px; background:var(--panel);
     border:1px dashed var(--panel-line); border-radius:var(--radius);
   }
-  .empty h3{ font-size:1.05rem; margin-bottom:8px; }
+  .empty h3{ font-size:1.02rem; margin-bottom:8px; }
   .empty p{ color:var(--muted); font-size:.85rem; line-height:1.9; margin:0 auto 20px; max-width:420px; }
 
-  /* ---------- المحرّر ---------- */
+  /* ═══════════ النوافذ ═══════════ */
   .modal{
-    position:fixed; inset:0; z-index:200; background:rgba(10,11,12,.82);
+    position:fixed; inset:0; z-index:200; background:rgba(10,11,12,.84);
     display:none; align-items:flex-start; justify-content:center;
-    padding:24px 16px; overflow-y:auto; backdrop-filter:blur(3px);
+    padding:20px 14px; overflow-y:auto; backdrop-filter:blur(3px);
   }
   .modal.on{ display:flex; }
   .modal .sheet{
@@ -180,36 +207,39 @@
     border:1px solid var(--panel-line); border-radius:var(--radius); margin:auto;
   }
   .modal .sheet-head{
-    padding:18px 22px; border-bottom:1px solid var(--panel-line);
+    padding:16px 20px; border-bottom:1px solid var(--panel-line);
     display:flex; align-items:center; gap:12px;
+    position:sticky; top:0; background:var(--panel); z-index:2;
   }
-  .modal .sheet-head h2{ font-size:1.05rem; flex:1; }
-  .modal .sheet-body{ padding:22px; }
+  .modal .sheet-head h2{ font-size:1.02rem; flex:1; }
+  .modal .sheet-body{ padding:20px; }
   .modal .sheet-foot{
-    padding:16px 22px; border-top:1px solid var(--panel-line);
+    padding:14px 20px calc(14px + var(--safe-b)); border-top:1px solid var(--panel-line);
     display:flex; gap:9px; justify-content:flex-end;
+    position:sticky; bottom:0; background:var(--panel);
   }
-  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  @media(max-width:560px){ .row2{ grid-template-columns:1fr; gap:0; } }
+  @media(max-width:600px){
+    .modal{ padding:0; align-items:stretch; }
+    .modal .sheet{ max-width:none; min-height:100vh; border:none; border-radius:0; }
+  }
 
-  .segs{ display:flex; gap:0; border:1px solid var(--panel-line); border-radius:var(--radius); overflow:hidden; margin-bottom:12px; }
+  .segs{ display:flex; border:1px solid var(--panel-line); border-radius:var(--radius); overflow:hidden; margin-bottom:12px; }
   .seg{
     flex:1; background:var(--ink-2); border:none; color:var(--muted);
-    padding:9px 6px; font-size:.78rem; transition:.18s; border-left:1px solid var(--panel-line);
+    padding:10px 6px; font-size:.78rem; transition:.18s; border-left:1px solid var(--panel-line);
   }
   .seg:last-child{ border-left:none; }
   .seg.on{ background:var(--gold-dim); color:var(--gold); font-weight:700; }
 
   .imgprev{
-    width:100%; height:150px; background:var(--ink-2); border:1px solid var(--panel-line);
+    width:100%; height:140px; background:var(--ink-2); border:1px solid var(--panel-line);
     border-radius:var(--radius); overflow:hidden; display:flex;
     align-items:center; justify-content:center; margin-top:10px;
   }
-  .imgprev img{ width:100%; height:100%; object-fit:cover; }
+  .imgprev img{ width:100%; height:100%; object-fit:contain; }
   .imgprev .ph{ color:var(--muted); font-size:.78rem; }
 
-  /* لا بد من رفع التخصيص هنا، وإلا غلبته قاعدة .field label أعلاه */
-  .field label.toggle, .toggle{
+  .toggle, .field label.toggle{
     display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;
     margin-bottom:0; color:var(--paper); font-size:.85rem;
   }
@@ -224,90 +254,218 @@
   }
   .toggle input:checked + .track{ background:var(--gold-dim); border-color:var(--gold); }
   .toggle input:checked + .track::after{ right:20px; background:var(--gold); }
-  .toggle .lbl{ font-size:.85rem; }
 
-  /* ---------- تنبيهات ---------- */
-  #toasts{ position:fixed; bottom:20px; left:20px; z-index:400; display:flex; flex-direction:column; gap:8px; }
+  /* ═══════════ المزالق ═══════════ */
+  .slider{
+    background:var(--panel); border:1px solid var(--panel-line);
+    border-radius:var(--radius); padding:13px 15px; margin-bottom:10px;
+  }
+  .slider-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .slider-head span{ font-size:.85rem; }
+  .slider-head b{
+    font-family:'JetBrains Mono',monospace; font-size:.78rem; color:var(--gold);
+    background:var(--gold-dim); padding:2px 9px; border-radius:var(--radius);
+  }
+  input[type=range]{
+    width:100%; -webkit-appearance:none; appearance:none; height:3px;
+    background:var(--panel-line); border-radius:2px; outline:none; margin:8px 0;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none; width:20px; height:20px;
+    border-radius:50%; background:var(--gold); cursor:pointer; border:none;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:20px; height:20px; border-radius:50%; background:var(--gold); cursor:pointer; border:none;
+  }
+
+  .tprev{
+    background:var(--ink); border:1px solid var(--panel-line);
+    border-radius:var(--radius); padding:24px 20px; text-align:center;
+  }
+  .tp-eyebrow{ font-family:'JetBrains Mono',monospace; font-size:calc(.65rem * var(--p-base,1));
+               color:var(--gold); letter-spacing:.14em; margin-bottom:12px; }
+  .tp-tagline{ font-size:calc(1.05rem * var(--p-base,1) * var(--p-tagline,1));
+               color:var(--muted); line-height:1.9; margin-bottom:20px; }
+  .tp-h2{ font-family:'Cairo',sans-serif; font-weight:700;
+          font-size:calc(1.1rem * var(--p-base,1) * var(--p-heading,1)); margin-bottom:14px; }
+  .tp-card{ display:inline-block; text-align:right; border:1px solid var(--panel-line);
+            border-radius:var(--radius); padding:10px 15px;
+            font-family:'Cairo',sans-serif; font-weight:700;
+            font-size:calc(.9rem * var(--p-base,1) * var(--p-card,1)); }
+  .tp-card span{ display:block; font-family:'Tajawal',sans-serif; font-weight:400;
+                 font-size:calc(.72rem * var(--p-base,1)); color:var(--muted); margin-top:3px; }
+
+  /* ═══════════ المعاينة والتحرير ═══════════ */
+  #pane-edit{ display:none; }
+  #pane-edit.on{ display:block; }
+
+  .edit-bar{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;
+  }
+  .stage{
+    background:var(--ink-2); border:1px solid var(--panel-line); border-radius:var(--radius);
+    padding:14px; display:flex; justify-content:center; overflow:hidden;
+  }
+  .frame-wrap{
+    background:#000; border:1px solid var(--panel-line); border-radius:var(--radius);
+    overflow:hidden; transition:width .25s ease; position:relative;
+    width:100%; max-width:100%;
+  }
+  .frame-wrap.mobile{ width:390px; max-width:100%; }
+  #siteFrame{ width:100%; height:640px; border:0; display:block; background:#17181a; }
+  @media(max-width:700px){
+    .stage{ padding:8px; }
+    #siteFrame{ height:520px; }
+  }
+
+  .pick-hint{
+    font-size:.76rem; color:var(--muted); margin-bottom:10px; line-height:1.8;
+    background:var(--ink-2); border-right:3px solid var(--gold);
+    padding:10px 13px; border-radius:var(--radius);
+  }
+
+  /* لوحة الفحص — جانبية على اللابتوب، ورقة سفلية على الجوال */
+  #inspector{
+    position:fixed; z-index:120; background:var(--panel);
+    border:1px solid var(--panel-line); display:none; flex-direction:column;
+  }
+  #inspector.on{ display:flex; }
+  @media(min-width:1000px){
+    #inspector{
+      top:0; left:0; bottom:0; width:340px; border-right:1px solid var(--panel-line);
+      box-shadow:6px 0 24px rgba(0,0,0,.45);
+    }
+  }
+  @media(max-width:999px){
+    #inspector{
+      left:0; right:0; bottom:0; max-height:72vh; border-radius:12px 12px 0 0;
+      box-shadow:0 -8px 28px rgba(0,0,0,.5);
+    }
+  }
+  .insp-head{
+    padding:13px 15px; border-bottom:1px solid var(--panel-line);
+    display:flex; align-items:center; gap:10px; flex:none;
+  }
+  .insp-head .nm{ flex:1; min-width:0; }
+  .insp-head .nm b{ font-family:'Cairo',sans-serif; font-size:.9rem; display:block; }
+  .insp-head .nm small{ font-family:'JetBrains Mono',monospace; font-size:.65rem; color:var(--muted); }
+  .insp-body{ padding:15px; overflow-y:auto; flex:1; -webkit-overflow-scrolling:touch; }
+  .insp-foot{
+    padding:11px 15px calc(11px + var(--safe-b)); border-top:1px solid var(--panel-line);
+    display:flex; gap:7px; flex:none;
+  }
+  .insp-foot .btn{ flex:1; }
+
+  .ctl{ margin-bottom:13px; }
+  .ctl > label{ display:block; font-size:.74rem; color:var(--muted); margin-bottom:5px; }
+  .ctl-row{ display:flex; gap:7px; align-items:center; }
+  .ctl input[type=text], .ctl input[type=number], .ctl textarea, .ctl select{
+    width:100%; background:var(--ink-2); border:1px solid var(--panel-line);
+    border-radius:var(--radius); color:var(--paper); padding:8px 10px; font-size:.85rem;
+  }
+  .ctl input:focus, .ctl textarea:focus, .ctl select:focus{ outline:none; border-color:var(--gold); }
+  .ctl input[type=color]{
+    width:44px; height:36px; padding:2px; background:var(--ink-2);
+    border:1px solid var(--panel-line); border-radius:var(--radius); cursor:pointer; flex:none;
+  }
+  .ctl .val{
+    font-family:'JetBrains Mono',monospace; font-size:.72rem; color:var(--gold);
+    min-width:52px; text-align:center; flex:none;
+  }
+  .mini-segs{ display:flex; gap:0; border:1px solid var(--panel-line); border-radius:var(--radius); overflow:hidden; }
+  .mini-segs button{
+    flex:1; background:var(--ink-2); border:none; color:var(--muted);
+    padding:8px 4px; font-size:.75rem; border-left:1px solid var(--panel-line);
+  }
+  .mini-segs button:last-child{ border-left:none; }
+  .mini-segs button.on{ background:var(--gold-dim); color:var(--gold); font-weight:700; }
+
+  .dev-switch{ display:flex; gap:0; border:1px solid var(--gold); border-radius:var(--radius);
+               overflow:hidden; margin-bottom:14px; }
+  .dev-switch button{
+    flex:1; background:var(--ink-2); border:none; color:var(--muted);
+    padding:9px 4px; font-size:.8rem; border-left:1px solid var(--panel-line);
+  }
+  .dev-switch button:last-child{ border-left:none; }
+  .dev-switch button.on{ background:var(--gold); color:#17181a; font-weight:700; }
+
+  .addgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .addgrid button{
+    background:var(--ink-2); border:1px solid var(--panel-line); border-radius:var(--radius);
+    color:var(--paper); padding:10px 4px; font-size:.74rem;
+  }
+  .addgrid button:hover{ border-color:var(--gold); color:var(--gold); }
+
+  /* ═══════════ التنبيهات ═══════════ */
+  #toasts{ position:fixed; bottom:calc(16px + var(--safe-b)); left:16px; z-index:400;
+           display:flex; flex-direction:column; gap:8px; pointer-events:none; }
   .toast{
     background:var(--panel); border:1px solid var(--panel-line); border-right:3px solid var(--gold);
-    border-radius:var(--radius); padding:12px 16px; font-size:.83rem; max-width:340px;
+    border-radius:var(--radius); padding:12px 15px; font-size:.83rem; max-width:min(340px,86vw);
     animation:pop .2s ease; line-height:1.7;
   }
   .toast.ok{ border-right-color:var(--ok); }
   .toast.bad{ border-right-color:var(--bad); }
   @keyframes pop{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:none;} }
 
-  .note{
-    background:var(--ink-2); border:1px solid var(--panel-line); border-right:3px solid var(--gold);
-    border-radius:var(--radius); padding:13px 16px; font-size:.8rem;
-    color:var(--muted); line-height:1.9; margin-bottom:20px;
+  /* شريط الحفظ العائم */
+  #savebar{
+    position:fixed; left:0; right:0; bottom:0; z-index:100;
+    background:var(--ink-2); border-top:1px solid var(--panel-line);
+    padding:10px 16px calc(10px + var(--safe-b));
+    display:none; align-items:center; gap:10px;
   }
-  .note b{ color:var(--paper); font-weight:500; }
+  #savebar.on{ display:flex; }
+  #savebar .txt{ flex:1; font-size:.8rem; color:var(--warn); }
 
-  #loader{ text-align:center; padding:70px 20px; color:var(--muted); font-size:.85rem; }
+  /* ═══════════ سجل التعديلات ═══════════ */
+  .hist-item{
+    display:flex; align-items:center; gap:11px; padding:12px 18px;
+    border-bottom:1px solid var(--panel-line); cursor:pointer; transition:.15s;
+  }
+  .hist-item:hover{ background:var(--ink-2); }
+  .hist-item .dot{ width:8px; height:8px; border-radius:50%; background:var(--panel-line); flex:none; }
+  .hist-item.now .dot{ background:var(--gold); box-shadow:0 0 0 3px var(--gold-dim); }
+  .hist-item.now{ background:var(--gold-dim); }
+  .hist-item.future{ opacity:.45; }
+  .hist-item .lbl{ flex:1; font-size:.85rem; }
+  .hist-item .tm{ font-family:'JetBrains Mono',monospace; font-size:.68rem; color:var(--muted); }
 
-  /* ---------- مجموعات الحقول ---------- */
-  .group{ margin:26px 0 14px; border-bottom:1px solid var(--panel-line); padding-bottom:8px; }
-  .group:first-child{ margin-top:0; }
-  .group h3{ font-size:.9rem; color:var(--gold); font-weight:700; }
-  .field textarea{ resize:vertical; line-height:1.9; }
-
-  /* ---------- المزالق ---------- */
-  .slider{
+  /* ═══════════ محرّر المربعات ═══════════ */
+  .cov-card{
     background:var(--panel); border:1px solid var(--panel-line);
-    border-radius:var(--radius); padding:14px 16px; margin-bottom:10px;
+    border-radius:var(--radius); padding:13px; margin-bottom:10px;
   }
-  .slider-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-  .slider-head span{ font-size:.85rem; }
-  .slider-head b{
-    font-family:'JetBrains Mono',monospace; font-size:.8rem; color:var(--gold);
-    background:var(--gold-dim); padding:2px 9px; border-radius:var(--radius);
+  .cov-card.off{ opacity:.5; }
+  .cov-head{ display:flex; align-items:center; gap:9px; margin-bottom:11px; }
+  .cov-head .nm{ flex:1; font-family:'Cairo',sans-serif; font-weight:700; font-size:.87rem; }
+  .cov-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .cov-grid .c label{ display:block; font-size:.68rem; color:var(--muted); margin-bottom:4px; text-align:center; }
+  .cov-grid .c input{
+    width:100%; background:var(--ink-2); border:1px solid var(--panel-line);
+    border-radius:var(--radius); color:var(--paper); padding:7px 4px;
+    font-size:.82rem; text-align:center; font-family:'JetBrains Mono',monospace;
   }
-  .slider input[type=range]{
-    width:100%; -webkit-appearance:none; appearance:none; height:3px;
-    background:var(--panel-line); border-radius:2px; outline:none;
+  .cov-grid .c input:focus{ outline:none; border-color:var(--gold); }
+  @media(max-width:520px){ .cov-grid{ grid-template-columns:repeat(2,1fr); } }
+
+  .param-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:9px; }
+  .param-grid .p{
+    background:var(--ink-2); border:1px solid var(--panel-line);
+    border-radius:var(--radius); padding:9px 11px;
   }
-  .slider input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; appearance:none; width:16px; height:16px;
-    border-radius:50%; background:var(--gold); cursor:pointer; border:none;
-  }
-  .slider input[type=range]::-moz-range-thumb{
-    width:16px; height:16px; border-radius:50%; background:var(--gold);
-    cursor:pointer; border:none;
+  .param-grid .p label{ display:block; font-size:.72rem; color:var(--muted); margin-bottom:5px; }
+  .param-grid .p select{
+    width:100%; background:var(--panel); border:1px solid var(--panel-line);
+    border-radius:var(--radius); color:var(--paper); padding:6px; font-size:.8rem;
   }
 
-  /* ---------- معاينة الخطوط ---------- */
-  .tprev{
-    background:var(--ink); border:1px solid var(--panel-line);
-    border-radius:var(--radius); padding:26px 22px; text-align:center;
-  }
-  .tp-eyebrow{
-    font-family:'JetBrains Mono',monospace; font-size:calc(.65rem * var(--p-base,1));
-    color:var(--gold); letter-spacing:.14em; margin-bottom:12px;
-  }
-  .tp-tagline{
-    font-size:calc(1.05rem * var(--p-base,1) * var(--p-tagline,1));
-    color:var(--muted); line-height:1.9; margin-bottom:22px;
-  }
-  .tp-h2{
-    font-family:'Cairo',sans-serif; font-weight:700;
-    font-size:calc(1.1rem * var(--p-base,1) * var(--p-heading,1)); margin-bottom:16px;
-  }
-  .tp-card{
-    display:inline-block; text-align:right; border:1px solid var(--panel-line);
-    border-radius:var(--radius); padding:11px 16px;
-    font-family:'Cairo',sans-serif; font-weight:700;
-    font-size:calc(.9rem * var(--p-base,1) * var(--p-card,1));
-  }
-  .tp-card span{
-    display:block; font-family:'Tajawal',sans-serif; font-weight:400;
-    font-size:calc(.72rem * var(--p-base,1)); color:var(--muted); margin-top:3px;
-  }
+  #loader{ text-align:center; padding:60px 20px; color:var(--muted); font-size:.85rem; }
 </style>
 </head>
 <body>
 
-<!-- ============ شاشة تسجيل الدخول ============ -->
+<!-- ════════ تسجيل الدخول ════════ -->
 <div id="login">
   <div class="box">
     <div class="brand">
@@ -330,7 +488,7 @@
   </div>
 </div>
 
-<!-- ============ اللوحة ============ -->
+<!-- ════════ اللوحة ════════ -->
 <div id="app">
   <header class="top">
     <div class="top-in">
@@ -339,28 +497,35 @@
         <span>لوحة التحكم</span>
       </div>
       <div class="spacer"></div>
+      <button class="btn icon sm" id="btnUndo" title="تراجع" disabled>↶</button>
+      <button class="btn icon sm" id="btnRedo" title="إعادة" disabled>↷</button>
+      <button class="btn icon sm" id="btnHist" title="سجل التعديلات">🕘</button>
       <div class="who" id="who"></div>
-      <button class="btn" id="btnOut">خروج</button>
+      <button class="btn sm" id="btnOut">خروج</button>
     </div>
   </header>
 
   <nav class="tabs">
     <div class="tabs-in">
       <button class="tab on" data-pane="tours">الجولات</button>
-      <button class="tab" data-pane="texts">نصوص الموقع</button>
-      <button class="tab" data-pane="type">أحجام الخطوط</button>
-      <button class="tab" data-pane="settings">التواصل والعلامة</button>
+      <button class="tab" data-pane="edit">المعاينة والتحرير</button>
+      <button class="tab" data-pane="tourx">تخصيص الجولات</button>
+      <button class="tab" data-pane="texts">النصوص</button>
+      <button class="tab" data-pane="type">الخطوط</button>
+      <button class="tab" data-pane="logos">الشعارات</button>
+      <button class="tab" data-pane="settings">التواصل</button>
     </div>
   </nav>
 
   <main>
     <div id="loader">جارٍ التحميل…</div>
 
-    <!-- ---- الجولات ---- -->
+    <!-- ──── الجولات ──── -->
     <section class="pane" id="pane-tours">
       <div class="bar">
         <button class="btn primary" id="btnNew">+ جولة جديدة</button>
-        <a class="btn" id="btnPreview" href="index.html" target="_blank">معاينة الموقع</a>
+        <a class="btn" id="btnPreview" href="index.html" target="_blank">فتح الموقع</a>
+        <button class="btn" id="btnExport">نزّل نسخة محدّثة</button>
         <div class="spacer"></div>
         <div class="status" id="pubStatus"><span class="dot"></span><span class="txt"></span></div>
         <button class="btn" id="btnPublish">إعادة نشر</button>
@@ -368,115 +533,109 @@
       <div id="toursList"></div>
     </section>
 
-    <!-- ---- نصوص الموقع ---- -->
+    <!-- ──── المعاينة والتحرير ──── -->
+    <section class="pane" id="pane-edit">
+      <div class="pick-hint" id="pickHint">
+        شغّل <b>وضع التحرير</b> واضغط على أي عنصر داخل الموقع تحت — تفتح لك لوحة تتحكم فيه بالكامل.
+        الأحمر يعني عنصر معدّل. التعديلات تبان فوراً هنا، وما تظهر للزوار حتى تضغط <b>حفظ ونشر</b>.
+      </div>
+      <div class="edit-bar">
+        <div class="segs" style="width:200px;margin:0">
+          <button class="seg on" data-view="desktop">لابتوب</button>
+          <button class="seg" data-view="mobile">جوال</button>
+        </div>
+        <button class="btn" id="btnEditMode">وضع التحرير: مغلق</button>
+        <button class="btn sm" id="btnReload">تحديث</button>
+        <div class="spacer"></div>
+        <button class="btn sm danger" id="btnResetEdits">مسح كل التعديلات</button>
+      </div>
+      <div class="stage">
+        <div class="frame-wrap" id="frameWrap">
+          <iframe id="siteFrame" src="about:blank" title="معاينة موقع رؤى"></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──── تخصيص الجولات ──── -->
+    <section class="pane" id="pane-tourx">
+      <div class="note">
+        كل جولة تتخصّص لحالها. <b>الجولة اللي ما تعدّل فيها شي تقعد على الوضع الافتراضي</b> —
+        أي خانة تتركها فاضية معناها «استعمل الافتراضي العام».
+      </div>
+      <div class="field">
+        <label>اختر الجولة</label>
+        <select id="txPick"></select>
+      </div>
+      <div id="txBody"></div>
+    </section>
+
+    <!-- ──── النصوص ──── -->
     <section class="pane" id="pane-texts">
       <div class="note">
         كل سطر مكتوب في الموقع تقدر تغيّره من هنا.
         <b>اترك أي خانة فاضية وبيرجع النص الأصلي المكتوب في الملف.</b>
       </div>
-
       <div class="group"><h3>الترويسة</h3></div>
-      <div class="field">
-        <label>السطر الصغير فوق</label>
-        <input type="text" data-t="eyebrow" />
-      </div>
-      <div class="field">
-        <label>الوصف — السطر الأول</label>
-        <input type="text" data-t="tagline1" />
-      </div>
-      <div class="field">
-        <label>الوصف — السطر الثاني</label>
-        <input type="text" data-t="tagline2" />
-      </div>
+      <div class="field"><label>السطر الصغير فوق</label><input type="text" data-t="eyebrow" /></div>
+      <div class="field"><label>الوصف — السطر الأول</label><input type="text" data-t="tagline1" /></div>
+      <div class="field"><label>الوصف — السطر الثاني</label><input type="text" data-t="tagline2" /></div>
 
       <div class="group"><h3>إطار الجولة</h3></div>
       <div class="row2">
-        <div class="field">
-          <label>وسم الجولة (يمين)</label>
-          <input type="text" data-t="tagTour" />
-        </div>
-        <div class="field">
-          <label>وسم المقياس (يسار)</label>
-          <input type="text" data-t="tagScale" />
-        </div>
+        <div class="field"><label>وسم الجولة</label><input type="text" data-t="tagTour" /></div>
+        <div class="field"><label>وسم المقياس</label><input type="text" data-t="tagScale" /></div>
       </div>
-      <div class="field">
-        <label>نص زر الخريطة</label>
-        <input type="text" data-t="mapLabel" />
-      </div>
+      <div class="field"><label>نص زر الخريطة</label><input type="text" data-t="mapLabel" /></div>
 
       <div class="group"><h3>قسم الخدمات</h3></div>
       <div class="row2">
-        <div class="field">
-          <label>العنوان</label>
-          <input type="text" data-t="servicesTitle" />
-        </div>
-        <div class="field">
-          <label>العنوان الإنجليزي الصغير</label>
-          <input type="text" data-t="servicesSub" class="ltr" />
-        </div>
+        <div class="field"><label>العنوان</label><input type="text" data-t="servicesTitle" /></div>
+        <div class="field"><label>العنوان الإنجليزي</label><input type="text" data-t="servicesSub" class="ltr" /></div>
       </div>
-      <div class="field">
-        <label>نص الفقرة</label>
-        <textarea data-t="servicesText" rows="3"></textarea>
-      </div>
+      <div class="field"><label>نص الفقرة</label><textarea data-t="servicesText" rows="3"></textarea></div>
 
       <div class="group"><h3>مكتبة الأعمال</h3></div>
       <div class="row2">
-        <div class="field">
-          <label>العنوان</label>
-          <input type="text" data-t="portfolioTitle" />
-        </div>
-        <div class="field">
-          <label>العنوان الإنجليزي الصغير</label>
-          <input type="text" data-t="portfolioSub" class="ltr" />
-        </div>
+        <div class="field"><label>العنوان</label><input type="text" data-t="portfolioTitle" /></div>
+        <div class="field"><label>العنوان الإنجليزي</label><input type="text" data-t="portfolioSub" class="ltr" /></div>
       </div>
 
       <div class="group"><h3>قسم التواصل</h3></div>
       <div class="row2">
-        <div class="field">
-          <label>العنوان</label>
-          <input type="text" data-t="contactTitle" />
-        </div>
-        <div class="field">
-          <label>العنوان الإنجليزي الصغير</label>
-          <input type="text" data-t="contactSub" class="ltr" />
-        </div>
+        <div class="field"><label>العنوان</label><input type="text" data-t="contactTitle" /></div>
+        <div class="field"><label>العنوان الإنجليزي</label><input type="text" data-t="contactSub" class="ltr" /></div>
       </div>
 
       <div class="group"><h3>التذييل</h3></div>
       <div class="row2">
-        <div class="field">
-          <label>اسم العلامة</label>
-          <input type="text" data-t="brandName" />
-        </div>
-        <div class="field">
-          <label>نص الحقوق</label>
-          <input type="text" data-t="footerText" />
-        </div>
+        <div class="field"><label>اسم العلامة</label><input type="text" data-t="brandName" /></div>
+        <div class="field"><label>نص الحقوق</label><input type="text" data-t="footerText" /></div>
+      </div>
+
+      <div class="group"><h3>نصوص داخل الجولة (الافتراضية للكل)</h3></div>
+      <div class="row2">
+        <div class="field"><label>أثناء التحميل</label><input type="text" data-t="tourLoading" /></div>
+        <div class="field"><label>عند الجاهزية (الجوال)</label><input type="text" data-t="tourReady" /></div>
+      </div>
+      <div class="field"><label>زر العودة لملء الشاشة</label><input type="text" data-t="tourResume" /></div>
+      <div class="row2">
+        <div class="field"><label>عنوان الحالة الفارغة</label><input type="text" data-t="emptyTitle" /></div>
+        <div class="field"><label>شرح الحالة الفارغة</label><input type="text" data-t="emptyHint" /></div>
       </div>
 
       <div class="group"><h3>معلومات الصفحة</h3></div>
-      <div class="field">
-        <label>عنوان التبويب في المتصفح</label>
-        <input type="text" data-t="pageTitle" />
-      </div>
-      <div class="field">
-        <label>وصف الموقع لمحركات البحث</label>
-        <textarea data-t="pageDescription" rows="2"></textarea>
-      </div>
+      <div class="field"><label>عنوان التبويب في المتصفح</label><input type="text" data-t="pageTitle" /></div>
+      <div class="field"><label>وصف الموقع لمحركات البحث</label><textarea data-t="pageDescription" rows="2"></textarea></div>
 
       <button class="btn primary" id="btnSaveTexts">حفظ ونشر</button>
     </section>
 
-    <!-- ---- أحجام الخطوط ---- -->
+    <!-- ──── الخطوط ──── -->
     <section class="pane" id="pane-type">
       <div class="note">
         <b>١٠٠٪ هو الحجم الأصلي.</b> المقياس العام يكبّر أو يصغّر كل شيء بتناسق،
-        والمقاييس تحته تعدّل عناصر بعينها فوق العام. غيّر شوية شوية — خمسة بالمية فرق واضح.
+        والمقاييس تحته تعدّل عناصر بعينها فوق العام.
       </div>
-
       <div class="group"><h3>المقياس العام</h3></div>
       <div class="slider" data-y="desktop">
         <div class="slider-head"><span>اللابتوب والشاشات الكبيرة</span><b class="val"></b></div>
@@ -486,7 +645,6 @@
         <div class="slider-head"><span>الجوال والتابلت</span><b class="val"></b></div>
         <input type="range" min="70" max="140" step="1" />
       </div>
-
       <div class="group"><h3>عناصر محددة</h3></div>
       <div class="slider" data-y="tagline">
         <div class="slider-head"><span>وصف الترويسة</span><b class="val"></b></div>
@@ -500,26 +658,33 @@
         <div class="slider-head"><span>أسماء الجولات في المكتبة</span><b class="val"></b></div>
         <input type="range" min="70" max="150" step="1" />
       </div>
-
       <div class="group"><h3>معاينة</h3></div>
       <div class="tprev">
         <div class="tp-eyebrow">3D SCAN · VIRTUAL TOUR STUDIO</div>
-        <div class="tp-tagline" id="tpTag">ادخل لعالم من الواقعية الراقية، وين تبان أدق تفاصيل موقعك.</div>
-        <div class="tp-h2" id="tpH2">مكتبة الأعمال</div>
-        <div class="tp-card" id="tpCard">فيلا الأندلس<span>جنزور، ليبيا</span></div>
+        <div class="tp-tagline">نرسم رؤيتك رقمياً — جولة افتراضية تنقل مكانك بأدق تفاصيله.</div>
+        <div class="tp-h2">مكتبة الأعمال</div>
+        <div class="tp-card">فيلا الأندلس<span>جنزور، ليبيا</span></div>
       </div>
-
-      <div class="bar" style="margin-top:22px">
+      <div class="bar" style="margin-top:20px">
         <button class="btn primary" id="btnSaveType">حفظ ونشر</button>
         <button class="btn" id="btnResetType">رجّع الأحجام الأصلية</button>
       </div>
     </section>
 
-    <!-- ---- الإعدادات ---- -->
+    <!-- ──── الشعارات ──── -->
+    <section class="pane" id="pane-logos">
+      <div class="note">
+        اترك أي خانة فاضية وبيرجع الشعار الأصلي المرفوع مع الموقع.
+        <b>الأفضل ترفع صورة بخلفية شفافة (PNG).</b>
+      </div>
+      <div id="logoFields"></div>
+      <button class="btn primary" id="btnSaveLogos">حفظ ونشر</button>
+    </section>
+
+    <!-- ──── التواصل ──── -->
     <section class="pane" id="pane-settings">
       <div class="note">
         هذي القيم تظهر للزوار في أزرار التواصل وفي شريط العلامة داخل الجولة.
-        <b>أي تعديل يبان على الموقع فوراً بعد الحفظ.</b>
       </div>
       <div class="row2">
         <div class="field">
@@ -527,46 +692,45 @@
           <input type="text" id="sWa" class="ltr" placeholder="218912345678" />
           <div class="hint">بالصيغة الدولية بدون + وبدون أصفار في البداية.</div>
         </div>
-        <div class="field">
-          <label>البريد الإلكتروني</label>
-          <input type="text" id="sEmail" class="ltr" placeholder="info@roaa.ly" />
-        </div>
+        <div class="field"><label>البريد الإلكتروني</label><input type="text" id="sEmail" class="ltr" /></div>
       </div>
-      <div class="field">
-        <label>رسالة الواتساب الجاهزة</label>
-        <input type="text" id="sWaMsg" />
-        <div class="hint">النص اللي يلقاه الزائر مكتوب له في المحادثة.</div>
+      <div class="field"><label>رسالة الواتساب الجاهزة</label><input type="text" id="sWaMsg" /></div>
+      <div class="row2">
+        <div class="field"><label>رابط فيسبوك</label><input type="text" id="sFb" class="ltr" /></div>
+        <div class="field"><label>رابط لينكدإن</label><input type="text" id="sLi" class="ltr" /></div>
       </div>
       <div class="row2">
-        <div class="field">
-          <label>رابط فيسبوك</label>
-          <input type="text" id="sFb" class="ltr" />
-        </div>
-        <div class="field">
-          <label>رابط لينكدإن</label>
-          <input type="text" id="sLi" class="ltr" />
-        </div>
+        <div class="field"><label>نص الشريط — السطر الأول</label><input type="text" id="sV1" /></div>
+        <div class="field"><label>نص الشريط — السطر الثاني</label><input type="text" id="sV2" /></div>
       </div>
-      <div class="row2">
-        <div class="field">
-          <label>نص الشريط — السطر الأول</label>
-          <input type="text" id="sV1" />
-        </div>
-        <div class="field">
-          <label>نص الشريط — السطر الثاني</label>
-          <input type="text" id="sV2" />
-        </div>
-      </div>
-      <div class="field">
-        <label>رابط موقعك (لوجو أعلى اليسار داخل الجولة)</label>
-        <input type="text" id="sLink" class="ltr" />
-      </div>
+      <div class="field"><label>رابط موقعك (لوجو أعلى اليسار داخل الجولة)</label><input type="text" id="sLink" class="ltr" /></div>
       <button class="btn primary" id="btnSaveSettings">حفظ ونشر</button>
     </section>
   </main>
+
+  <!-- شريط الحفظ العائم -->
+  <div id="savebar">
+    <span class="txt">فيه تعديلات ما انحفظتش</span>
+    <button class="btn sm" id="btnDiscard">تجاهل</button>
+    <button class="btn sm primary" id="btnSaveEdits">حفظ ونشر</button>
+  </div>
 </div>
 
-<!-- ============ محرّر الجولة ============ -->
+<!-- ════════ لوحة فحص العنصر ════════ -->
+<div id="inspector">
+  <div class="insp-head">
+    <div class="nm"><b id="ispName">عنصر</b><small id="ispKey"></small></div>
+    <button class="btn icon sm" id="ispParent" title="اختر العنصر الأب">▲</button>
+    <button class="btn icon sm" id="ispClose">&times;</button>
+  </div>
+  <div class="insp-body" id="ispBody"></div>
+  <div class="insp-foot">
+    <button class="btn sm" id="ispReset">إرجاع للأصل</button>
+    <button class="btn sm danger" id="ispDelete">حذف</button>
+  </div>
+</div>
+
+<!-- ════════ محرّر الجولة ════════ -->
 <div class="modal" id="editor">
   <div class="sheet">
     <div class="sheet-head">
@@ -578,43 +742,27 @@
         <label>اسم الجولة <span class="req">*</span></label>
         <input type="text" id="fTitle" placeholder="فيلا الأندلس" />
       </div>
-
       <div class="field">
         <label>رابط الجولة من Matterport <span class="req">*</span></label>
         <input type="text" id="fTour" class="ltr" placeholder="https://my.matterport.com/show?m=XXXXXXXX" />
         <div class="hint">الصق الرابط زي ما هو. اللوحة تنظّفه وتوحّد إعدادات العرض تلقائياً.</div>
         <div class="err" id="eTour" style="display:none"></div>
       </div>
-
       <div class="row2">
-        <div class="field">
-          <label>المدينة / المنطقة</label>
-          <input type="text" id="fLocation" placeholder="طرابلس، ليبيا" />
-        </div>
-        <div class="field">
-          <label>العنوان التفصيلي</label>
-          <input type="text" id="fAddress" placeholder="عين زارة، طرابلس" />
-        </div>
+        <div class="field"><label>المدينة / المنطقة</label><input type="text" id="fLocation" placeholder="طرابلس، ليبيا" /></div>
+        <div class="field"><label>العنوان التفصيلي</label><input type="text" id="fAddress" /></div>
       </div>
-
       <div class="field">
         <label>رابط الموقع على الخريطة</label>
-        <input type="text" id="fMap" class="ltr" placeholder="https://maps.google.com/?q=..." />
-        <div class="hint">
-          اتركه فاضي وبيتولّد تلقائياً من العنوان.
-          <a href="#" id="genMap">توليد الآن</a>
-        </div>
+        <input type="text" id="fMap" class="ltr" />
+        <div class="hint">اتركه فاضي وبيتولّد تلقائياً من العنوان. <a href="#" id="genMap">توليد الآن</a></div>
       </div>
-
       <div class="field">
         <label>المعرّف في الرابط (slug) <span class="req">*</span></label>
         <input type="text" id="fSlug" class="ltr" placeholder="villa-andalus" />
-        <div class="hint">
-          الرابط المستقل للجولة بيكون: <span class="mono" id="slugPreview" style="color:var(--gold-soft)"></span>
-        </div>
+        <div class="hint">الرابط المستقل: <span class="mono" id="slugPreview" style="color:var(--gold-soft)"></span></div>
         <div class="err" id="eSlug" style="display:none"></div>
       </div>
-
       <div class="field">
         <label>صورة البطاقة</label>
         <div class="segs">
@@ -627,7 +775,6 @@
         <div class="imgprev" id="imgPrev"><div class="ph">لا توجد صورة</div></div>
         <div class="hint" id="imgHint">تُسحب الصورة المصغّرة من Matterport تلقائياً — بدون رفع ولا مساحة تخزين.</div>
       </div>
-
       <div class="field" style="margin-bottom:0">
         <label class="toggle">
           <input type="checkbox" id="fPub" checked />
@@ -643,16 +790,35 @@
   </div>
 </div>
 
-<!-- ============ تأكيد الحذف ============ -->
+<!-- ════════ تأكيد ════════ -->
 <div class="modal" id="confirm">
   <div class="sheet" style="max-width:400px">
-    <div class="sheet-head"><h2>تأكيد الحذف</h2></div>
+    <div class="sheet-head"><h2 id="cfTitle">تأكيد</h2></div>
     <div class="sheet-body" style="font-size:.88rem; line-height:1.9; color:var(--muted)">
       <span id="cfMsg"></span>
     </div>
     <div class="sheet-foot">
       <button class="btn" id="cfNo">تراجع</button>
-      <button class="btn danger" id="cfYes">نعم، احذف</button>
+      <button class="btn danger" id="cfYes">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ سجل التعديلات ════════ -->
+<div class="modal" id="history">
+  <div class="sheet" style="max-width:520px">
+    <div class="sheet-head">
+      <h2>سجل التعديلات</h2>
+      <button class="btn icon" id="hsClose">&times;</button>
+    </div>
+    <div class="sheet-body" style="padding:0">
+      <div id="histList"></div>
+    </div>
+    <div class="sheet-foot">
+      <span style="flex:1;font-size:.75rem;color:var(--muted);align-self:center">
+        اضغط أي سطر للرجوع لتلك اللحظة
+      </span>
+      <button class="btn" id="hsClose2">إغلاق</button>
     </div>
   </div>
 </div>
@@ -670,8 +836,7 @@ import { getFirestore, collection, getDocs, doc, addDoc, updateDoc,
 
 /* ============================================================
    إعدادات مشروع رؤى على Firebase
-   هذي القيم علنية بطبيعتها وتصل لأي زائر — الحماية في قواعد
-   Firestore المحفوظة عند جوجل، مش في إخفاء هذا الكود.
+   القيم علنية بطبيعتها — الحماية في قواعد Firestore عند جوجل.
    ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyCTcNHv2e6fRFA1i6ZiwAcwv7g6xk3naYs",
@@ -686,7 +851,6 @@ const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-/* ---------- أدوات صغيرة ---------- */
 const $  = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
 
@@ -704,7 +868,6 @@ function esc(s){
     ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 }
 
-/* يستخرج معرّف Matterport من أي شكل رابط */
 function matterportId(url){
   try{
     const u = new URL(url);
@@ -712,80 +875,68 @@ function matterportId(url){
     return u.searchParams.get("m") || "";
   }catch(e){ return ""; }
 }
-
-function autoThumb(tourUrl){
-  const id = matterportId(tourUrl);
-  return id ? `https://my.matterport.com/api/v2/player/models/${id}/thumb/` : "";
-}
+const autoThumb = (t) => { const id = matterportId(t);
+  return id ? `https://my.matterport.com/api/v2/player/models/${id}/thumb/` : ""; };
 
 function slugify(s){
-  return String(s || "")
-    .trim().toLowerCase()
-    .replace(/[؀-ۿ]/g, "")          // الحروف العربية لا تصلح في الرابط
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+  return String(s || "").trim().toLowerCase()
+    .replace(/[؀-ۿ]/g, "").replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
 }
 
-/* ---------- الحالة ---------- */
-let TOURS = [];        // كل الجولات (منشورة ومخفية)
-let SETTINGS = {};     // بيانات التواصل والعلامة
-let TEXTS = {};        // نصوص صفحات الموقع
-let TYPE = {};         // أحجام الخطوط
-let editingId = null;  // معرّف الجولة تحت التعديل، أو null للجديدة
-let imgMode = "auto";
-let imgData = "";      // القيمة النهائية للصورة (رابط أو data URL)
+/* ============================================================
+   الحالة
+   ============================================================ */
+let TOURS = [], SETTINGS = {}, TEXTS = {}, TYPE = {}, LOGOS = {}, EDITS = {}, BLOCKS = [], TOURX = {};
+let editingId = null, imgMode = "auto", imgData = "";
+let DIRTY = false;
 
 const DEFAULT_SETTINGS = {
-  whatsappNumber:  "218xxxxxxxxx",
-  whatsappMessage: "مرحباً، أرغب بمعرفة المزيد عن خدمات رؤى",
-  facebookUrl:     "https://facebook.com/roaa",
-  linkedinUrl:     "https://linkedin.com/company/roaa",
-  email:           "info@roaa.com",
-  veil1:           "استكشف المكان",
-  veil2:           "بتقنية رؤى",
-  topLeftLink:     "https://roaa.ly"
+  whatsappNumber:"218xxxxxxxxx",
+  whatsappMessage:"مرحباً، أرغب بمعرفة المزيد عن خدمات رؤى",
+  facebookUrl:"https://facebook.com/roaa",
+  linkedinUrl:"https://linkedin.com/company/roaa",
+  email:"info@roaa.com",
+  veil1:"استكشف المكان", veil2:"بتقنية رؤى", topLeftLink:"https://roaa.ly"
 };
 
-/* النصوص كما هي مكتوبة في index.html — تظهر في الخانات كنقطة بداية */
 const DEFAULT_TEXTS = {
-  eyebrow:        "3D SCAN · VIRTUAL TOUR STUDIO",
-  tagline1:       "نرسم رؤيتك رقمياً — جولة افتراضية تنقل مكانك بأدق تفاصيله،",
-  tagline2:       "بفخامة تليق بيك وبعملائك.",
-  tagTour:        "جولة افتراضية ثلاثية الأبعاد",
-  tagScale:       "SCALE 1:1",
-  mapLabel:       "الموقع الجغرافي",
-  servicesTitle:  "خدماتنا",
-  servicesSub:    "What we do",
-  servicesText:   "رؤيتنا الرقمية تسبق زيارتك. نحوّل أي مكان لجولة افتراضية تفاعلية بأبعاده الحقيقية، عميلك يدخلها من هاتفه ويتجول فيها بكل حرية.",
-  portfolioTitle: "مكتبة الأعمال",
-  portfolioSub:   "SELECTED PROJECTS",
-  contactTitle:   "تواصل معنا",
-  contactSub:     "GET IN TOUCH",
-  brandName:      "رؤى",
-  footerText:     "— ALL RIGHTS RESERVED",
-  pageTitle:      "رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية",
+  eyebrow:"3D SCAN · VIRTUAL TOUR STUDIO",
+  tagline1:"نرسم رؤيتك رقمياً — جولة افتراضية تنقل مكانك بأدق تفاصيله،",
+  tagline2:"بفخامة تليق بيك وبعملائك.",
+  tagTour:"جولة افتراضية ثلاثية الأبعاد",
+  tagScale:"SCALE 1:1",
+  mapLabel:"الموقع الجغرافي",
+  servicesTitle:"خدماتنا", servicesSub:"What we do",
+  servicesText:"رؤيتنا الرقمية تسبق زيارتك. نحوّل أي مكان لجولة افتراضية تفاعلية بأبعاده الحقيقية، عميلك يدخلها من هاتفه ويتجول فيها بكل حرية.",
+  portfolioTitle:"مكتبة الأعمال", portfolioSub:"SELECTED PROJECTS",
+  contactTitle:"تواصل معنا", contactSub:"GET IN TOUCH",
+  brandName:"رؤى", footerText:"— ALL RIGHTS RESERVED",
+  pageTitle:"رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية",
   pageDescription:"رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية."
 };
 
-/* 1 = الحجم الأصلي */
 const DEFAULT_TYPE = { desktop:1, mobile:1, tagline:1, heading:1, card:1 };
 
-/* الجولات الثمانية الموجودة حالياً في index.html — للاستيراد بضغطة */
+const LOGO_DEFS = [
+  { key:"main",    label:"شعار الترويسة والأيقونة", file:"roaa-logo-main.png" },
+  { key:"loading", label:"شعار شاشة تحميل الجولة",  file:"roaa-logo-loading.png" },
+  { key:"wide",    label:"الشعار العريض داخل الجولة", file:"roaa-logo-wide.png" }
+];
+
 const SEED = [
-  { slug:"tour-1",  title:"الجولة 1", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=4SwDcoDxVZk" },
-  { slug:"test-02", title:"الجولة 2", location:"عين زاره، ليبيا", address:"عين زاره، طرابلس", mapLink:"https://maps.google.com/?q=Ain+Zara+Tripoli",   tour:"https://my.matterport.com/show?m=SX1WhWQita6" },
-  { slug:"tour-3",  title:"الجولة 3", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=6m1W2bQmWnq" },
-  { slug:"tour-4",  title:"الجولة 4", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=6UCJ2mFDuuK" },
-  { slug:"tour-5",  title:"الجولة 5", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=PGAro8qLnpj" },
-  { slug:"tour-6",  title:"الجولة 6", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=3JEECQymK3L" },
-  { slug:"tour-7",  title:"الجولة 7", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=rFLBrgqeGa9" },
-  { slug:"tour-8",  title:"الجولة 8", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",      tour:"https://my.matterport.com/show?m=4SFdEEwpkC2" }
+  { slug:"tour-1",  title:"الجولة 1", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",    tour:"https://my.matterport.com/show?m=4SwDcoDxVZk" },
+  { slug:"test-02", title:"الجولة 2", location:"عين زاره، ليبيا", address:"عين زاره، طرابلس", mapLink:"https://maps.google.com/?q=Ain+Zara+Tripoli", tour:"https://my.matterport.com/show?m=SX1WhWQita6" },
+  { slug:"tour-3",  title:"الجولة 3", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",    tour:"https://my.matterport.com/show?m=6m1W2bQmWnq" },
+  { slug:"tour-4",  title:"الجولة 4", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",    tour:"https://my.matterport.com/show?m=6UCJ2mFDuuK" },
+  { slug:"tour-5",  title:"الجولة 5", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",    tour:"https://my.matterport.com/show?m=PGAro8qLnpj" },
+  { slug:"tour-6",  title:"الجولة 6", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",    tour:"https://my.matterport.com/show?m=3JEECQymK3L" },
+  { slug:"tour-7",  title:"الجولة 7", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",    tour:"https://my.matterport.com/show?m=rFLBrgqeGa9" },
+  { slug:"tour-8",  title:"الجولة 8", location:"طرابلس، ليبيا", address:"",                  mapLink:"https://maps.google.com/?q=Tripoli,Libya",    tour:"https://my.matterport.com/show?m=4SFdEEwpkC2" }
 ];
 
 /* ============================================================
-   تسجيل الدخول
+   الدخول
    ============================================================ */
 $("#loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -796,18 +947,16 @@ $("#loginForm").addEventListener("submit", async (e) => {
     await signInWithEmailAndPassword(auth, $("#lEmail").value.trim(), $("#lPass").value);
   }catch(err){
     const map = {
-      "auth/invalid-credential": "البريد أو كلمة المرور غير صحيحة.",
-      "auth/invalid-email":      "صيغة البريد الإلكتروني غير صحيحة.",
-      "auth/user-not-found":     "لا يوجد حساب بهذا البريد.",
-      "auth/wrong-password":     "كلمة المرور غير صحيحة.",
-      "auth/too-many-requests":  "محاولات كثيرة متتالية. انتظر دقيقة وأعد المحاولة.",
-      "auth/network-request-failed": "تعذّر الاتصال بالإنترنت."
+      "auth/invalid-credential":"البريد أو كلمة المرور غير صحيحة.",
+      "auth/invalid-email":"صيغة البريد الإلكتروني غير صحيحة.",
+      "auth/user-not-found":"لا يوجد حساب بهذا البريد.",
+      "auth/wrong-password":"كلمة المرور غير صحيحة.",
+      "auth/too-many-requests":"محاولات كثيرة متتالية. انتظر دقيقة وأعد المحاولة.",
+      "auth/network-request-failed":"تعذّر الاتصال بالإنترنت."
     };
     $("#loginErr").textContent = map[err.code] || ("تعذّر تسجيل الدخول: " + err.code);
     $("#loginErr").style.display = "block";
-  }finally{
-    btn.disabled = false; btn.textContent = "دخول";
-  }
+  }finally{ btn.disabled = false; btn.textContent = "دخول"; }
 });
 
 $("#btnOut").addEventListener("click", () => signOut(auth));
@@ -815,12 +964,12 @@ $("#btnOut").addEventListener("click", () => signOut(auth));
 onAuthStateChanged(auth, (user) => {
   if (user){
     $("#login").style.display = "none";
-    $("#app").style.display   = "block";
-    $("#who").textContent     = user.email;
+    $("#app").style.display = "block";
+    $("#who").textContent = user.email;
     loadAll();
   }else{
     $("#login").style.display = "flex";
-    $("#app").style.display   = "none";
+    $("#app").style.display = "none";
     $("#lPass").value = "";
   }
 });
@@ -828,14 +977,15 @@ onAuthStateChanged(auth, (user) => {
 /* ============================================================
    التبويبات
    ============================================================ */
-$$(".tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    $$(".tab").forEach(t => t.classList.remove("on"));
-    $$(".pane").forEach(p => p.classList.remove("on"));
-    tab.classList.add("on");
-    $("#pane-" + tab.dataset.pane).classList.add("on");
-  });
-});
+$$(".tab").forEach(tab => tab.addEventListener("click", () => {
+  $$(".tab").forEach(t => t.classList.remove("on"));
+  $$(".pane").forEach(p => p.classList.remove("on"));
+  tab.classList.add("on");
+  $("#pane-" + tab.dataset.pane).classList.add("on");
+  if (tab.dataset.pane === "edit") ensureFrame();
+  else if (tab.dataset.pane === "tourx"){ ensureFrame(); renderTourX(); }
+  else closeInspector();
+}));
 
 /* ============================================================
    تحميل البيانات
@@ -845,27 +995,31 @@ async function loadAll(){
   $$(".pane").forEach(p => p.classList.remove("on"));
   try{
     const snap = await getDocs(collection(db, "tours"));
-    TOURS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    TOURS.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    TOURS = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    TOURS.sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
 
-    let sSnap;
+    let pub = null;
     try{
       const sDocs = await getDocs(collection(db, "site"));
-      const pub = sDocs.docs.find(d => d.id === "public");
-      sSnap = pub ? pub.data() : null;
-    }catch(e){ sSnap = null; }
+      const d = sDocs.docs.find(x => x.id === "public");
+      pub = d ? d.data() : null;
+    }catch(e){ pub = null; }
 
-    SETTINGS = Object.assign({}, DEFAULT_SETTINGS, (sSnap && sSnap.settings) || {});
-    TEXTS    = Object.assign({}, DEFAULT_TEXTS,    (sSnap && sSnap.texts)    || {});
-    TYPE     = Object.assign({}, DEFAULT_TYPE,     (sSnap && sSnap.type)     || {});
-    fillSettings();
-    fillTexts();
-    fillType();
-    renderTours();
-    setStatus(sSnap ? "live" : "dirty", sSnap ? "منشور" : "لم يُنشر بعد");
+    SETTINGS = Object.assign({}, DEFAULT_SETTINGS, (pub && pub.settings) || {});
+    TEXTS    = Object.assign({}, DEFAULT_TEXTS,    (pub && pub.texts)    || {});
+    TYPE     = Object.assign({}, DEFAULT_TYPE,     (pub && pub.type)     || {});
+    LOGOS    = Object.assign({}, (pub && pub.logos) || {});
+    EDITS    = Object.assign({}, (pub && pub.edits) || {});
+    BLOCKS   = Array.isArray(pub && pub.blocks) ? pub.blocks.slice() : [];
+    TOURX    = Object.assign({}, (pub && pub.tourx) || {});
+
+    fillSettings(); fillTexts(); fillType(); fillLogos(); renderTours(); renderTourX();
+    HIST = []; HPTR = -1; pushHist("آخر نسخة منشورة");
+    setStatus(pub ? "live" : "dirty", pub ? "منشور" : "لم يُنشر بعد");
+    setDirty(false);
   }catch(err){
     console.error(err);
-    toast("تعذّر تحميل البيانات: " + err.code, "bad");
+    toast("تعذّر تحميل البيانات: " + (err.code || err.message), "bad");
   }finally{
     $("#loader").style.display = "none";
     $("#pane-tours").classList.add("on");
@@ -880,12 +1034,16 @@ function setStatus(kind, txt){
   el.querySelector(".txt").textContent = txt;
 }
 
+function setDirty(v){
+  DIRTY = v;
+  $("#savebar").classList.toggle("on", v);
+}
+
 /* ============================================================
-   عرض قائمة الجولات
+   قائمة الجولات
    ============================================================ */
 function renderTours(){
   const box = $("#toursList");
-
   if (!TOURS.length){
     box.innerHTML = `
       <div class="empty">
@@ -897,7 +1055,6 @@ function renderTours(){
     $("#btnSeed").addEventListener("click", seedTours);
     return;
   }
-
   box.innerHTML = TOURS.map((t, i) => `
     <div class="tour-row ${t.published === false ? "hidden-t" : ""}">
       <div class="thumb">
@@ -911,26 +1068,19 @@ function renderTours(){
         <div class="sub">${esc(t.location || "—")} · <span class="slug">?p=${esc(t.slug)}</span></div>
       </div>
       <div class="acts">
-        <button class="btn icon" data-up="${i}"   ${i === 0 ? "disabled" : ""} title="أعلى">▲</button>
-        <button class="btn icon" data-down="${i}" ${i === TOURS.length - 1 ? "disabled" : ""} title="أسفل">▼</button>
-        <button class="btn" data-edit="${t.id}">تعديل</button>
-        <button class="btn danger icon" data-del="${t.id}" title="حذف">🗑</button>
+        <button class="btn icon sm" data-up="${i}"   ${i === 0 ? "disabled" : ""}>▲</button>
+        <button class="btn icon sm" data-down="${i}" ${i === TOURS.length-1 ? "disabled" : ""}>▼</button>
+        <button class="btn sm" data-edit="${t.id}">تعديل</button>
+        <button class="btn danger icon sm" data-del="${t.id}">🗑</button>
       </div>
     </div>`).join("");
 
-  box.querySelectorAll("[data-edit]").forEach(b =>
-    b.addEventListener("click", () => openEditor(b.dataset.edit)));
-  box.querySelectorAll("[data-del]").forEach(b =>
-    b.addEventListener("click", () => askDelete(b.dataset.del)));
-  box.querySelectorAll("[data-up]").forEach(b =>
-    b.addEventListener("click", () => move(+b.dataset.up, -1)));
-  box.querySelectorAll("[data-down]").forEach(b =>
-    b.addEventListener("click", () => move(+b.dataset.down, +1)));
+  box.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => openEditor(b.dataset.edit)));
+  box.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => askDelete(b.dataset.del)));
+  box.querySelectorAll("[data-up]").forEach(b => b.addEventListener("click", () => move(+b.dataset.up, -1)));
+  box.querySelectorAll("[data-down]").forEach(b => b.addEventListener("click", () => move(+b.dataset.down, +1)));
 }
 
-/* ============================================================
-   الترتيب
-   ============================================================ */
 async function move(i, dir){
   const j = i + dir;
   if (j < 0 || j >= TOURS.length) return;
@@ -938,35 +1088,26 @@ async function move(i, dir){
   renderTours();
   try{
     const batch = writeBatch(db);
-    TOURS.forEach((t, idx) => {
-      t.order = idx;
-      batch.update(doc(db, "tours", t.id), { order: idx });
-    });
+    TOURS.forEach((t, idx) => { t.order = idx; batch.update(doc(db,"tours",t.id), { order: idx }); });
     await batch.commit();
     await publish();
-  }catch(err){
-    toast("تعذّر حفظ الترتيب: " + err.code, "bad");
-  }
+  }catch(err){ toast("تعذّر حفظ الترتيب: " + err.code, "bad"); }
 }
 
-/* ============================================================
-   استيراد الجولات الحالية
-   ============================================================ */
 async function seedTours(){
   const btn = $("#btnSeed");
   btn.disabled = true; btn.textContent = "جارٍ الاستيراد…";
   try{
     for (let i = 0; i < SEED.length; i++){
       const s = SEED[i];
-      await addDoc(collection(db, "tours"), {
-        slug: s.slug, title: s.title, location: s.location, address: s.address,
-        mapLink: s.mapLink, tour: s.tour, image: autoThumb(s.tour),
-        imageMode: "auto", order: i, published: true, updatedAt: serverTimestamp()
+      await addDoc(collection(db,"tours"), {
+        slug:s.slug, title:s.title, location:s.location, address:s.address,
+        mapLink:s.mapLink, tour:s.tour, image:autoThumb(s.tour),
+        imageMode:"auto", order:i, published:true, updatedAt:serverTimestamp()
       });
     }
     toast("تم استيراد " + SEED.length + " جولات", "ok");
-    await loadAll();
-    await publish();
+    await loadAll(); await publish();
   }catch(err){
     toast("فشل الاستيراد: " + err.code, "bad");
     btn.disabled = false; btn.textContent = "استيراد الجولات الثمانية الحالية";
@@ -979,150 +1120,108 @@ async function seedTours(){
 function openEditor(id){
   editingId = id || null;
   const t = id ? TOURS.find(x => x.id === id) : null;
-
   $("#edTitle").textContent = t ? "تعديل الجولة" : "جولة جديدة";
-  $("#fTitle").value    = t ? (t.title    || "") : "";
-  $("#fTour").value     = t ? (t.tour     || "") : "";
-  $("#fLocation").value = t ? (t.location || "") : "";
-  $("#fAddress").value  = t ? (t.address  || "") : "";
-  $("#fMap").value      = t ? (t.mapLink  || "") : "";
-  $("#fSlug").value     = t ? (t.slug     || "") : "";
+  $("#fTitle").value    = t ? (t.title||"") : "";
+  $("#fTour").value     = t ? (t.tour||"") : "";
+  $("#fLocation").value = t ? (t.location||"") : "";
+  $("#fAddress").value  = t ? (t.address||"") : "";
+  $("#fMap").value      = t ? (t.mapLink||"") : "";
+  $("#fSlug").value     = t ? (t.slug||"") : "";
   $("#fPub").checked    = t ? (t.published !== false) : true;
-
+  delete $("#fSlug").dataset.touched;
   imgMode = t ? (t.imageMode || "auto") : "auto";
   imgData = t ? (t.image || "") : "";
   $("#fImgUrl").value = (imgMode === "url") ? imgData : "";
-  syncImgMode();
-  updateSlugPreview();
-  clearErrors();
-
+  syncImgMode(); updateSlugPreview(); clearErrors();
   $("#editor").classList.add("on");
   setTimeout(() => $("#fTitle").focus(), 60);
 }
-
-function closeEditor(){ $("#editor").classList.remove("on"); }
+const closeEditor = () => $("#editor").classList.remove("on");
 $("#edClose").addEventListener("click", closeEditor);
 $("#edCancel").addEventListener("click", closeEditor);
 $("#btnNew").addEventListener("click", () => openEditor(null));
-$("#editor").addEventListener("click", (e) => { if (e.target.id === "editor") closeEditor(); });
 
-/* توليد slug تلقائياً من الاسم للجولات الجديدة فقط */
-$("#fTitle").addEventListener("input", () => {
-  if (!editingId && !$("#fSlug").dataset.touched){
-    const auto = slugify($("#fTitle").value);
-    $("#fSlug").value = auto || nextFreeSlug();
-    updateSlugPreview();
-  }
-});
-$("#fSlug").addEventListener("input", () => {
-  $("#fSlug").dataset.touched = "1";
-  updateSlugPreview();
-});
-$("#fTour").addEventListener("input", () => { if (imgMode === "auto") syncImgMode(); });
-
-/* أول معرّف من شكل tour-N غير مستخدم — للأسماء العربية اللي ما تصلح للرابط */
 function nextFreeSlug(){
   let n = TOURS.length + 1;
   while (TOURS.some(t => t.slug === "tour-" + n)) n++;
   return "tour-" + n;
 }
-
+$("#fTitle").addEventListener("input", () => {
+  if (!editingId && !$("#fSlug").dataset.touched){
+    $("#fSlug").value = slugify($("#fTitle").value) || nextFreeSlug();
+    updateSlugPreview();
+  }
+});
+$("#fSlug").addEventListener("input", () => { $("#fSlug").dataset.touched = "1"; updateSlugPreview(); });
+$("#fTour").addEventListener("input", () => { if (imgMode === "auto") syncImgMode(); });
 function updateSlugPreview(){
-  const s = $("#fSlug").value.trim() || "…";
-  $("#slugPreview").textContent = "index.html?p=" + s;
+  $("#slugPreview").textContent = "index.html?p=" + ($("#fSlug").value.trim() || "…");
 }
-
 $("#genMap").addEventListener("click", (e) => {
   e.preventDefault();
-  const q = ($("#fAddress").value.trim() || $("#fLocation").value.trim());
+  const q = $("#fAddress").value.trim() || $("#fLocation").value.trim();
   if (!q) return toast("اكتب العنوان أو المدينة أولاً");
   $("#fMap").value = "https://maps.google.com/?q=" + encodeURIComponent(q);
 });
 
-/* ---------- الصورة ---------- */
 $$(".seg[data-img]").forEach(b => b.addEventListener("click", () => {
   imgMode = b.dataset.img;
   if (imgMode === "url")  imgData = $("#fImgUrl").value.trim();
   if (imgMode === "auto") imgData = "";
   syncImgMode();
 }));
-
 function syncImgMode(){
   $$(".seg[data-img]").forEach(b => b.classList.toggle("on", b.dataset.img === imgMode));
-  $("#fImgUrl").style.display  = (imgMode === "url")  ? "block" : "none";
-  $("#fImgFile").style.display = (imgMode === "file") ? "block" : "none";
-
-  const hints = {
-    auto: "تُسحب الصورة المصغّرة من Matterport تلقائياً — بدون رفع ولا مساحة تخزين.",
-    url:  "أي رابط صورة مباشر ينتهي بـ jpg أو png أو webp.",
-    file: "الصورة تُضغط تلقائياً قبل الحفظ. الأفضل تستعمل الوضع التلقائي إلا لو تبي صورة مختلفة."
-  };
-  $("#imgHint").textContent = hints[imgMode];
-
-  let src = "";
-  if (imgMode === "auto") src = autoThumb($("#fTour").value.trim());
-  else if (imgMode === "url") src = $("#fImgUrl").value.trim();
-  else src = imgData;
-
+  $("#fImgUrl").style.display  = imgMode === "url"  ? "block" : "none";
+  $("#fImgFile").style.display = imgMode === "file" ? "block" : "none";
+  $("#imgHint").textContent = {
+    auto:"تُسحب الصورة المصغّرة من Matterport تلقائياً — بدون رفع ولا مساحة تخزين.",
+    url:"أي رابط صورة مباشر ينتهي بـ jpg أو png أو webp.",
+    file:"الصورة تُضغط تلقائياً قبل الحفظ."
+  }[imgMode];
+  let src = imgMode === "auto" ? autoThumb($("#fTour").value.trim())
+          : imgMode === "url"  ? $("#fImgUrl").value.trim() : imgData;
   $("#imgPrev").innerHTML = src
     ? `<img src="${esc(src)}" onerror="this.parentNode.innerHTML='<div class=ph>تعذّر تحميل الصورة</div>'" />`
     : `<div class="ph">لا توجد صورة</div>`;
 }
-
 $("#fImgUrl").addEventListener("input", () => { imgData = $("#fImgUrl").value.trim(); syncImgMode(); });
-
 $("#fImgFile").addEventListener("change", async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const f = e.target.files[0]; if (!f) return;
   try{
-    imgData = await compressImage(file, 900, 0.72);
-    const kb = Math.round(imgData.length * 0.75 / 1024);
-    toast("تم تجهيز الصورة (" + kb + " كيلوبايت)", "ok");
+    imgData = await compressImage(f, 900, 0.72);
+    toast("تم تجهيز الصورة (" + Math.round(imgData.length*0.75/1024) + " كيلوبايت)", "ok");
     syncImgMode();
-  }catch(err){
-    toast("تعذّرت معالجة الصورة", "bad");
-  }
+  }catch(err){ toast("تعذّرت معالجة الصورة", "bad"); }
 });
 
-/* يضغط الصورة في المتصفح قبل الحفظ — يوفّر مساحة ويسرّع الموقع */
 function compressImage(file, maxW, quality){
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
+    const r = new FileReader();
+    r.onload = () => {
       const img = new Image();
       img.onload = () => {
         const scale = Math.min(1, maxW / img.width);
         const cv = document.createElement("canvas");
-        cv.width  = Math.round(img.width  * scale);
-        cv.height = Math.round(img.height * scale);
+        cv.width = Math.round(img.width*scale); cv.height = Math.round(img.height*scale);
         cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
         let out = cv.toDataURL("image/webp", quality);
         if (out.length > 260000) out = cv.toDataURL("image/webp", 0.5);
         resolve(out);
       };
-      img.onerror = reject;
-      img.src = reader.result;
+      img.onerror = reject; img.src = r.result;
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    r.onerror = reject; r.readAsDataURL(file);
   });
 }
 
-/* ---------- التحقق والحفظ ---------- */
-function clearErrors(){
-  $("#eSlug").style.display = "none";
-  $("#eTour").style.display = "none";
-}
+function clearErrors(){ $("#eSlug").style.display = "none"; $("#eTour").style.display = "none"; }
 
 $("#edSave").addEventListener("click", async () => {
   clearErrors();
-  const title = $("#fTitle").value.trim();
-  const tour  = $("#fTour").value.trim();
-  const slug  = $("#fSlug").value.trim();
+  const title = $("#fTitle").value.trim(), tour = $("#fTour").value.trim(), slug = $("#fSlug").value.trim();
   let ok = true;
-
   if (!title){ toast("اسم الجولة مطلوب", "bad"); ok = false; }
-
   if (!tour || !matterportId(tour)){
     $("#eTour").textContent = "الرابط لازم يكون رابط Matterport فيه معرّف الجولة (m=...).";
     $("#eTour").style.display = "block"; ok = false;
@@ -1136,218 +1235,1125 @@ $("#edSave").addEventListener("click", async () => {
   }
   if (!ok) return;
 
-  let image = "";
-  if (imgMode === "auto")      image = autoThumb(tour);
-  else if (imgMode === "url")  image = $("#fImgUrl").value.trim();
-  else                         image = imgData;
-
+  const image = imgMode === "auto" ? autoThumb(tour)
+              : imgMode === "url"  ? $("#fImgUrl").value.trim() : imgData;
   const data = {
-    title, slug, tour, image,
-    imageMode: imgMode,
-    location: $("#fLocation").value.trim(),
-    address:  $("#fAddress").value.trim(),
-    mapLink:  $("#fMap").value.trim(),
-    published: $("#fPub").checked,
-    updatedAt: serverTimestamp()
+    title, slug, tour, image, imageMode:imgMode,
+    location:$("#fLocation").value.trim(), address:$("#fAddress").value.trim(),
+    mapLink:$("#fMap").value.trim(), published:$("#fPub").checked,
+    updatedAt:serverTimestamp()
   };
-
   const btn = $("#edSave");
   btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
   try{
-    if (editingId){
-      await updateDoc(doc(db, "tours", editingId), data);
-    }else{
-      data.order = TOURS.length;
-      await addDoc(collection(db, "tours"), data);
-    }
-    closeEditor();
-    await loadAll();
-    await publish();
+    if (editingId) await updateDoc(doc(db,"tours",editingId), data);
+    else { data.order = TOURS.length; await addDoc(collection(db,"tours"), data); }
+    closeEditor(); await loadAll(); await publish();
     toast("تم الحفظ والنشر", "ok");
-  }catch(err){
-    toast("تعذّر الحفظ: " + err.code, "bad");
-  }finally{
-    btn.disabled = false; btn.textContent = "حفظ ونشر";
-  }
+  }catch(err){ toast("تعذّر الحفظ: " + err.code, "bad"); }
+  finally{ btn.disabled = false; btn.textContent = "حفظ ونشر"; }
 });
 
-/* ---------- الحذف ---------- */
-let pendingDelete = null;
-function askDelete(id){
-  const t = TOURS.find(x => x.id === id);
-  pendingDelete = id;
-  $("#cfMsg").innerHTML = `سيتم حذف <b style="color:var(--paper)">${esc(t.title)}</b> نهائياً من القاعدة ومن الموقع. ما فيه تراجع بعد الحذف.`;
+/* ---------- التأكيد العام ---------- */
+let confirmAction = null;
+function askConfirm(title, msg, fn){
+  $("#cfTitle").textContent = title;
+  $("#cfMsg").innerHTML = msg;
+  confirmAction = fn;
   $("#confirm").classList.add("on");
 }
-$("#cfNo").addEventListener("click", () => { pendingDelete = null; $("#confirm").classList.remove("on"); });
+$("#cfNo").addEventListener("click", () => { confirmAction = null; $("#confirm").classList.remove("on"); });
 $("#cfYes").addEventListener("click", async () => {
-  if (!pendingDelete) return;
-  const btn = $("#cfYes");
-  btn.disabled = true; btn.textContent = "جارٍ الحذف…";
-  try{
-    await deleteDoc(doc(db, "tours", pendingDelete));
-    $("#confirm").classList.remove("on");
-    await loadAll();
-    await publish();
-    toast("تم الحذف", "ok");
-  }catch(err){
-    toast("تعذّر الحذف: " + err.code, "bad");
-  }finally{
-    pendingDelete = null;
-    btn.disabled = false; btn.textContent = "نعم، احذف";
-  }
+  const fn = confirmAction; confirmAction = null;
+  $("#confirm").classList.remove("on");
+  if (fn) await fn();
 });
 
-/* ============================================================
-   الإعدادات
-   ============================================================ */
-const SFIELDS = {
-  whatsappNumber:"#sWa", whatsappMessage:"#sWaMsg", facebookUrl:"#sFb",
-  linkedinUrl:"#sLi", email:"#sEmail", veil1:"#sV1", veil2:"#sV2", topLeftLink:"#sLink"
-};
-
-function fillSettings(){
-  for (const k in SFIELDS) $(SFIELDS[k]).value = SETTINGS[k] || "";
+function askDelete(id){
+  const t = TOURS.find(x => x.id === id);
+  askConfirm("تأكيد الحذف",
+    `سيتم حذف <b style="color:var(--paper)">${esc(t.title)}</b> نهائياً من القاعدة ومن الموقع. ما فيه تراجع بعد الحذف.`,
+    async () => {
+      try{
+        await deleteDoc(doc(db,"tours",id));
+        await loadAll(); await publish(); toast("تم الحذف", "ok");
+      }catch(err){ toast("تعذّر الحذف: " + err.code, "bad"); }
+    });
 }
+
+/* ============================================================
+   الإعدادات / النصوص / الخطوط / الشعارات
+   ============================================================ */
+const SFIELDS = { whatsappNumber:"#sWa", whatsappMessage:"#sWaMsg", facebookUrl:"#sFb",
+                  linkedinUrl:"#sLi", email:"#sEmail", veil1:"#sV1", veil2:"#sV2", topLeftLink:"#sLink" };
+const fillSettings = () => { for (const k in SFIELDS) $(SFIELDS[k]).value = SETTINGS[k] || ""; };
 
 $("#btnSaveSettings").addEventListener("click", async () => {
   for (const k in SFIELDS) SETTINGS[k] = $(SFIELDS[k]).value.trim();
-  const btn = $("#btnSaveSettings");
-  btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
-  try{
-    await publish();
-    toast("تم حفظ الإعدادات ونشرها", "ok");
-  }catch(err){
-    toast("تعذّر الحفظ: " + err.code, "bad");
-  }finally{
-    btn.disabled = false; btn.textContent = "حفظ ونشر";
-  }
+  pushHist("تعديل بيانات التواصل");
+  await saveWith($("#btnSaveSettings"), "تم حفظ الإعدادات ونشرها");
 });
 
-/* ============================================================
-   نصوص الموقع
-   ============================================================ */
-function fillTexts(){
-  $$("[data-t]").forEach(el => { el.value = TEXTS[el.dataset.t] || ""; });
-}
-
+const fillTexts = () => $$("[data-t]").forEach(el => { el.value = TEXTS[el.dataset.t] || ""; });
 $("#btnSaveTexts").addEventListener("click", async () => {
   $$("[data-t]").forEach(el => {
-    const v = el.value.trim();
-    // الخانة الفاضية ترجّع النص الأصلي المكتوب في الملف
-    TEXTS[el.dataset.t] = v || DEFAULT_TEXTS[el.dataset.t] || "";
+    TEXTS[el.dataset.t] = el.value.trim() || DEFAULT_TEXTS[el.dataset.t] || "";
   });
-  fillTexts();
-  const btn = $("#btnSaveTexts");
-  btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
-  try{
-    await publish();
-    toast("تم حفظ النصوص ونشرها", "ok");
-  }catch(err){
-    if (err.code) toast("تعذّر الحفظ: " + err.code, "bad");
-  }finally{
-    btn.disabled = false; btn.textContent = "حفظ ونشر";
-  }
+  fillTexts(); pushHist("تعديل نصوص الموقع");
+  await saveWith($("#btnSaveTexts"), "تم حفظ النصوص ونشرها");
 });
 
-/* ============================================================
-   أحجام الخطوط
-   ============================================================ */
 const PREV_VARS = { desktop:"--p-base", tagline:"--p-tagline", heading:"--p-heading", card:"--p-card" };
-
 function fillType(){
   $$(".slider").forEach(box => {
-    const key = box.dataset.y;
-    const pct = Math.round((Number(TYPE[key]) || 1) * 100);
+    const pct = Math.round((Number(TYPE[box.dataset.y]) || 1) * 100);
     box.querySelector("input").value = pct;
     box.querySelector(".val").textContent = pct + "٪";
   });
-  paintPreview();
-}
-
-function paintPreview(){
   const prev = $(".tprev");
   for (const k in PREV_VARS) prev.style.setProperty(PREV_VARS[k], String(Number(TYPE[k]) || 1));
 }
-
-$$(".slider input").forEach(inp => {
-  inp.addEventListener("input", () => {
-    const box = inp.closest(".slider");
-    const key = box.dataset.y;
-    TYPE[key] = Number(inp.value) / 100;
-    box.querySelector(".val").textContent = inp.value + "٪";
-    paintPreview();
-  });
-});
-
+$$(".slider input").forEach(inp => inp.addEventListener("input", () => {
+  const box = inp.closest(".slider");
+  TYPE[box.dataset.y] = Number(inp.value) / 100;
+  box.querySelector(".val").textContent = inp.value + "٪";
+  const prev = $(".tprev");
+  for (const k in PREV_VARS) prev.style.setProperty(PREV_VARS[k], String(Number(TYPE[k]) || 1));
+  pushStyles(); pushHistSoon("تغيير حجم خط");
+}));
 $("#btnResetType").addEventListener("click", () => {
-  TYPE = Object.assign({}, DEFAULT_TYPE);
-  fillType();
+  TYPE = Object.assign({}, DEFAULT_TYPE); fillType(); pushStyles();
   toast("رجّعت الأحجام الأصلية — اضغط حفظ ونشر لتثبيتها");
 });
-
 $("#btnSaveType").addEventListener("click", async () => {
-  const btn = $("#btnSaveType");
-  btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
-  try{
-    await publish();
-    toast("تم حفظ الأحجام ونشرها", "ok");
-  }catch(err){
-    if (err.code) toast("تعذّر الحفظ: " + err.code, "bad");
-  }finally{
-    btn.disabled = false; btn.textContent = "حفظ ونشر";
-  }
+  await saveWith($("#btnSaveType"), "تم حفظ الأحجام ونشرها");
 });
 
+function fillLogos(){
+  $("#logoFields").innerHTML = LOGO_DEFS.map(d => `
+    <div class="group"><h3>${d.label}</h3></div>
+    <div class="field">
+      <label>رابط الصورة أو ارفع من الجهاز</label>
+      <input type="text" class="ltr" data-logo="${d.key}" placeholder="${d.file}" />
+      <div class="ctl-row" style="margin-top:8px">
+        <input type="file" accept="image/*" data-logofile="${d.key}" style="flex:1" />
+        <button class="btn sm" data-logoclear="${d.key}">مسح</button>
+      </div>
+      <div class="imgprev" data-logoprev="${d.key}"></div>
+      <div class="hint">فاضي = الشعار الأصلي <span class="mono">${d.file}</span></div>
+    </div>`).join("");
+
+  LOGO_DEFS.forEach(d => {
+    const inp = $(`[data-logo="${d.key}"]`);
+    inp.value = LOGOS[d.key] && !LOGOS[d.key].startsWith("data:") ? LOGOS[d.key] : "";
+    inp.addEventListener("input", () => { LOGOS[d.key] = inp.value.trim(); paintLogo(d); pushStyles(); pushHistSoon("تغيير شعار"); });
+    $(`[data-logofile="${d.key}"]`).addEventListener("change", async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      try{
+        LOGOS[d.key] = await compressImage(f, 600, 0.85);
+        paintLogo(d); pushDraft(); pushHist("تغيير شعار"); toast("تم تجهيز الشعار", "ok");
+      }catch(err){ toast("تعذّرت معالجة الصورة", "bad"); }
+    });
+    $(`[data-logoclear="${d.key}"]`).addEventListener("click", () => {
+      delete LOGOS[d.key]; inp.value = ""; paintLogo(d); pushDraft();
+    });
+    paintLogo(d);
+  });
+}
+function paintLogo(d){
+  const box = $(`[data-logoprev="${d.key}"]`);
+  const src = LOGOS[d.key] || d.file;
+  box.innerHTML = `<img src="${esc(src)}" onerror="this.parentNode.innerHTML='<div class=ph>تعذّر تحميل الصورة</div>'" />`;
+}
+$("#btnSaveLogos").addEventListener("click", async () => {
+  await saveWith($("#btnSaveLogos"), "تم حفظ الشعارات ونشرها");
+});
+
+async function saveWith(btn, okMsg){
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = "جارٍ الحفظ…";
+  try{ await publish(); toast(okMsg, "ok"); setDirty(false); }
+  catch(err){ if (err.code) toast("تعذّر الحفظ: " + err.code, "bad"); }
+  finally{ btn.disabled = false; btn.textContent = old; }
+}
+
 /* ============================================================
-   النشر — يبني النسخة العلنية اللي يقراها الموقع
+   النشر
    ============================================================ */
+function draft(){
+  const pub = TOURS.filter(t => t.published !== false)
+    .sort((a,b) => (a.order ?? 0) - (b.order ?? 0))
+    .map(t => ({ slug:t.slug||"", title:t.title||"", location:t.location||"",
+                 address:t.address||"", mapLink:t.mapLink||"",
+                 image:t.image||"", tour:t.tour||"" }));
+  // نستبعد الجولات اللي فُتحت في التبويب بلا تعديل فعلي، حتى لا
+  // تُنشر مدخلات فاضية توهم أن الجولة مخصّصة
+  const tourx = {};
+  for (const k in TOURX){
+    const v = TOURX[k];
+    if (v && Object.keys(v).length) tourx[k] = v;
+  }
+  return { tours:pub, settings:SETTINGS, texts:TEXTS, type:TYPE,
+           logos:LOGOS, edits:EDITS, blocks:BLOCKS, tourx };
+}
+
 async function publish(){
-  const pub = TOURS
-    .filter(t => t.published !== false)
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-    .map(t => ({
-      slug: t.slug || "", title: t.title || "", location: t.location || "",
-      address: t.address || "", mapLink: t.mapLink || "",
-      image: t.image || "", tour: t.tour || ""
-    }));
-
-  const payload = {
-    tours: pub, settings: SETTINGS, texts: TEXTS, type: TYPE,
-    updatedAt: serverTimestamp()
-  };
-
-  const size = JSON.stringify({ tours: pub, settings: SETTINGS, texts: TEXTS }).length;
+  const d = draft();
+  const size = JSON.stringify(d).length;
   if (size > 900000){
-    toast("حجم البيانات كبير جداً بسبب الصور المرفوعة. استعمل الوضع التلقائي أو روابط صور بدل الرفع.", "bad");
+    toast("حجم البيانات كبير جداً بسبب الصور المرفوعة. استعمل روابط صور بدل الرفع.", "bad");
     setStatus("dirty", "النشر متوقف — الحجم كبير");
     throw new Error("payload too large");
   }
-
-  await setDoc(doc(db, "site", "public"), payload);
-  setStatus("live", "منشور · " + pub.length + " جولة");
+  await setDoc(doc(db,"site","public"), Object.assign({}, d, { updatedAt: serverTimestamp() }));
+  setStatus("live", "منشور · " + d.tours.length + " جولة");
+  setDirty(false);
 }
 
 $("#btnPublish").addEventListener("click", async () => {
-  const btn = $("#btnPublish");
-  btn.disabled = true; btn.textContent = "جارٍ النشر…";
-  try{
-    await publish();
-    toast("تم النشر", "ok");
-  }catch(err){
-    if (err.code) toast("تعذّر النشر: " + err.code, "bad");
-  }finally{
-    btn.disabled = false; btn.textContent = "إعادة نشر";
+  const b = $("#btnPublish"); b.disabled = true; b.textContent = "جارٍ النشر…";
+  try{ await publish(); toast("تم النشر", "ok"); }
+  catch(err){ if (err.code) toast("تعذّر النشر: " + err.code, "bad"); }
+  finally{ b.disabled = false; b.textContent = "إعادة نشر"; }
+});
+$("#btnSaveEdits").addEventListener("click", () => saveWith($("#btnSaveEdits"), "تم الحفظ والنشر"));
+$("#btnDiscard").addEventListener("click", () => {
+  askConfirm("تجاهل التعديلات", "بترجع لآخر نسخة منشورة وتضيع التعديلات اللي ما انحفظتش.", async () => {
+    await loadAll(); reloadFrame(); toast("رجّعت آخر نسخة منشورة");
+  });
+});
+
+/* ============================================================
+   المعاينة والمحرّر المرئي
+   ============================================================ */
+const frame = $("#siteFrame");
+let EDIT_MODE = false;
+let DEV = "d";            // الجهاز اللي نعدّل طبقته: d = لابتوب، m = جوال
+let SEL = null;           // مفتاح العنصر المختار
+let frameReady = false;
+
+function ensureFrame(){
+  if (frame.getAttribute("src") === "about:blank"){
+    frame.src = "index.html?preview=1";
+  }
+}
+function reloadFrame(){
+  frameReady = false; closeInspector();
+  frame.src = "index.html?preview=1&t=" + Date.now();
+}
+$("#btnReload").addEventListener("click", reloadFrame);
+
+frame.addEventListener("load", () => {
+  const w = frame.contentWindow;
+  if (!w || !w.__ROAA__) return;
+  frameReady = true;
+  w.__ROAA__.apply(draft());
+  injectEditorCss();
+  armFrame();
+  applyEditMode();
+});
+
+function fdoc(){ try{ return frame.contentDocument; }catch(e){ return null; } }
+
+function pushDraft(){
+  if (!frameReady) return;
+  try{ frame.contentWindow.__ROAA__.apply(draft()); }catch(e){}
+  setTimeout(() => { injectEditorCss(); armFrame(); applyEditMode(); markEdited(); }, 30);
+}
+function pushStyles(){
+  setDirty(true);
+  if (!frameReady) return;
+  try{ frame.contentWindow.__ROAA__.applyStyles(EDITS, BLOCKS, TEXTS, TYPE); }catch(e){}
+  markEdited();
+}
+
+/* ---------- حقن أنماط المحرّر داخل الإطار ---------- */
+function injectEditorCss(){
+  const d = fdoc(); if (!d) return;
+  if (d.getElementById("roaa-editor-css")) return;
+  const s = d.createElement("style");
+  s.id = "roaa-editor-css";
+  s.textContent = `
+    html[data-edit="1"] *{ cursor:crosshair !important; }
+    html[data-edit="1"] [data-el]:hover{ outline:1px dashed rgba(198,163,93,.85) !important; outline-offset:1px; }
+    html[data-edit="1"] [data-el][data-sel="1"]{ outline:2px solid #c6a35d !important; outline-offset:1px; }
+    html[data-edit="1"] [data-el][data-touched="1"]{ box-shadow:inset 0 0 0 1px rgba(192,92,82,.55); }
+  `;
+  d.head.appendChild(s);
+}
+
+function armFrame(){
+  const d = fdoc(); if (!d) return;
+  if (d.__roaaArmed) return;
+  d.__roaaArmed = true;
+  d.addEventListener("click", (e) => {
+    if (!EDIT_MODE) return;
+    e.preventDefault(); e.stopPropagation();
+    const el = e.target.closest("[data-el]");
+    if (el) select(el.getAttribute("data-el"));
+  }, true);
+}
+
+function applyEditMode(){
+  const d = fdoc(); if (!d) return;
+  d.documentElement.setAttribute("data-edit", EDIT_MODE ? "1" : "0");
+}
+
+function markEdited(){
+  const d = fdoc(); if (!d) return;
+  d.querySelectorAll("[data-touched]").forEach(n => n.removeAttribute("data-touched"));
+  for (const k in EDITS){
+    const n = d.querySelector('[data-el="' + CSS.escape(k) + '"]');
+    if (n) n.setAttribute("data-touched", "1");
+  }
+  if (SEL){
+    d.querySelectorAll('[data-sel]').forEach(n => n.removeAttribute("data-sel"));
+    const n = d.querySelector('[data-el="' + CSS.escape(SEL) + '"]');
+    if (n) n.setAttribute("data-sel", "1");
+  }
+}
+
+$("#btnEditMode").addEventListener("click", () => {
+  EDIT_MODE = !EDIT_MODE;
+  $("#btnEditMode").textContent = "وضع التحرير: " + (EDIT_MODE ? "شغّال" : "مغلق");
+  $("#btnEditMode").classList.toggle("on", EDIT_MODE);
+  applyEditMode();
+  if (!EDIT_MODE) closeInspector();
+});
+
+$$(".seg[data-view]").forEach(b => b.addEventListener("click", () => {
+  $$(".seg[data-view]").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  const mob = b.dataset.view === "mobile";
+  $("#frameWrap").classList.toggle("mobile", mob);
+  DEV = mob ? "m" : "d";
+  if (SEL) renderInspector();
+}));
+
+$("#btnResetEdits").addEventListener("click", () => {
+  askConfirm("مسح كل التعديلات",
+    "بيتمسح كل تعديل عملته بمحرّر النقر (النصوص والأحجام والألوان والعناصر المضافة). النصوص من تبويب «النصوص» ما تتأثر.",
+    async () => { EDITS = {}; BLOCKS = []; closeInspector(); pushDraft(); setDirty(true); pushHist("مسح كل التعديلات"); toast("انمسحت التعديلات — اضغط حفظ ونشر لتثبيت"); });
+});
+
+/* ---------- اختيار عنصر ---------- */
+function elInfo(key){
+  const d = fdoc(); if (!d) return null;
+  const el = d.querySelector('[data-el="' + CSS.escape(key) + '"]');
+  if (!el) return null;
+  const cs = frame.contentWindow.getComputedStyle(el);
+  return { el, cs,
+    tag: el.tagName.toLowerCase(),
+    isBlock: el.hasAttribute("data-roaa-block"),
+    hasKids: !!el.querySelector("[data-el]"),
+    label: labelOf(el)
+  };
+}
+
+function labelOf(el){
+  const c = " " + (el.className || "") + " ";
+  if (/\beyebrow\b/.test(c)) return "السطر الصغير فوق";
+  if (/\btagline\b/.test(c)) return "وصف الترويسة";
+  if (/\bmark\b/.test(c))    return "شعار الترويسة";
+  if (/\bsub\b/.test(c))     return "العنوان الإنجليزي";
+  if (/\bsection-head\b/.test(c)) return "رأس القسم";
+  if (/\bportfolio-grid\b/.test(c)) return "شبكة الجولات";
+  if (/\bicon-btn\b/.test(c)) return "زر تواصل";
+  if (/\btag\b/.test(c))     return "وسم";
+  if (/\bhero\b/.test(c))    return "الترويسة";
+  if (/\bsheet\b/.test(c))   return "ورقة الجولة";
+  if (/\bdivider\b/.test(c)) return "فاصل";
+  const t = el.tagName.toLowerCase();
+  return { h1:"عنوان رئيسي", h2:"عنوان قسم", h3:"عنوان فرعي", p:"فقرة", a:"رابط",
+           img:"صورة", span:"نص", div:"حاوية", section:"قسم", header:"ترويسة",
+           footer:"تذييل", main:"جسم الصفحة", button:"زر" }[t] || t;
+}
+
+function select(key){
+  SEL = key;
+  const info = elInfo(key);
+  if (!info) return;
+  $("#ispName").textContent = info.label;
+  $("#ispKey").textContent  = "<" + info.tag + "> · " + key;
+  $("#inspector").classList.add("on");
+  renderInspector();
+  markEdited();
+}
+function closeInspector(){
+  SEL = null;
+  $("#inspector").classList.remove("on");
+  const d = fdoc();
+  if (d) d.querySelectorAll("[data-sel]").forEach(n => n.removeAttribute("data-sel"));
+}
+$("#ispClose").addEventListener("click", closeInspector);
+
+$("#ispParent").addEventListener("click", () => {
+  const info = elInfo(SEL); if (!info) return;
+  const p = info.el.parentElement && info.el.parentElement.closest("[data-el]");
+  if (p) select(p.getAttribute("data-el"));
+  else toast("هذا أعلى عنصر");
+});
+
+/* ---------- قراءة/كتابة قيمة ---------- */
+function E(){ return EDITS[SEL] = EDITS[SEL] || {}; }
+function layer(){ const e = E(); return e[DEV] = e[DEV] || {}; }
+function getVal(prop){
+  const e = EDITS[SEL];
+  if (e && e[DEV] && e[DEV][prop] != null) return e[DEV][prop];
+  return null;
+}
+function setVal(prop, v){
+  const L = layer();
+  if (v === "" || v == null) delete L[prop];
+  else L[prop] = v;
+  cleanup(); pushStyles(); pushHistSoon("تغيير تنسيق");
+}
+function cleanup(){
+  const e = EDITS[SEL]; if (!e) return;
+  ["d","m"].forEach(k => { if (e[k] && !Object.keys(e[k]).length) delete e[k]; });
+  if (!Object.keys(e).length) delete EDITS[SEL];
+}
+
+/* ---------- بناء لوحة الفحص ---------- */
+function renderInspector(){
+  const info = elInfo(SEL); if (!info) return;
+  const cs = info.cs;
+  const px = (v) => Math.round(parseFloat(v) || 0);
+  const body = $("#ispBody");
+  body.innerHTML = "";
+
+  // مبدّل الجهاز
+  add(`<div class="dev-switch">
+        <button data-dev="d" class="${DEV==="d"?"on":""}">لابتوب</button>
+        <button data-dev="m" class="${DEV==="m"?"on":""}">جوال</button>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin:-8px 0 14px;line-height:1.7">
+        ${DEV==="d" ? "تعدّل طبقة اللابتوب — الجوال يرثها ما لم تغيّره." : "تعدّل طبقة الجوال فقط — اللابتوب ما يتأثر."}
+      </div>`);
+
+  // النص
+  if (!info.hasKids && info.tag !== "img"){
+    const cur = (EDITS[SEL] && EDITS[SEL].text != null) ? EDITS[SEL].text : info.el.textContent.trim();
+    add(`<div class="ctl"><label>النص</label><textarea rows="3" id="cText">${esc(cur)}</textarea></div>`);
+    $("#cText").addEventListener("input", (e) => {
+      E().text = e.target.value;
+      if (!e.target.value.trim()) delete E().text;
+      cleanup();
+      const el = elInfo(SEL);
+      if (el) el.el.textContent = e.target.value;
+      setDirty(true); markEdited(); pushHistSoon("تعديل نص");
+    });
+  }
+  if (info.tag === "img"){
+    const cur = (EDITS[SEL] && EDITS[SEL].src) || info.el.getAttribute("src") || "";
+    add(`<div class="ctl"><label>رابط الصورة</label><input type="text" id="cSrc" value="${esc(cur)}" style="direction:ltr;text-align:left"></div>
+         <div class="ctl"><label>أو ارفع صورة</label><input type="file" accept="image/*" id="cSrcFile"></div>`);
+    $("#cSrc").addEventListener("input", (e) => { E().src = e.target.value.trim(); cleanup(); pushDraft(); });
+    $("#cSrcFile").addEventListener("change", async (e) => {
+      const f = e.target.files[0]; if (!f) return;
+      E().src = await compressImage(f, 900, 0.82); pushDraft(); toast("تم تركيب الصورة", "ok");
+    });
+  }
+  if (info.tag === "a"){
+    const cur = (EDITS[SEL] && EDITS[SEL].href) || info.el.getAttribute("href") || "";
+    add(`<div class="ctl"><label>الرابط</label><input type="text" id="cHref" value="${esc(cur)}" style="direction:ltr;text-align:left"></div>`);
+    $("#cHref").addEventListener("input", (e) => { E().href = e.target.value.trim(); cleanup(); pushDraft(); });
+  }
+
+  // حجم الخط
+  range("حجم الخط", "fontSize", px(cs.fontSize), 8, 90, 1, "px");
+  // الوزن
+  select_("سُمك الخط", "fontWeight",
+    [["","الأصلي"],["300","خفيف"],["400","عادي"],["500","متوسط"],["700","عريض"],["800","عريض جداً"],["900","أثقل"]]);
+  // ارتفاع السطر
+  range("ارتفاع السطر", "lineHeight", (parseFloat(cs.lineHeight)/parseFloat(cs.fontSize)||1.6), 0.8, 3.2, 0.05, "");
+  // تباعد الحروف
+  range("تباعد الحروف", "letterSpacing", px(cs.letterSpacing), -3, 14, 0.5, "px");
+  // المحاذاة
+  segs("المحاذاة", "textAlign", [["","الأصلي"],["right","يمين"],["center","وسط"],["left","يسار"]]);
+  // الألوان
+  color("لون النص", "color", cs.color);
+  color("لون الخلفية", "background", cs.backgroundColor);
+  // المسافات
+  range("الحشو الداخلي", "padding", px(cs.paddingTop), 0, 80, 1, "px");
+  range("الهامش الخارجي", "margin", px(cs.marginTop), -60, 100, 1, "px");
+  // المقاسات
+  text_("العرض", "width", "مثال: 100% أو 320px");
+  text_("أقصى عرض", "maxWidth", "مثال: 760px");
+  text_("الارتفاع", "height", "مثال: 220px");
+  range("استدارة الحواف", "borderRadius", px(cs.borderTopLeftRadius), 0, 60, 1, "px");
+  range("الشفافية", "opacity", Math.round((parseFloat(cs.opacity)||1)*100), 0, 100, 1, "%");
+
+  // الإخفاء
+  const hidNow = getVal("display") === "none";
+  add(`<div class="ctl"><label class="toggle"><input type="checkbox" id="cHide" ${hidNow?"checked":""}>
+        <span class="track"></span><span>مخفي على ${DEV==="d"?"اللابتوب":"الجوال"}</span></label></div>`);
+  $("#cHide").addEventListener("change", (e) => {
+    if (e.target.checked){
+      layer().display = "none";
+      // إذا أخفيناه على اللابتوب فقط، نرجّعه ظاهراً على الجوال
+      if (DEV === "d"){
+        const e2 = E(); e2.m = e2.m || {};
+        if (e2.m.display == null) e2.m.display = cs.display === "none" ? "block" : cs.display;
+      }
+    }else{
+      delete layer().display;
+      if (DEV === "d" && E().m && E().m.display && E().m.display !== "none") delete E().m.display;
+    }
+    cleanup(); pushStyles(); renderInspector();
+  });
+
+  // الترتيب
+  add(`<div class="ctl"><label>الترتيب داخل الأب</label>
+        <div class="ctl-row">
+          <button class="btn sm" id="cUp" style="flex:1">▲ فوق</button>
+          <button class="btn sm" id="cDown" style="flex:1">▼ تحت</button>
+        </div></div>`);
+  $("#cUp").addEventListener("click", () => shift(-1));
+  $("#cDown").addEventListener("click", () => shift(+1));
+
+  // إضافة عناصر
+  add(`<div class="ctl"><label>أضف عنصراً جديداً داخل هذا العنصر</label>
+        <div class="addgrid">
+          <button data-add="text">نص</button>
+          <button data-add="heading">عنوان</button>
+          <button data-add="image">صورة</button>
+          <button data-add="button">زر</button>
+          <button data-add="divider">فاصل</button>
+          <button data-add="spacer">مسافة</button>
+        </div></div>`);
+  body.querySelectorAll("[data-add]").forEach(b =>
+    b.addEventListener("click", () => addBlock(b.dataset.add)));
+
+  body.querySelectorAll("[data-dev]").forEach(b => b.addEventListener("click", () => {
+    DEV = b.dataset.dev;
+    $$(".seg[data-view]").forEach(x => x.classList.toggle("on", (x.dataset.view === "mobile") === (DEV === "m")));
+    $("#frameWrap").classList.toggle("mobile", DEV === "m");
+    renderInspector();
+  }));
+
+  $("#ispDelete").textContent = info.isBlock ? "حذف" : "إخفاء نهائي";
+
+  function add(html){ const w = document.createElement("div"); w.innerHTML = html; while (w.firstChild) body.appendChild(w.firstChild); }
+
+  function range(label, prop, fallback, min, max, step, unit){
+    const raw = getVal(prop);
+    const val = raw != null ? parseFloat(raw) : fallback;
+    const id = "r_" + prop;
+    add(`<div class="ctl"><label>${label}</label>
+          <div class="ctl-row">
+            <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}">
+            <span class="val" id="${id}_v">${raw != null ? raw : "الأصلي"}</span>
+          </div>
+          <button class="btn sm" id="${id}_c" style="margin-top:5px;width:100%">إرجاع للأصل</button>
+        </div>`);
+    $("#"+id).addEventListener("input", (e) => {
+      const v = prop === "opacity" ? (e.target.value/100)
+              : prop === "lineHeight" ? e.target.value
+              : e.target.value + unit;
+      $("#"+id+"_v").textContent = v;
+      setVal(prop, String(v));
+    });
+    $("#"+id+"_c").addEventListener("click", () => { setVal(prop, ""); renderInspector(); });
+  }
+  function select_(label, prop, opts){
+    const cur = getVal(prop) || "";
+    const id = "s_" + prop;
+    add(`<div class="ctl"><label>${label}</label><select id="${id}">
+      ${opts.map(([v,t]) => `<option value="${v}" ${v===cur?"selected":""}>${t}</option>`).join("")}
+    </select></div>`);
+    $("#"+id).addEventListener("change", (e) => setVal(prop, e.target.value));
+  }
+  function segs(label, prop, opts){
+    const cur = getVal(prop) || "";
+    const id = "g_" + prop;
+    add(`<div class="ctl"><label>${label}</label><div class="mini-segs" id="${id}">
+      ${opts.map(([v,t]) => `<button data-v="${v}" class="${v===cur?"on":""}">${t}</button>`).join("")}
+    </div></div>`);
+    $("#"+id).querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
+      setVal(prop, b.dataset.v); renderInspector();
+    }));
+  }
+  function color(label, prop, fallback){
+    const raw = getVal(prop);
+    const id = "c_" + prop;
+    add(`<div class="ctl"><label>${label}</label>
+          <div class="ctl-row">
+            <input type="color" id="${id}" value="${toHex(raw || fallback)}">
+            <input type="text" id="${id}_t" value="${esc(raw || "")}" placeholder="الأصلي" style="direction:ltr;text-align:left">
+            <button class="btn sm" id="${id}_c">مسح</button>
+          </div></div>`);
+    $("#"+id).addEventListener("input", (e) => { $("#"+id+"_t").value = e.target.value; setVal(prop, e.target.value); });
+    $("#"+id+"_t").addEventListener("input", (e) => setVal(prop, e.target.value.trim()));
+    $("#"+id+"_c").addEventListener("click", () => { setVal(prop, ""); renderInspector(); });
+  }
+  function text_(label, prop, ph){
+    const id = "t_" + prop;
+    add(`<div class="ctl"><label>${label}</label>
+          <input type="text" id="${id}" value="${esc(getVal(prop) || "")}" placeholder="${ph}" style="direction:ltr;text-align:left"></div>`);
+    $("#"+id).addEventListener("input", (e) => setVal(prop, e.target.value.trim()));
+  }
+}
+
+function toHex(c){
+  if (!c) return "#ffffff";
+  if (/^#[0-9a-f]{6}$/i.test(c)) return c;
+  const m = String(c).match(/rgba?\(([^)]+)\)/);
+  if (!m) return "#ffffff";
+  const [r,g,b] = m[1].split(",").map(n => parseInt(n.trim(), 10));
+  return "#" + [r,g,b].map(n => (n|0).toString(16).padStart(2,"0")).join("");
+}
+
+function shift(dir){
+  const info = elInfo(SEL); if (!info) return;
+  const parent = info.el.parentElement && info.el.parentElement.closest("[data-el]");
+  if (!parent) return toast("ما فيه عنصر أب لنقله داخله");
+  const kids = Array.from(parent.children);
+  const cur = kids.indexOf(info.el);
+  const next = cur + dir;
+  if (next < 0 || next >= kids.length) return toast("وصل الطرف");
+  E().move = { parent: parent.getAttribute("data-el"), index: next };
+  pushDraft(); setDirty(true); pushHist("تغيير ترتيب عنصر");
+}
+
+function addBlock(type){
+  const info = elInfo(SEL); if (!info) return;
+  const key = "b" + Date.now().toString(36);
+  const kids = info.el.children.length;
+  const block = { key, type, parent: SEL, index: kids };
+  if (type === "text")    block.text = "نص جديد — اضغط عليه وعدّله";
+  if (type === "heading") block.text = "عنوان جديد";
+  if (type === "button")  { block.text = "اضغط هنا"; block.href = "https://roaa.ly"; }
+  if (type === "image")   block.src = "";
+  if (type === "spacer")  block.size = 24;
+  if (type === "image"){
+    toast("ضيفت خانة صورة — اضغط عليها في المعاينة وحط رابطها");
+    block.src = "data:image/svg+xml;utf8," + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="#232427"/><text x="200" y="105" fill="#9a978d" font-size="16" text-anchor="middle">صورة</text></svg>');
+  }
+  BLOCKS.push(block);
+  pushDraft(); setDirty(true); pushHist("إضافة عنصر");
+  setTimeout(() => select(key), 120);
+  toast("تمت الإضافة");
+}
+
+$("#ispDelete").addEventListener("click", () => {
+  const info = elInfo(SEL); if (!info) return;
+  if (info.isBlock){
+    BLOCKS = BLOCKS.filter(b => b.key !== SEL);
+    delete EDITS[SEL];
+    closeInspector(); pushDraft(); setDirty(true); pushHist("حذف عنصر"); toast("انحذف العنصر");
+  }else{
+    askConfirm("إخفاء العنصر",
+      "العناصر الأصلية ما تنحذف نهائياً — تنخفي عن الزوار وتقدر ترجّعها في أي وقت من زر «إرجاع للأصل».",
+      async () => {
+        const e = E(); e.d = e.d || {}; e.d.display = "none";
+        if (e.m) delete e.m.display;
+        closeInspector(); pushStyles(); setDirty(true); pushHist("إخفاء عنصر"); toast("انخفى العنصر");
+      });
   }
 });
 
-/* إغلاق النوافذ بمفتاح Esc */
+$("#ispReset").addEventListener("click", () => {
+  if (!SEL) return;
+  delete EDITS[SEL];
+  pushDraft(); setDirty(true); pushHist("إرجاع عنصر لأصله");
+  setTimeout(() => { if (SEL) renderInspector(); }, 150);
+  toast("رجّع العنصر لأصله");
+});
+
+/* إغلاق بمفتاح Esc */
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape"){
     $("#editor").classList.remove("on");
     $("#confirm").classList.remove("on");
+    closeInspector();
   }
 });
+
+
+/* ═══════════════════════════════════════════════════════════════
+   سجل التعديلات — تراجع وإعادة
+   نلتقط لقطة من الحالة القابلة للتحرير بعد كل عملية.
+   ═══════════════════════════════════════════════════════════════ */
+let HIST = [], HPTR = -1, histTimer = null;
+const HIST_MAX = 60;
+
+function snap(){
+  return JSON.stringify({ EDITS, BLOCKS, TEXTS, TYPE, LOGOS, SETTINGS, TOURX });
+}
+function restore(json){
+  const s = JSON.parse(json);
+  EDITS = s.EDITS || {}; BLOCKS = s.BLOCKS || []; TEXTS = s.TEXTS || {};
+  TYPE = s.TYPE || {}; LOGOS = s.LOGOS || {}; SETTINGS = s.SETTINGS || {};
+  TOURX = s.TOURX || {};
+  fillSettings(); fillTexts(); fillType(); fillLogos(); renderTourX();
+  closeInspector(); pushDraft(); setDirty(true); paintHist();
+}
+
+function pushHist(label){
+  const cur = snap();
+  if (HPTR >= 0 && HIST[HPTR] && HIST[HPTR].state === cur) return;  // ما تغيّر شي
+  HIST = HIST.slice(0, HPTR + 1);
+  HIST.push({ label, state: cur, at: new Date() });
+  if (HIST.length > HIST_MAX) HIST.shift();
+  HPTR = HIST.length - 1;
+  paintHist();
+}
+/* للمزالق: نجمّع التغييرات المتتالية في خطوة واحدة */
+function pushHistSoon(label){
+  clearTimeout(histTimer);
+  histTimer = setTimeout(() => pushHist(label), 550);
+}
+
+function paintHist(){
+  $("#btnUndo").disabled = HPTR <= 0;
+  $("#btnRedo").disabled = HPTR >= HIST.length - 1;
+  const box = $("#histList");
+  if (!box) return;
+  box.innerHTML = HIST.map((h, i) => `
+    <div class="hist-item ${i === HPTR ? "now" : ""} ${i > HPTR ? "future" : ""}" data-h="${i}">
+      <span class="dot"></span>
+      <span class="lbl">${esc(h.label)}</span>
+      <span class="tm">${h.at.toLocaleTimeString("ar-LY", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}</span>
+    </div>`).reverse().join("");
+  box.querySelectorAll("[data-h]").forEach(el => el.addEventListener("click", () => {
+    const i = +el.dataset.h;
+    if (i === HPTR) return;
+    HPTR = i; restore(HIST[i].state);
+    toast("رجّعت للحظة: " + HIST[i].label);
+  }));
+}
+
+$("#btnUndo").addEventListener("click", () => {
+  if (HPTR <= 0) return;
+  HPTR--; restore(HIST[HPTR].state);
+  toast("تراجعت عن: " + (HIST[HPTR + 1] ? HIST[HPTR + 1].label : "آخر تعديل"));
+});
+$("#btnRedo").addEventListener("click", () => {
+  if (HPTR >= HIST.length - 1) return;
+  HPTR++; restore(HIST[HPTR].state);
+  toast("أعدت: " + HIST[HPTR].label);
+});
+$("#btnHist").addEventListener("click", () => { paintHist(); $("#history").classList.add("on"); });
+$("#hsClose").addEventListener("click", () => $("#history").classList.remove("on"));
+$("#hsClose2").addEventListener("click", () => $("#history").classList.remove("on"));
+
+/* اختصارات لوحة المفاتيح */
+document.addEventListener("keydown", (e) => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (!mod) return;
+  const k = e.key.toLowerCase();
+  if (k === "z" && !e.shiftKey){ e.preventDefault(); $("#btnUndo").click(); }
+  else if ((k === "z" && e.shiftKey) || k === "y"){ e.preventDefault(); $("#btnRedo").click(); }
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   تخصيص كل جولة
+   ═══════════════════════════════════════════════════════════════ */
+const PARAM_DEFS = [
+  { k:"play",   label:"تشغيل تلقائي",        on:"1", off:"0" },
+  { k:"qs",     label:"بدء سريع",             on:"1", off:"0" },
+  { k:"dh",     label:"عرض المخطط (Dollhouse)", on:"1", off:"0" },
+  { k:"mt",     label:"شريط القياس",          on:"1", off:"0" },
+  { k:"tour",   label:"الجولة الإرشادية",     on:"1", off:"0" },
+  { k:"hl",     label:"قائمة الطوابق",        on:"1", off:"0" },
+  { k:"help",   label:"زر المساعدة",          on:"1", off:"0" },
+  { k:"vr",     label:"وضع VR",               on:"1", off:"0" },
+  { k:"gt",     label:"زر الجولة الإرشادية",  on:"1", off:"0" },
+  { k:"mls",    label:"تحميل مسبق",           on:"1", off:"0" },
+  { k:"nozoom", label:"منع التكبير",          on:"1", off:"0" },
+  { k:"search", label:"البحث",                on:"1", off:"0" },
+  { k:"pin",    label:"العلامات",             on:"1", off:"0" },
+  { k:"portal", label:"البوابات",             on:"1", off:"0" },
+  { k:"f",      label:"التنقل الحر",          on:"1", off:"0" },
+  { k:"lp",     label:"نقطة البداية",         on:"1", off:"0" },
+  { k:"title",  label:"عنوان Matterport",     on:"1", off:"0" },
+  { k:"brand",  label:"علامة Matterport",     on:"1", off:"0" }
+];
+
+const DEFAULT_PARAMS = {
+  play:"1", lang:"en-US", brand:"0", title:"0", hl:"0", help:"0",
+  mt:"1", dh:"1", tour:"0", qs:"1", vr:"0", gt:"0", mls:"0",
+  nozoom:"0", search:"0", pin:"0", portal:"0", f:"1", lp:"0"
+};
+
+function defaultCovers(){
+  return [
+    { id:"logo", name:"حاجز أسفل اليمين", type:"blocker", style:"transparent", z:5,
+      pos:{ anchor:"br", x:8, y:8, w:150, h:66 }, fs:{ x:2, y:12, w:200, h:88 } },
+    { id:"topblock", name:"حاجز أعلى اليسار", type:"blocker", style:"transparent", z:4,
+      pos:{ anchor:"tl", x:0, y:0, w:230, h:70 } },
+    { id:"topleft", name:"مربع اللوجو", type:"logo", style:"light", z:5,
+      pos:{ anchor:"tl", x:5, y:6, w:150, h:38 }, fs:{ x:9, y:10, w:200, h:52 } }
+  ];
+}
+
+let TX_SLUG = null;   // الجولة المفتوحة في تبويب التخصيص
+
+function tx(){
+  if (!TX_SLUG) return null;
+  TOURX[TX_SLUG] = TOURX[TX_SLUG] || {};
+  return TOURX[TX_SLUG];
+}
+
+function renderTourX(){
+  const pick = $("#txPick");
+  if (!pick) return;
+  const list = TOURS.slice().sort((a,b) => (a.order??0)-(b.order??0));
+  if (!list.length){
+    pick.innerHTML = '<option value="">ما فيه جولات بعد</option>';
+    $("#txBody").innerHTML = '<div class="empty"><p>ضيف جولة أول من تبويب «الجولات».</p></div>';
+    return;
+  }
+  if (!TX_SLUG || !list.some(t => t.slug === TX_SLUG)) TX_SLUG = list[0].slug;
+  pick.innerHTML = list.map(t => {
+    const custom = TOURX[t.slug] && Object.keys(TOURX[t.slug]).length;
+    return `<option value="${esc(t.slug)}" ${t.slug===TX_SLUG?"selected":""}>${esc(t.title)}${custom?" ● مخصّصة":" — افتراضية"}</option>`;
+  }).join("");
+  renderTxBody();
+}
+
+$("#txPick").addEventListener("change", (e) => { TX_SLUG = e.target.value; renderTxBody(); });
+
+function renderTxBody(){
+  const x = tx(); if (!x) return;
+  const b = x.brand || {}, t = x.texts || {}, v = x.veil || {};
+  const covers = Array.isArray(x.covers) && x.covers.length ? x.covers : defaultCovers();
+  const isCustomCovers = Array.isArray(x.covers) && x.covers.length > 0;
+  const box = $("#txBody");
+
+  box.innerHTML = `
+    <div class="bar">
+      <button class="btn sm" id="txOpen">افتح هذه الجولة</button>
+      <div class="spacer"></div>
+      <button class="btn sm danger" id="txReset">رجّع هذه الجولة للافتراضي</button>
+    </div>
+
+    <div class="group"><h3>لوجو العميل داخل الجولة</h3></div>
+    <div class="field">
+      <label>رابط اللوجو (يحل محل لوجو رؤى في هذه الجولة فقط)</label>
+      <input type="text" class="ltr" id="txLogo" value="${esc(b.logo||"")}" placeholder="فاضي = لوجو رؤى" />
+      <div class="ctl-row" style="margin-top:8px">
+        <input type="file" accept="image/*" id="txLogoFile" style="flex:1" />
+        <button class="btn sm" id="txLogoClear">مسح</button>
+      </div>
+      <div class="imgprev" id="txLogoPrev"></div>
+    </div>
+    <div class="field">
+      <label>رابط اللوجو عند الضغط</label>
+      <input type="text" class="ltr" id="txLink" value="${esc(b.link||"")}" placeholder="فاضي = رابط رؤى" />
+    </div>
+    <div class="field">
+      <label>شعار شاشة التحميل لهذه الجولة</label>
+      <input type="text" class="ltr" id="txLoadLogo" value="${esc(b.loading||"")}" placeholder="فاضي = شعار رؤى" />
+    </div>
+
+    <div class="group"><h3>نصوص داخل هذه الجولة</h3></div>
+    <div class="row2">
+      <div class="field"><label>الشريط — السطر الأول</label>
+        <input type="text" id="txVeil1" value="${esc(b.veil1||"")}" placeholder="${esc(SETTINGS.veil1||"")}" /></div>
+      <div class="field"><label>الشريط — السطر الثاني</label>
+        <input type="text" id="txVeil2" value="${esc(b.veil2||"")}" placeholder="${esc(SETTINGS.veil2||"")}" /></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>أثناء التحميل</label>
+        <input type="text" id="txTLoading" value="${esc(t.tourLoading||"")}" placeholder="${esc(TEXTS.tourLoading||"يتم التحميل…")}" /></div>
+      <div class="field"><label>عند الجاهزية (الجوال)</label>
+        <input type="text" id="txTReady" value="${esc(t.tourReady||"")}" placeholder="${esc(TEXTS.tourReady||"اضغط لبدء الجولة")}" /></div>
+    </div>
+    <div class="field"><label>زر العودة لملء الشاشة</label>
+      <input type="text" id="txTResume" value="${esc(t.tourResume||"")}" placeholder="${esc(TEXTS.tourResume||"▶ عرض الجولة بملء الشاشة")}" /></div>
+
+    <div class="group"><h3>موضع الشريط وحجمه</h3></div>
+    <div class="cov-grid">
+      <div class="c"><label>من فوق (لابتوب) ٪</label><input type="number" id="txVTop" value="${v.top??""}" placeholder="65"></div>
+      <div class="c"><label>من فوق (جوال) ٪</label><input type="number" id="txVTopM" value="${v.topMob??""}" placeholder="67"></div>
+      <div class="c"><label>حجم الخط px</label><input type="number" id="txVSize" value="${v.size??""}" placeholder="14"></div>
+      <div class="c" style="display:flex;align-items:flex-end">
+        <label class="toggle"><input type="checkbox" id="txVHide" ${v.hidden?"checked":""}>
+          <span class="track"></span><span style="font-size:.75rem">إخفاء</span></label>
+      </div>
+    </div>
+
+    <div class="group"><h3>المربعات الشفافة</h3></div>
+    <div class="note" style="margin-bottom:12px">
+      المربعات تغطي شعارات Matterport وتمنع الضغط عليها.
+      <b>القيم بالبكسل من الزاوية المختارة.</b>
+      ${isCustomCovers ? "هذه الجولة عندها مربعات مخصّصة." : "هذه الجولة على المربعات الافتراضية — أول تعديل يخصّصها."}
+    </div>
+    <div id="txCovers"></div>
+    <button class="btn sm" id="txAddCover">+ مربع جديد</button>
+
+    <div class="group"><h3>إعدادات عرض Matterport</h3></div>
+    <div class="note" style="margin-bottom:12px">
+      «افتراضي» يعني نفس إعداد بقية الجولات. غيّر فقط اللي تحتاجه.
+    </div>
+    <div class="param-grid" id="txParams"></div>
+
+    <div class="bar" style="margin-top:24px">
+      <button class="btn primary" id="txSave">حفظ ونشر</button>
+    </div>`;
+
+  paintTxLogo();
+  renderCovers(covers, isCustomCovers);
+  renderParams(x.params || {});
+
+  const bind = (id, fn) => $(id).addEventListener("input", fn);
+  const setB = (k, val) => { const o = tx(); o.brand = o.brand || {};
+    if (val) o.brand[k] = val; else delete o.brand[k]; tidyTx(); };
+  const setT = (k, val) => { const o = tx(); o.texts = o.texts || {};
+    if (val) o.texts[k] = val; else delete o.texts[k]; tidyTx(); };
+  const setV = (k, val) => { const o = tx(); o.veil = o.veil || {};
+    if (val === "" || val == null) delete o.veil[k]; else o.veil[k] = val; tidyTx(); };
+
+  bind("#txLogo",     e => { setB("logo", e.target.value.trim()); paintTxLogo(); live("لوجو الجولة"); });
+  bind("#txLink",     e => { setB("link", e.target.value.trim()); live("رابط اللوجو"); });
+  bind("#txLoadLogo", e => { setB("loading", e.target.value.trim()); live("شعار التحميل"); });
+  bind("#txVeil1",    e => { setB("veil1", e.target.value.trim()); live("نص الشريط"); });
+  bind("#txVeil2",    e => { setB("veil2", e.target.value.trim()); live("نص الشريط"); });
+  bind("#txTLoading", e => { setT("tourLoading", e.target.value.trim()); live("نص التحميل"); });
+  bind("#txTReady",   e => { setT("tourReady", e.target.value.trim()); live("نص الجاهزية"); });
+  bind("#txTResume",  e => { setT("tourResume", e.target.value.trim()); live("نص زر العودة"); });
+  bind("#txVTop",     e => { setV("top", e.target.value === "" ? "" : +e.target.value); live("موضع الشريط"); });
+  bind("#txVTopM",    e => { setV("topMob", e.target.value === "" ? "" : +e.target.value); live("موضع الشريط"); });
+  bind("#txVSize",    e => { setV("size", e.target.value === "" ? "" : +e.target.value); live("حجم الشريط"); });
+  $("#txVHide").addEventListener("change", e => { setV("hidden", e.target.checked || ""); live("إخفاء الشريط"); });
+
+  $("#txLogoFile").addEventListener("change", async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    setB("logo", await compressImage(f, 600, 0.85));
+    $("#txLogo").value = ""; paintTxLogo(); live("لوجو الجولة"); toast("تم تركيب لوجو العميل", "ok");
+  });
+  $("#txLogoClear").addEventListener("click", () => {
+    setB("logo", ""); $("#txLogo").value = ""; paintTxLogo(); live("مسح لوجو الجولة");
+  });
+  $("#txAddCover").addEventListener("click", () => {
+    const o = tx();
+    o.covers = (Array.isArray(o.covers) && o.covers.length) ? o.covers : defaultCovers();
+    o.covers.push({ id:"c" + Date.now().toString(36), name:"مربع جديد", type:"blocker",
+                    style:"dark", z:5, pos:{ anchor:"tr", x:10, y:10, w:120, h:44 } });
+    renderTxBody(); live("إضافة مربع");
+  });
+  $("#txReset").addEventListener("click", () => {
+    askConfirm("رجوع للافتراضي",
+      "بيتمسح كل تخصيص لهذه الجولة (اللوجو والنصوص والمربعات والإعدادات) وترجع زي بقية الجولات.",
+      async () => { delete TOURX[TX_SLUG]; renderTourX(); live("رجوع جولة للافتراضي"); });
+  });
+  $("#txOpen").addEventListener("click", () => window.open("index.html?p=" + encodeURIComponent(TX_SLUG), "_blank"));
+  $("#txSave").addEventListener("click", () => saveWith($("#txSave"), "تم حفظ تخصيص الجولة ونشره"));
+}
+
+function tidyTx(){
+  const o = TOURX[TX_SLUG]; if (!o) return;
+  ["brand","texts","veil","params"].forEach(k => {
+    if (o[k] && !Object.keys(o[k]).length) delete o[k];
+  });
+  if (Array.isArray(o.covers) && !o.covers.length) delete o.covers;
+  if (!Object.keys(o).length) delete TOURX[TX_SLUG];
+}
+
+function live(label){
+  setDirty(true);
+  markTxOption();
+  pushDraftTour();
+  pushHistSoon(label);
+}
+
+/* يحدّث علامة «مخصّصة / افتراضية» أمام الجولة في القائمة فوراً */
+function markTxOption(){
+  const pick = $("#txPick"); if (!pick || !TX_SLUG) return;
+  const opt = Array.from(pick.options).find(o => o.value === TX_SLUG);
+  if (!opt) return;
+  const t = TOURS.find(x => x.slug === TX_SLUG);
+  const x = TOURX[TX_SLUG];
+  const custom = x && Object.keys(x).length;
+  opt.textContent = (t ? t.title : TX_SLUG) + (custom ? " ● مخصّصة" : " — افتراضية");
+}
+
+/* المعاينة تفتح الجولة المخصّصة نفسها حتى تشوف التغيير مباشرة */
+function pushDraftTour(){
+  if (!frameReady) { return; }
+  try{
+    frame.contentWindow.__ROAA__.apply(draft());
+  }catch(e){}
+}
+
+function paintTxLogo(){
+  const b = (tx() || {}).brand || {};
+  const src = b.logo || LOGOS.wide || "roaa-logo-wide.png";
+  $("#txLogoPrev").innerHTML =
+    `<img src="${esc(src)}" onerror="this.parentNode.innerHTML='<div class=ph>تعذّر تحميل الصورة</div>'" />`;
+}
+
+function renderCovers(covers, isCustom){
+  const box = $("#txCovers");
+  box.innerHTML = covers.map((c, i) => {
+    const p = c.pos || {}, m = c.mob || {}, f = c.fs || {};
+    return `
+    <div class="cov-card ${c.enabled === false ? "off" : ""}" data-ci="${i}">
+      <div class="cov-head">
+        <span class="nm">${esc(c.name || c.id)}</span>
+        <label class="toggle"><input type="checkbox" data-cen="${i}" ${c.enabled === false ? "" : "checked"}>
+          <span class="track"></span></label>
+        <button class="btn icon sm danger" data-cdel="${i}">🗑</button>
+      </div>
+      <div class="row2" style="gap:8px;margin-bottom:9px">
+        <div><label style="font-size:.7rem;color:var(--muted)">النوع</label>
+          <select data-ctype="${i}" style="width:100%;background:var(--ink-2);border:1px solid var(--panel-line);border-radius:2px;color:var(--paper);padding:7px">
+            <option value="blocker" ${c.type==="blocker"?"selected":""}>حاجز شفاف</option>
+            <option value="logo" ${c.type==="logo"?"selected":""}>مربع لوجو</option>
+            <option value="text" ${c.type==="text"?"selected":""}>نص</option>
+          </select></div>
+        <div><label style="font-size:.7rem;color:var(--muted)">الخلفية</label>
+          <select data-cstyle="${i}" style="width:100%;background:var(--ink-2);border:1px solid var(--panel-line);border-radius:2px;color:var(--paper);padding:7px">
+            <option value="transparent" ${(!c.style||c.style==="transparent")?"selected":""}>شفافة</option>
+            <option value="dark" ${c.style==="dark"?"selected":""}>داكنة</option>
+            <option value="light" ${c.style==="light"?"selected":""}>فاتحة</option>
+          </select></div>
+      </div>
+      ${c.type === "text" ? `<div class="field" style="margin-bottom:9px">
+        <input type="text" data-ctext="${i}" value="${esc(c.text||"")}" placeholder="النص"></div>` : ""}
+      <div style="font-size:.7rem;color:var(--gold-soft);margin:8px 0 6px">الزاوية والمقاس — لابتوب</div>
+      <div class="cov-grid">
+        <div class="c"><label>الزاوية</label>
+          <select data-canchor="${i}" style="width:100%;background:var(--ink-2);border:1px solid var(--panel-line);border-radius:2px;color:var(--paper);padding:6px;font-size:.78rem">
+            <option value="tl" ${p.anchor==="tl"?"selected":""}>فوق-يسار</option>
+            <option value="tr" ${p.anchor==="tr"?"selected":""}>فوق-يمين</option>
+            <option value="bl" ${p.anchor==="bl"?"selected":""}>تحت-يسار</option>
+            <option value="br" ${p.anchor==="br"?"selected":""}>تحت-يمين</option>
+          </select></div>
+        <div class="c"><label>أفقي X</label><input type="number" data-cd="${i}|pos|x" value="${p.x??0}"></div>
+        <div class="c"><label>رأسي Y</label><input type="number" data-cd="${i}|pos|y" value="${p.y??0}"></div>
+        <div class="c"><label>العرض</label><input type="number" data-cd="${i}|pos|w" value="${p.w??100}"></div>
+      </div>
+      <div class="cov-grid" style="margin-top:8px">
+        <div class="c"><label>الارتفاع</label><input type="number" data-cd="${i}|pos|h" value="${p.h??40}"></div>
+        <div class="c"><label>الطبقة z</label><input type="number" data-cd="${i}|z|" value="${c.z??5}"></div>
+      </div>
+      <div style="font-size:.7rem;color:var(--gold-soft);margin:12px 0 6px">الجوال — فاضي يعني نفس اللابتوب</div>
+      <div class="cov-grid">
+        <div class="c"><label>X</label><input type="number" data-cd="${i}|mob|x" value="${m.x??""}" placeholder="—"></div>
+        <div class="c"><label>Y</label><input type="number" data-cd="${i}|mob|y" value="${m.y??""}" placeholder="—"></div>
+        <div class="c"><label>العرض</label><input type="number" data-cd="${i}|mob|w" value="${m.w??""}" placeholder="—"></div>
+        <div class="c"><label>الارتفاع</label><input type="number" data-cd="${i}|mob|h" value="${m.h??""}" placeholder="—"></div>
+      </div>
+      <div style="font-size:.7rem;color:var(--gold-soft);margin:12px 0 6px">ملء الشاشة — فاضي يعني نفس اللابتوب</div>
+      <div class="cov-grid">
+        <div class="c"><label>X</label><input type="number" data-cd="${i}|fs|x" value="${f.x??""}" placeholder="—"></div>
+        <div class="c"><label>Y</label><input type="number" data-cd="${i}|fs|y" value="${f.y??""}" placeholder="—"></div>
+        <div class="c"><label>العرض</label><input type="number" data-cd="${i}|fs|w" value="${f.w??""}" placeholder="—"></div>
+        <div class="c"><label>الارتفاع</label><input type="number" data-cd="${i}|fs|h" value="${f.h??""}" placeholder="—"></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  function ensure(){
+    const o = tx();
+    if (!Array.isArray(o.covers) || !o.covers.length) o.covers = defaultCovers();
+    return o.covers;
+  }
+  box.querySelectorAll("[data-cd]").forEach(inp => inp.addEventListener("input", () => {
+    const [i, grp, key] = inp.dataset.cd.split("|");
+    const arr = ensure(); const c = arr[+i]; if (!c) return;
+    const v = inp.value === "" ? null : Number(inp.value);
+    if (grp === "z"){ if (v == null) delete c.z; else c.z = v; }
+    else{
+      c[grp] = c[grp] || {};
+      if (v == null) delete c[grp][key]; else c[grp][key] = v;
+      if (!Object.keys(c[grp]).length && grp !== "pos") delete c[grp];
+    }
+    live("مقاس مربع");
+  }));
+  box.querySelectorAll("[data-canchor]").forEach(s => s.addEventListener("change", () => {
+    const arr = ensure(); const c = arr[+s.dataset.canchor];
+    c.pos = c.pos || {}; c.pos.anchor = s.value; live("زاوية مربع");
+  }));
+  box.querySelectorAll("[data-ctype]").forEach(s => s.addEventListener("change", () => {
+    const arr = ensure(); arr[+s.dataset.ctype].type = s.value; renderTxBody(); live("نوع مربع");
+  }));
+  box.querySelectorAll("[data-cstyle]").forEach(s => s.addEventListener("change", () => {
+    const arr = ensure(); arr[+s.dataset.cstyle].style = s.value; live("خلفية مربع");
+  }));
+  box.querySelectorAll("[data-ctext]").forEach(s => s.addEventListener("input", () => {
+    const arr = ensure(); arr[+s.dataset.ctext].text = s.value; live("نص مربع");
+  }));
+  box.querySelectorAll("[data-cen]").forEach(s => s.addEventListener("change", () => {
+    const arr = ensure(); arr[+s.dataset.cen].enabled = s.checked;
+    s.closest(".cov-card").classList.toggle("off", !s.checked); live("إظهار مربع");
+  }));
+  box.querySelectorAll("[data-cdel]").forEach(b => b.addEventListener("click", () => {
+    const arr = ensure(); const i = +b.dataset.cdel;
+    askConfirm("حذف المربع", `بينحذف <b style="color:var(--paper)">${esc(arr[i].name || arr[i].id)}</b> من هذه الجولة فقط.`,
+      async () => { arr.splice(i,1); renderTxBody(); live("حذف مربع"); });
+  }));
+}
+
+function renderParams(cur){
+  $("#txParams").innerHTML = PARAM_DEFS.map(d => `
+    <div class="p">
+      <label>${d.label}</label>
+      <select data-param="${d.k}">
+        <option value="">افتراضي (${DEFAULT_PARAMS[d.k] === "1" ? "مفعّل" : "مطفي"})</option>
+        <option value="1" ${cur[d.k]==="1"?"selected":""}>مفعّل</option>
+        <option value="0" ${cur[d.k]==="0"?"selected":""}>مطفي</option>
+      </select>
+    </div>`).join("");
+  $("#txParams").querySelectorAll("[data-param]").forEach(s => s.addEventListener("change", () => {
+    const o = tx(); o.params = o.params || {};
+    if (s.value === "") delete o.params[s.dataset.param];
+    else o.params[s.dataset.param] = s.value;
+    tidyTx(); live("إعداد عرض");
+  }));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   تصدير نسخة محدّثة من الموقع
+   نجلب index.html كما هو، ونطبع فيه المحتوى الحالي، وننزّله.
+   ═══════════════════════════════════════════════════════════════ */
+$("#btnExport").addEventListener("click", async () => {
+  const btn = $("#btnExport");
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = "جارٍ التجهيز…";
+  try{
+    const res = await fetch("index.html?raw=" + Date.now(), { cache:"no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    let html = await res.text();
+
+    if (!html.includes("<!--ROAA_BAKED-->")){
+      // ملف قديم بلا موضع طباعة — نضيفه قبل السكربت الأخير
+      const at = html.lastIndexOf("<script>");
+      if (at < 0) throw new Error("no-anchor");
+      html = html.slice(0, at) + "<!--ROAA_BAKED-->\n" + html.slice(at);
+    }
+
+    const data = Object.assign({}, draft(), { bakedAt: new Date().toISOString() });
+    const json = JSON.stringify(data)
+      .replace(/</g, "\\u003c")     // حتى لا يُغلق وسم السكربت مبكراً
+      .replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+
+    const tag = "<script>window.__ROAA_BAKED__ = " + json + ";<\/script>";
+    html = html.replace("<!--ROAA_BAKED-->", tag);
+
+    const blob = new Blob([html], { type:"text/html;charset=utf-8" });
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "index.html";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast("نزّلت النسخة المحدّثة — ارفعها للهوست", "ok");
+  }catch(err){
+    toast("تعذّر التجهيز: " + (err.message || err), "bad");
+  }finally{
+    btn.disabled = false; btn.textContent = old;
+  }
+});
+
+/* تحذير قبل مغادرة الصفحة وفيه تعديلات */
+window.addEventListener("beforeunload", (e) => {
+  if (DIRTY){ e.preventDefault(); e.returnValue = ""; }
+});
+
 </script>
 </body>
 </html>
