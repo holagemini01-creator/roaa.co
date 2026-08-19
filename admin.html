@@ -397,6 +397,22 @@
   .addgrid button:hover{ border-color:var(--gold); color:var(--gold); }
 
   /* ═══════════ التنبيهات ═══════════ */
+  html[dir=ltr] .toast{ border-right:none; border-left:3px solid var(--gold); }
+  html[dir=ltr] .toast.ok{ border-left-color:var(--ok); }
+  html[dir=ltr] .toast.bad{ border-left-color:var(--bad); }
+  html[dir=ltr] .note{ border-right:none; border-left:3px solid var(--gold); }
+  html[dir=ltr] .pick-hint{ border-right:none; border-left:3px solid var(--gold); }
+  html[dir=ltr] .pdesc{ border-right:none; border-left:2px solid var(--gold); }
+  html[dir=ltr] .phelp{ left:auto; right:9px; }
+  html[dir=ltr] .param-grid .p label{ padding-left:0; padding-right:26px; }
+  html[dir=ltr] .toggle .track::after{ right:auto; left:2px; }
+  html[dir=ltr] .toggle input:checked + .track::after{ left:20px; right:auto; }
+  html[dir=ltr] #inspector{ direction:ltr; }
+  @media(min-width:1000px){ html[dir=ltr] #inspector{ left:auto; right:0;
+    border-right:none; border-left:1px solid var(--panel-line); } }
+  html[dir=ltr] .tour-row .meta .sub .slug{ direction:ltr; }
+  html[dir=ltr] .cov-card, html[dir=ltr] .slider{ direction:ltr; }
+
   #toasts{ position:fixed; bottom:calc(16px + var(--safe-b)); left:16px; z-index:400;
            display:flex; flex-direction:column; gap:8px; pointer-events:none; }
   .toast{
@@ -460,6 +476,25 @@
     border-radius:var(--radius); color:var(--paper); padding:6px; font-size:.8rem;
   }
 
+  /* ═══════════ شرح البارامتر ═══════════ */
+  .param-grid .p{ position:relative; }
+  .phelp{
+    position:absolute; top:7px; left:9px;
+    width:20px; height:20px; padding:0; line-height:1;
+    background:var(--panel); border:1px solid var(--panel-line);
+    border-radius:50%; color:var(--muted); font-size:.72rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center; transition:.15s;
+  }
+  .phelp:hover, .phelp.on{ border-color:var(--gold); color:var(--gold); background:var(--gold-dim); }
+  .pdesc{
+    display:none; margin-top:9px; padding:10px 12px;
+    background:var(--panel); border:1px solid var(--panel-line);
+    border-right:2px solid var(--gold);
+    border-radius:var(--radius); font-size:.74rem; line-height:1.85; color:var(--muted);
+  }
+  .pdesc.on{ display:block; }
+  .param-grid .p label{ padding-left:26px; }
+
   #loader{ text-align:center; padding:60px 20px; color:var(--muted); font-size:.85rem; }
 </style>
 </head>
@@ -500,6 +535,7 @@
       <button class="btn icon sm" id="btnUndo" title="تراجع" disabled>↶</button>
       <button class="btn icon sm" id="btnRedo" title="إعادة" disabled>↷</button>
       <button class="btn icon sm" id="btnHist" title="سجل التعديلات">🕘</button>
+      <button class="btn sm" id="btnLang" title="لغة اللوحة">EN</button>
       <div class="who" id="who"></div>
       <button class="btn sm" id="btnOut">خروج</button>
     </div>
@@ -567,6 +603,19 @@
         هذي تنطبق على كل الجولات، وأي جولة تقدر تخالفها من قسمها بالأسفل.
       </div>
       <div class="param-grid" id="gParams"></div>
+
+      <div class="group" style="margin-top:28px"><h3>المربعات الافتراضية — لكل الجولات</h3></div>
+      <div class="note" style="margin-bottom:12px">
+        المربعات الشفافة تغطي أزرار Matterport وتمنع الضغط عليها.
+        <b>الغطاء الجاهز يخفي زر شريط اللقطات ويسيب زر التشغيل ▶ شغّالاً.</b>
+        أي جولة تقدر تخالف هذي المربعات من قسمها بالأسفل.
+      </div>
+      <div id="gCovers"></div>
+      <div class="bar">
+        <button class="btn sm" id="btnAddReelCover">+ غطاء زر شريط اللقطات</button>
+        <button class="btn sm" id="btnAddGCover">+ مربع جديد</button>
+      </div>
+
       <div class="bar" style="margin-top:16px">
         <button class="btn primary" id="btnSaveGParams">حفظ ونشر</button>
         <button class="btn" id="btnResetGParams">رجّع الافتراضي الأصلي</button>
@@ -898,7 +947,7 @@ function slugify(s){
 /* ============================================================
    الحالة
    ============================================================ */
-let TOURS = [], SETTINGS = {}, TEXTS = {}, TYPE = {}, LOGOS = {}, EDITS = {}, BLOCKS = [], TOURX = {}, GPARAMS = {};
+let TOURS = [], SETTINGS = {}, TEXTS = {}, TYPE = {}, LOGOS = {}, EDITS = {}, BLOCKS = [], TOURX = {}, GPARAMS = {}, GCOVERS = null;
 let editingId = null, imgMode = "auto", imgData = "";
 let DIRTY = false;
 
@@ -1024,6 +1073,7 @@ async function loadAll(){
     BLOCKS   = Array.isArray(pub && pub.blocks) ? pub.blocks.slice() : [];
     TOURX    = Object.assign({}, (pub && pub.tourx) || {});
     GPARAMS  = Object.assign({}, (pub && pub.tparams) || {});
+    GCOVERS  = Array.isArray(pub && pub.gcovers) && pub.gcovers.length ? pub.gcovers : null;
 
     fillSettings(); fillTexts(); fillType(); fillLogos(); renderTours(); renderTourX();
     HIST = []; HPTR = -1; pushHist("آخر نسخة منشورة");
@@ -1040,10 +1090,14 @@ async function loadAll(){
   }
 }
 
-function setStatus(kind, txt){
+/* نحفظ الحالة خاماً حتى نعيد بناءها لو اتغيّرت اللغة */
+let LAST_STATUS = null;
+function setStatus(kind, arKey, count){
+  LAST_STATUS = { kind, arKey, count };
   const el = $("#pubStatus");
   el.className = "status " + kind;
-  el.querySelector(".txt").textContent = txt;
+  el.querySelector(".txt").textContent =
+    t(arKey) + (count == null ? "" : " · " + count + " " + t("جولة"));
 }
 
 function setDirty(v){
@@ -1320,7 +1374,7 @@ function fillType(){
   $$(".slider").forEach(box => {
     const pct = Math.round((Number(TYPE[box.dataset.y]) || 1) * 100);
     box.querySelector("input").value = pct;
-    box.querySelector(".val").textContent = pct + "٪";
+    box.querySelector(".val").textContent = pct + (LANG === "en" ? "%" : "٪");
   });
   const prev = $(".tprev");
   for (const k in PREV_VARS) prev.style.setProperty(PREV_VARS[k], String(Number(TYPE[k]) || 1));
@@ -1328,7 +1382,7 @@ function fillType(){
 $$(".slider input").forEach(inp => inp.addEventListener("input", () => {
   const box = inp.closest(".slider");
   TYPE[box.dataset.y] = Number(inp.value) / 100;
-  box.querySelector(".val").textContent = inp.value + "٪";
+  box.querySelector(".val").textContent = inp.value + (LANG === "en" ? "%" : "٪");
   const prev = $(".tprev");
   for (const k in PREV_VARS) prev.style.setProperty(PREV_VARS[k], String(Number(TYPE[k]) || 1));
   pushStyles(); pushHistSoon("تغيير حجم خط");
@@ -1406,7 +1460,8 @@ function draft(){
     if (v && Object.keys(v).length) tourx[k] = v;
   }
   return { tours:pub, settings:SETTINGS, texts:TEXTS, type:TYPE,
-           logos:LOGOS, edits:EDITS, blocks:BLOCKS, tourx, tparams:GPARAMS };
+           logos:LOGOS, edits:EDITS, blocks:BLOCKS, tourx,
+           tparams:GPARAMS, gcovers:GCOVERS || [] };
 }
 
 async function publish(){
@@ -1418,7 +1473,7 @@ async function publish(){
     throw new Error("payload too large");
   }
   await setDoc(doc(db,"site","public"), Object.assign({}, d, { updatedAt: serverTimestamp() }));
-  setStatus("live", "منشور · " + d.tours.length + " جولة");
+  setStatus("live", "منشور", d.tours.length);
   setDirty(false);
 }
 
@@ -1527,7 +1582,7 @@ function markEdited(){
 
 $("#btnEditMode").addEventListener("click", () => {
   EDIT_MODE = !EDIT_MODE;
-  $("#btnEditMode").textContent = "وضع التحرير: " + (EDIT_MODE ? "شغّال" : "مغلق");
+  $("#btnEditMode").textContent = t("وضع التحرير") + ": " + (EDIT_MODE ? t("شغّال") : t("مغلق"));
   $("#btnEditMode").classList.toggle("on", EDIT_MODE);
   applyEditMode();
   if (!EDIT_MODE) closeInspector();
@@ -1892,13 +1947,13 @@ let HIST = [], HPTR = -1, histTimer = null;
 const HIST_MAX = 60;
 
 function snap(){
-  return JSON.stringify({ EDITS, BLOCKS, TEXTS, TYPE, LOGOS, SETTINGS, TOURX, GPARAMS });
+  return JSON.stringify({ EDITS, BLOCKS, TEXTS, TYPE, LOGOS, SETTINGS, TOURX, GPARAMS, GCOVERS });
 }
 function restore(json){
   const s = JSON.parse(json);
   EDITS = s.EDITS || {}; BLOCKS = s.BLOCKS || []; TEXTS = s.TEXTS || {};
   TYPE = s.TYPE || {}; LOGOS = s.LOGOS || {}; SETTINGS = s.SETTINGS || {};
-  TOURX = s.TOURX || {}; GPARAMS = s.GPARAMS || {};
+  TOURX = s.TOURX || {}; GPARAMS = s.GPARAMS || {}; GCOVERS = s.GCOVERS || null;
   fillSettings(); fillTexts(); fillType(); fillLogos(); renderTourX();
   closeInspector(); pushDraft(); setDirty(true); paintHist();
 }
@@ -1964,37 +2019,56 @@ document.addEventListener("keydown", (e) => {
    تخصيص كل جولة
    ═══════════════════════════════════════════════════════════════ */
 const PARAM_DEFS = [
-  { k:"hl", label:"شريط اللقطات — زر التشغيل كفيديو", hint:"هذا هو الزر اللي يشغّل الجولة كأنها فيديو",
-    opts:[["0","يظهر لحظة ثم يختفي"],["1","يبقى ظاهراً"],["2","يبقى مطوياً"]] },
-  { k:"gt", label:"بدء الجولة الإرشادية تلقائياً", hint:"عدد الثواني بعد فتح المكان",
+  { k:"hl", label:"شريط اللقطات وأزراره",
+    desc:"مجموعة أزرار أسفل يسار الجولة: زر فتح شريط اللقطات، وزر التشغيل ▶ اللي يشغّل الجولة كأنها فيديو. Matterport ما يعطي طريقة لفصل الزرين — لو تبي تخفي واحد منهما فقط، حط مربعاً شفافاً فوقه من قسم المربعات.",
+    opts:[["0","تظهر لحظة ثم تختفي"],["1","تبقى ظاهرة ومفتوحة"],["2","تبقى ظاهرة ومطوية"]] },
+  { k:"gt", label:"بدء الجولة الإرشادية تلقائياً",
+    desc:"عدد الثواني بين فتح المكان وبدء الجولة الإرشادية لوحدها. صفر يعني ما تبدأ إلا لما يضغط الزائر زر التشغيل.",
     opts:[["0","لا تبدأ تلقائياً"],["1","بعد ثانية"],["3","بعد ٣ ثوان"],["5","بعد ٥ ثوان"],["10","بعد ١٠ ثوان"]] },
   { k:"tour", label:"نهاية الجولة الإرشادية",
+    desc:"إيش يصير لما تخلص الجولة الإرشادية: تقف عند آخر نقطة، أو ترجع للبداية وتعيد.",
     opts:[["0","تتوقف في النهاية"],["1","تعيد من البداية"]] },
   { k:"play", label:"عند فتح الصفحة",
+    desc:"إما يعرض صورة المكان مع زر تشغيل كبير ينتظر ضغطة الزائر، أو يفتح المكان تلقائياً. موقعك يستعمل شاشة تحميل خاصة، فالفتح التلقائي أنسب.",
     opts:[["0","يعرض زر التشغيل"],["1","يفتح المكان تلقائياً"]] },
   { k:"qs", label:"الدخول السريع للعرض الداخلي",
+    desc:"يدخل الزائر مباشرة داخل المكان بدل ما يبدأ من العرض الخارجي.",
     opts:[["0","معطّل"],["1","مفعّل"]] },
   { k:"dh", label:"شاشة المساعدة",
+    desc:"شرح طريقة التنقل اللي يظهر للزائر. الافتراضي يعرضها لأول زيارة فقط.",
     opts:[["","للزائر الجديد فقط"],["0","مخفية"],["1","كاملة"],["2","مختصرة"]] },
   { k:"mt", label:"تحريك الكاميرا عند العلامات",
+    desc:"أثناء الجولة الإرشادية، تتحرك الكاميرا حركة خفيفة لما توصل علامة جديدة.",
     opts:[["0","بلا تحريك"],["1","تحريك خفيف"]] },
   { k:"f", label:"التنقل بين الطوابق",
+    desc:"أزرار اختيار الطابق. أخفها لو المكان طابق واحد.",
     opts:[["0","مخفي"],["1","متاح"]] },
   { k:"lp", label:"دعوة لاتخاذ إجراء في النهاية",
+    desc:"لوحة تظهر للزائر عند نهاية الجولة الإرشادية، مصدرها إعدادات المكان عند Matterport.",
     opts:[["0","بلا"],["1","كبيرة"],["2","صغيرة"]] },
   { k:"title", label:"عنوان المكان ولوحة المعلومات",
+    desc:"اسم المكان أعلى اليسار ولوحة التفاصيل. موقعك يغطي هذي المنطقة بلوجو رؤى، فالأفضل تبقى مخفية.",
     opts:[["0","الاثنان مخفيان"],["1","الاثنان ظاهران"],["2","العنوان مخفي واللوحة ظاهرة"]] },
   { k:"brand", label:"علامة Matterport (Presented By)",
+    desc:"سطر «Presented By» وبيانات الشركة المالكة للمسح.",
     opts:[["0","مخفية"],["1","ظاهرة"]] },
   { k:"nozoom", label:"التكبير والتصغير",
+    desc:"يمنع الزائر من تكبير الصورة بالعجلة أو بالإصبعين.",
     opts:[["0","متاح"],["1","معطّل"]] },
   { k:"vr", label:"زر VR",
+    desc:"زر تشغيل الجولة بنظارة الواقع الافتراضي.",
     opts:[["0","مخفي"],["1","ظاهر"]] },
   { k:"mls", label:"وضع MLS",
+    desc:"وضع جاهز يشيل العلامات التجارية دفعة واحدة، مصمَّم لمواقع العقارات.",
     opts:[["0","العلامة ظاهرة"],["1","بلا علامة وبلا VR"],["2","بلا لوحة معلومات كذلك"]] },
-  { k:"search", label:"البحث", opts:[["0","مخفي"],["1","ظاهر"]] },
-  { k:"pin", label:"العلامات", opts:[["0","مخفية"],["1","ظاهرة"]] },
-  { k:"portal", label:"البوابات", opts:[["0","مخفية"],["1","ظاهرة"]] }
+  { k:"search", label:"البحث",
+    desc:"مربع البحث داخل المكان.", opts:[["0","مخفي"],["1","ظاهر"]] },
+  { k:"pin", label:"العلامات",
+    desc:"نقاط المعلومات (Mattertags) اللي تنحط على القطع داخل المكان.",
+    opts:[["0","مخفية"],["1","ظاهرة"]] },
+  { k:"portal", label:"البوابات",
+    desc:"نقاط الانتقال بين مساحات مربوطة ببعضها.",
+    opts:[["0","مخفية"],["1","ظاهرة"]] }
 ];
 
 const DEFAULT_PARAMS = {
@@ -2026,17 +2100,17 @@ function renderTourX(){
   const pick = $("#txPick");
   if (!pick) return;
   const list = TOURS.slice().sort((a,b) => (a.order??0)-(b.order??0));
-  renderGlobalParams();
+  renderGlobalParams(); renderGlobalCovers();
   if (!list.length){
     pick.innerHTML = '<option value="">ما فيه جولات بعد</option>';
     $("#txBody").innerHTML = '<div class="empty"><p>ضيف جولة أول من تبويب «الجولات».</p></div>';
     return;
   }
-  renderGlobalParams();
+  renderGlobalParams(); renderGlobalCovers();
   if (!TX_SLUG || !list.some(t => t.slug === TX_SLUG)) TX_SLUG = list[0].slug;
   pick.innerHTML = list.map(t => {
     const custom = TOURX[t.slug] && Object.keys(TOURX[t.slug]).length;
-    return `<option value="${esc(t.slug)}" ${t.slug===TX_SLUG?"selected":""}>${esc(t.title)}${custom?" ● مخصّصة":" — افتراضية"}</option>`;
+    return `<option value="${esc(t.slug)}" ${t.slug===TX_SLUG?"selected":""}>${esc(t.title)}${custom?" "+tr("● مخصّصة"):" "+tr("— افتراضية")}</option>`;
   }).join("");
   renderTxBody();
 }
@@ -2195,7 +2269,7 @@ function markTxOption(){
   const t = TOURS.find(x => x.slug === TX_SLUG);
   const x = TOURX[TX_SLUG];
   const custom = x && Object.keys(x).length;
-  opt.textContent = (t ? t.title : TX_SLUG) + (custom ? " ● مخصّصة" : " — افتراضية");
+  opt.textContent = (t ? t.title : TX_SLUG) + " " + (custom ? tr("● مخصّصة") : tr("— افتراضية"));
 }
 
 /* المعاينة تفتح الجولة المخصّصة نفسها حتى تشوف التغيير مباشرة */
@@ -2214,7 +2288,16 @@ function paintTxLogo(){
 }
 
 function renderCovers(covers, isCustom){
-  const box = $("#txCovers");
+  renderCoverList("#txCovers", covers, () => {
+    const o = tx();
+    if (!Array.isArray(o.covers) || !o.covers.length) o.covers = JSON.parse(JSON.stringify(
+      (Array.isArray(GCOVERS) && GCOVERS.length) ? GCOVERS : defaultCovers()));
+    return o.covers;
+  }, () => { renderTxBody(); live("مربعات الجولة"); }, "tc");
+}
+
+function renderCoverList(boxSel, covers, ensure, rerender, ns){
+  const box = $(boxSel);
   box.innerHTML = covers.map((c, i) => {
     const p = c.pos || {}, m = c.mob || {}, f = c.fs || {};
     return `
@@ -2275,11 +2358,8 @@ function renderCovers(covers, isCustom){
     </div>`;
   }).join("");
 
-  function ensure(){
-    const o = tx();
-    if (!Array.isArray(o.covers) || !o.covers.length) o.covers = defaultCovers();
-    return o.covers;
-  }
+  const touch = () => { setDirty(true); pushDraftTour(); pushHistSoon("تعديل مربع"); };
+
   box.querySelectorAll("[data-cd]").forEach(inp => inp.addEventListener("input", () => {
     const [i, grp, key] = inp.dataset.cd.split("|");
     const arr = ensure(); const c = arr[+i]; if (!c) return;
@@ -2290,29 +2370,30 @@ function renderCovers(covers, isCustom){
       if (v == null) delete c[grp][key]; else c[grp][key] = v;
       if (!Object.keys(c[grp]).length && grp !== "pos") delete c[grp];
     }
-    live("مقاس مربع");
+    touch();
   }));
   box.querySelectorAll("[data-canchor]").forEach(s => s.addEventListener("change", () => {
-    const arr = ensure(); const c = arr[+s.dataset.canchor];
-    c.pos = c.pos || {}; c.pos.anchor = s.value; live("زاوية مربع");
+    const c = ensure()[+s.dataset.canchor];
+    c.pos = c.pos || {}; c.pos.anchor = s.value; touch();
   }));
   box.querySelectorAll("[data-ctype]").forEach(s => s.addEventListener("change", () => {
-    const arr = ensure(); arr[+s.dataset.ctype].type = s.value; renderTxBody(); live("نوع مربع");
+    ensure()[+s.dataset.ctype].type = s.value; rerender();
   }));
   box.querySelectorAll("[data-cstyle]").forEach(s => s.addEventListener("change", () => {
-    const arr = ensure(); arr[+s.dataset.cstyle].style = s.value; live("خلفية مربع");
+    ensure()[+s.dataset.cstyle].style = s.value; touch();
   }));
   box.querySelectorAll("[data-ctext]").forEach(s => s.addEventListener("input", () => {
-    const arr = ensure(); arr[+s.dataset.ctext].text = s.value; live("نص مربع");
+    ensure()[+s.dataset.ctext].text = s.value; touch();
   }));
   box.querySelectorAll("[data-cen]").forEach(s => s.addEventListener("change", () => {
-    const arr = ensure(); arr[+s.dataset.cen].enabled = s.checked;
-    s.closest(".cov-card").classList.toggle("off", !s.checked); live("إظهار مربع");
+    ensure()[+s.dataset.cen].enabled = s.checked;
+    s.closest(".cov-card").classList.toggle("off", !s.checked); touch();
   }));
   box.querySelectorAll("[data-cdel]").forEach(b => b.addEventListener("click", () => {
     const arr = ensure(); const i = +b.dataset.cdel;
-    askConfirm("حذف المربع", `بينحذف <b style="color:var(--paper)">${esc(arr[i].name || arr[i].id)}</b> من هذه الجولة فقط.`,
-      async () => { arr.splice(i,1); renderTxBody(); live("حذف مربع"); });
+    askConfirm("حذف المربع",
+      `بينحذف <b style="color:var(--paper)">${esc(arr[i].name || arr[i].id)}</b>.`,
+      async () => { arr.splice(i,1); rerender(); });
   }));
 }
 
@@ -2321,22 +2402,29 @@ function paramGrid(boxSel, cur, inherited, onChange, inheritLabel){
   const box = $(boxSel);
   const nameOf = (d, v) => {
     const o = d.opts.find(x => x[0] === String(v));
-    return o ? o[1] : v;
+    return t(o ? o[1] : v);
   };
   box.innerHTML = PARAM_DEFS.map(d => {
     const inh = inherited[d.k];
     return `
     <div class="p">
-      <label>${d.label}</label>
+      <label>${esc(t(d.label))}</label>
       <select data-param="${d.k}">
-        <option value="">${inheritLabel} (${esc(nameOf(d, inh == null ? "" : inh))})</option>
-        ${d.opts.map(([v,t]) => `<option value="${v}" ${String(cur[d.k])===v?"selected":""}>${t}</option>`).join("")}
+        <option value="">${esc(t(inheritLabel))} (${esc(nameOf(d, inh == null ? "" : inh))})</option>
+        ${d.opts.map(([v,lbl]) => `<option value="${v}" ${String(cur[d.k])===v?"selected":""}>${esc(t(lbl))}</option>`).join("")}
       </select>
-      ${d.hint ? `<div style="font-size:.66rem;color:var(--gold-soft);margin-top:5px;line-height:1.6">${d.hint}</div>` : ""}
+      ${d.desc ? `<button class="phelp" data-help="${d.k}" title="${esc(t("شرح"))}">؟</button>
+        <div class="pdesc" data-desc="${d.k}">${esc(t(d.desc))}</div>` : ""}
     </div>`;
   }).join("");
   box.querySelectorAll("[data-param]").forEach(s =>
     s.addEventListener("change", () => onChange(s.dataset.param, s.value)));
+  box.querySelectorAll("[data-help]").forEach(b => b.addEventListener("click", (e) => {
+    e.preventDefault();
+    const d = box.querySelector('[data-desc="' + b.dataset.help + '"]');
+    const open = d.classList.toggle("on");
+    b.classList.toggle("on", open);
+  }));
 }
 
 /* إعدادات جولة واحدة — ترث الافتراضي العام */
@@ -2346,6 +2434,29 @@ function renderParams(cur){
     if (v === "") delete o.params[k]; else o.params[k] = v;
     tidyTx(); live("إعداد عرض للجولة");
   }, "زي بقية الجولات");
+}
+
+/* غطاء جاهز فوق زر شريط اللقطات (أسفل يسار إطار الجولة).
+   المقاس مأخوذ من شريط أدوات Matterport، وقابل للضبط بعدها. */
+function reelCover(){
+  return { id:"reelbtn", name:"غطاء زر شريط اللقطات", type:"blocker", style:"transparent", z:6,
+           pos:{ anchor:"bl", x:6, y:14, w:52, h:52 },
+           mob:{ x:4, y:10, w:44, h:44 },
+           fs: { x:8, y:18, w:58, h:58 } };
+}
+
+function ensureGCovers(){
+  if (!Array.isArray(GCOVERS) || !GCOVERS.length) GCOVERS = defaultCovers();
+  return GCOVERS;
+}
+
+function renderGlobalCovers(){
+  if (!$("#gCovers")) return;
+  const list = (Array.isArray(GCOVERS) && GCOVERS.length) ? GCOVERS : defaultCovers();
+  renderCoverList("#gCovers", list, ensureGCovers, () => {
+    renderGlobalCovers(); setDirty(true); pushDraftTour(); pushHistSoon("مربعات عامة");
+  }, "gc");
+  $("#btnAddReelCover").disabled = list.some(c => c.id === "reelbtn");
 }
 
 /* الإعدادات الافتراضية لكل الجولات */
@@ -2360,12 +2471,25 @@ function renderGlobalParams(){
 }
 
 document.addEventListener("click", (e) => {
+  if (e.target && e.target.id === "btnAddReelCover"){
+    const arr = ensureGCovers();
+    if (!arr.some(c => c.id === "reelbtn")) arr.push(reelCover());
+    renderGlobalCovers(); setDirty(true); pushDraftTour(); pushHist("غطاء زر شريط اللقطات");
+    toast("انضاف الغطاء — عاين الجولة واضبط المقاس لو احتاج", "ok");
+  }
+  if (e.target && e.target.id === "btnAddGCover"){
+    const arr = ensureGCovers();
+    arr.push({ id:"g" + Date.now().toString(36), name:"مربع جديد", type:"blocker",
+               style:"dark", z:5, pos:{ anchor:"tr", x:10, y:10, w:120, h:44 } });
+    renderGlobalCovers(); setDirty(true); pushDraftTour(); pushHist("إضافة مربع عام");
+  }
   if (e.target && e.target.id === "btnSaveGParams"){
     saveWith(e.target, "تم حفظ إعدادات العرض العامة ونشرها");
   }
   if (e.target && e.target.id === "btnResetGParams"){
-    GPARAMS = {}; renderGlobalParams(); setDirty(true);
-    pushDraftTour(); pushHist("رجوع إعدادات العرض للأصل");
+    GPARAMS = {}; GCOVERS = null;
+    renderGlobalParams(); renderGlobalCovers(); setDirty(true);
+    pushDraftTour(); pushHist("رجوع الإعدادات العامة للأصل");
     toast("رجّعت الإعدادات الأصلية — اضغط حفظ ونشر لتثبيتها");
   }
 });
@@ -2411,6 +2535,474 @@ $("#btnExport").addEventListener("click", async () => {
     btn.disabled = false; btn.textContent = old;
   }
 });
+
+
+/* ═══════════════════════════════════════════════════════════════
+   لغة اللوحة — عربي ⇄ إنجليزي
+
+   الترجمة تُطبَّق على نصوص الواجهة فقط. محتوى موقعك (أسماء الجولات،
+   النصوص اللي كتبتها، القيم داخل الخانات) ما يُترجم أبداً.
+   ═══════════════════════════════════════════════════════════════ */
+const I18N = {
+  // ── الترويسة والتبويبات ──
+  "لوحة التحكم":"Control Panel",
+  "ROAA CONTROL PANEL":"ROAA CONTROL PANEL",
+  "خروج":"Sign out", "دخول":"Sign in", "جارٍ الدخول…":"Signing in…",
+  "البريد الإلكتروني":"Email", "كلمة المرور":"Password",
+  "تراجع":"Undo", "إعادة":"Redo", "سجل التعديلات":"Change history",
+  "الجولات":"Tours", "المعاينة والتحرير":"Preview & Edit",
+  "تخصيص الجولات":"Tour Settings", "النصوص":"Texts",
+  "الخطوط":"Typography", "الشعارات":"Logos", "التواصل":"Contact",
+
+  // ── عام ──
+  "حفظ ونشر":"Save & publish", "إعادة نشر":"Republish", "إلغاء":"Cancel",
+  "تأكيد":"Confirm", "تراجع ":"Back", "إغلاق":"Close", "تحديث":"Reload",
+  "حذف":"Delete", "تعديل":"Edit", "مسح":"Clear", "شرح":"What is this?",
+  "تجاهل":"Discard", "معاينة":"Preview", "فتح الموقع":"Open site",
+  "جارٍ التحميل…":"Loading…", "جارٍ الحفظ…":"Saving…", "جارٍ النشر…":"Publishing…",
+  "جارٍ التجهيز…":"Preparing…", "جارٍ الاستيراد…":"Importing…",
+  "منشور":"Published", "لم يُنشر بعد":"Not published yet",
+  "فيه تعديلات ما انحفظتش":"You have unsaved changes",
+  "لابتوب":"Desktop", "جوال":"Mobile", "عنصر":"Element",
+  "اختر العنصر الأب":"Select parent element",
+
+  // ── الجولات ──
+  "+ جولة جديدة":"+ New tour", "جولة جديدة":"New tour", "تعديل الجولة":"Edit tour",
+  "نزّل نسخة محدّثة":"Download updated copy",
+  "ما فيه جولات بعد":"No tours yet",
+  "استيراد الجولات الثمانية الحالية":"Import the 8 existing tours",
+  "منشورة":"Published", "مخفية":"Hidden",
+  "اسم الجولة":"Tour name",
+  "رابط الجولة من Matterport":"Matterport tour link",
+  "الصق الرابط زي ما هو. اللوحة تنظّفه وتوحّد إعدادات العرض تلقائياً.":
+    "Paste the link as-is. The panel cleans it and applies your display settings automatically.",
+  "المدينة / المنطقة":"City / area", "العنوان التفصيلي":"Street address",
+  "رابط الموقع على الخريطة":"Map link",
+  "توليد الآن":"Generate now",
+  "اتركه فاضي وبيتولّد تلقائياً من العنوان.":"Leave empty and it is generated from the address.",
+  "المعرّف في الرابط (slug)":"URL identifier (slug)",
+  "الرابط المستقل:":"Direct link:",
+  "صورة البطاقة":"Card image",
+  "تلقائي من الجولة":"Auto from tour", "رابط صورة":"Image URL", "رفع من الجهاز":"Upload",
+  "لا توجد صورة":"No image", "تعذّر تحميل الصورة":"Could not load image",
+  "تُسحب الصورة المصغّرة من Matterport تلقائياً — بدون رفع ولا مساحة تخزين.":
+    "The thumbnail is pulled from Matterport automatically — no upload, no storage.",
+  "أي رابط صورة مباشر ينتهي بـ jpg أو png أو webp.":"Any direct image URL ending in jpg, png or webp.",
+  "الصورة تُضغط تلقائياً قبل الحفظ.":"The image is compressed automatically before saving.",
+  "ظاهرة للزوار في مكتبة الأعمال":"Visible to visitors in the portfolio",
+  "تأكيد الحذف":"Confirm deletion",
+  "اسم الجولة مطلوب":"Tour name is required",
+  "الرابط لازم يكون رابط Matterport فيه معرّف الجولة (m=...).":
+    "The link must be a Matterport URL containing the tour id (m=...).",
+  "المعرّف يقبل حروف إنجليزية صغيرة وأرقام وشرطة فقط.":
+    "The identifier accepts lowercase letters, numbers and hyphens only.",
+  "المعرّف مستخدم في جولة أخرى — اختر واحد غيره.":
+    "That identifier is already used by another tour — pick a different one.",
+
+  // ── المعاينة والتحرير ──
+  "وضع التحرير":"Edit mode", "وضع التحرير: مغلق":"Edit mode: off",
+  "وضع التحرير: شغّال":"Edit mode: on", "شغّال":"on", "مغلق":"off",
+  "مسح كل التعديلات":"Clear all edits",
+  "معاينة موقع رؤى":"Roaa site preview",
+  "النص":"Text", "الرابط":"Link", "رابط الصورة":"Image URL", "أو ارفع صورة":"Or upload an image",
+  "حجم الخط":"Font size", "سُمك الخط":"Font weight", "ارتفاع السطر":"Line height",
+  "تباعد الحروف":"Letter spacing", "المحاذاة":"Alignment",
+  "لون النص":"Text colour", "لون الخلفية":"Background colour",
+  "الحشو الداخلي":"Padding", "الهامش الخارجي":"Margin",
+  "العرض":"Width", "أقصى عرض":"Max width", "الارتفاع":"Height",
+  "استدارة الحواف":"Corner radius", "الشفافية":"Opacity",
+  "الترتيب داخل الأب":"Order within parent",
+  "▲ فوق":"▲ Up", "▼ تحت":"▼ Down",
+  "أضف عنصراً جديداً داخل هذا العنصر":"Add a new element inside this one",
+  "نص":"Text", "عنوان":"Heading", "صورة":"Image", "زر":"Button",
+  "فاصل":"Divider", "مسافة":"Spacer",
+  "إرجاع للأصل":"Reset to original", "إخفاء نهائي":"Hide permanently",
+  "الأصلي":"Original", "الأصلي ":"Default",
+  "خفيف":"Light", "عادي":"Normal", "متوسط":"Medium",
+  "عريض":"Bold", "عريض جداً":"Extra bold", "أثقل":"Heaviest",
+  "يمين":"Right", "وسط":"Centre", "يسار":"Left",
+  "تعدّل طبقة اللابتوب — الجوال يرثها ما لم تغيّره.":
+    "Editing the desktop layer — mobile inherits it unless you change it.",
+  "تعدّل طبقة الجوال فقط — اللابتوب ما يتأثر.":
+    "Editing the mobile layer only — desktop is unaffected.",
+  "هذا أعلى عنصر":"This is the topmost element",
+  "وصل الطرف":"Already at the end",
+  "ما فيه عنصر أب لنقله داخله":"No parent element to move within",
+  "إخفاء العنصر":"Hide element",
+  "انخفى العنصر":"Element hidden", "انحذف العنصر":"Element deleted",
+  "رجّع العنصر لأصله":"Element reset to original",
+  "تمت الإضافة":"Added",
+
+  // ── تخصيص الجولات ──
+  "إعدادات العرض الافتراضية — لكل الجولات":"Default display settings — all tours",
+  "المربعات الافتراضية — لكل الجولات":"Default cover boxes — all tours",
+  "تخصيص جولة بعينها":"Customise a specific tour",
+  "اختر الجولة":"Choose a tour",
+  "افتح هذه الجولة":"Open this tour",
+  "رجّع هذه الجولة للافتراضي":"Reset this tour to defaults",
+  "رجّع الافتراضي الأصلي":"Reset to original defaults",
+  "+ غطاء زر شريط اللقطات":"+ Cover the highlight-reel button",
+  "+ مربع جديد":"+ New box",
+  "لوجو العميل داخل الجولة":"Client logo inside the tour",
+  "رابط اللوجو (يحل محل لوجو رؤى في هذه الجولة فقط)":
+    "Logo URL (replaces the Roaa logo in this tour only)",
+  "فاضي = لوجو رؤى":"Empty = Roaa logo",
+  "رابط اللوجو عند الضغط":"Logo click-through link",
+  "فاضي = رابط رؤى":"Empty = Roaa link",
+  "شعار شاشة التحميل لهذه الجولة":"Loading-screen logo for this tour",
+  "فاضي = شعار رؤى":"Empty = Roaa logo",
+  "نصوص داخل هذه الجولة":"Texts inside this tour",
+  "الشريط — السطر الأول":"Banner — first line",
+  "الشريط — السطر الثاني":"Banner — second line",
+  "أثناء التحميل":"While loading",
+  "عند الجاهزية (الجوال)":"When ready (mobile)",
+  "زر العودة لملء الشاشة":"Return-to-fullscreen button",
+  "موضع الشريط وحجمه":"Banner position and size",
+  "من فوق (لابتوب) ٪":"From top (desktop) %",
+  "من فوق (جوال) ٪":"From top (mobile) %",
+  "حجم الخط px":"Font size px", "إخفاء":"Hide",
+  "المربعات الشفافة":"Cover boxes",
+  "النوع":"Type", "الخلفية":"Background",
+  "حاجز شفاف":"Transparent blocker", "مربع لوجو":"Logo box",
+  "شفافة":"Transparent", "داكنة":"Dark", "فاتحة":"Light",
+  "الزاوية والمقاس — لابتوب":"Corner and size — desktop",
+  "الجوال — فاضي يعني نفس اللابتوب":"Mobile — empty means same as desktop",
+  "ملء الشاشة — فاضي يعني نفس اللابتوب":"Fullscreen — empty means same as desktop",
+  "الزاوية":"Corner", "أفقي X":"Horizontal X", "رأسي Y":"Vertical Y",
+  "الطبقة z":"Layer z",
+  "فوق-يسار":"Top-left", "فوق-يمين":"Top-right",
+  "تحت-يسار":"Bottom-left", "تحت-يمين":"Bottom-right",
+  "إعدادات عرض Matterport":"Matterport display settings",
+  "حذف المربع":"Delete box",
+  "زي بقية الجولات":"Same as other tours",
+  "— افتراضية":"— default", "● مخصّصة":"● customised",
+  "حاجز أسفل اليمين":"Bottom-right blocker",
+  "حاجز أعلى اليسار":"Top-left blocker",
+  "مربع اللوجو":"Logo box", "مربع جديد":"New box",
+  "غطاء زر شريط اللقطات":"Highlight-reel button cover",
+  "ضيف جولة أول من تبويب «الجولات».":"Add a tour first from the Tours tab.",
+
+  // ── إعدادات Matterport ──
+  "شريط اللقطات وأزراره":"Highlight reel and its buttons",
+  "بدء الجولة الإرشادية تلقائياً":"Auto-start the guided tour",
+  "نهاية الجولة الإرشادية":"End of the guided tour",
+  "عند فتح الصفحة":"On page open",
+  "الدخول السريع للعرض الداخلي":"Quick start into Inside View",
+  "شاشة المساعدة":"Help screen",
+  "تحريك الكاميرا عند العلامات":"Camera pan at tags",
+  "التنقل بين الطوابق":"Floor switching",
+  "دعوة لاتخاذ إجراء في النهاية":"Call to action at the end",
+  "عنوان المكان ولوحة المعلومات":"Space title and info panel",
+  "علامة Matterport (Presented By)":"Matterport branding (Presented By)",
+  "التكبير والتصغير":"Zoom",
+  "زر VR":"VR button", "وضع MLS":"MLS mode",
+  "البحث":"Search", "العلامات":"Tags", "البوابات":"Portals",
+  "تظهر لحظة ثم تختفي":"Show briefly then hide",
+  "تبقى ظاهرة ومفتوحة":"Stay visible, expanded",
+  "تبقى ظاهرة ومطوية":"Stay visible, collapsed",
+  "لا تبدأ تلقائياً":"Do not auto-start",
+  "بعد ثانية":"After 1 second", "بعد ٣ ثوان":"After 3 seconds",
+  "بعد ٥ ثوان":"After 5 seconds", "بعد ١٠ ثوان":"After 10 seconds",
+  "تتوقف في النهاية":"Stops at the end", "تعيد من البداية":"Loops back to the start",
+  "يعرض زر التشغيل":"Show the play button", "يفتح المكان تلقائياً":"Open the space automatically",
+  "معطّل":"Off", "مفعّل":"On", "مخفي":"Hidden", "مخفية":"Hidden",
+  "ظاهر":"Visible", "ظاهرة":"Visible", "متاح":"Available",
+  "للزائر الجديد فقط":"First-time visitors only",
+  "كاملة":"Full", "مختصرة":"Concise",
+  "بلا تحريك":"No pan", "تحريك خفيف":"Gentle pan",
+  "بلا":"None", "كبيرة":"Large", "صغيرة":"Small",
+  "الاثنان مخفيان":"Both hidden", "الاثنان ظاهران":"Both visible",
+  "العنوان مخفي واللوحة ظاهرة":"Title hidden, panel visible",
+  "العلامة ظاهرة":"Branding visible",
+  "بلا علامة وبلا VR":"No branding, no VR",
+  "بلا لوحة معلومات كذلك":"No info panel either",
+
+  // شروح البارامترات
+  "مجموعة أزرار أسفل يسار الجولة: زر فتح شريط اللقطات، وزر التشغيل ▶ اللي يشغّل الجولة كأنها فيديو. Matterport ما يعطي طريقة لفصل الزرين — لو تبي تخفي واحد منهما فقط، حط مربعاً شفافاً فوقه من قسم المربعات.":
+    "The button group at the bottom-left of the tour: the highlight-reel toggle, and the ▶ play button that runs the tour like a video. Matterport gives no way to separate the two — to hide just one, place a transparent box over it from the cover-boxes section.",
+  "عدد الثواني بين فتح المكان وبدء الجولة الإرشادية لوحدها. صفر يعني ما تبدأ إلا لما يضغط الزائر زر التشغيل.":
+    "Seconds between opening the space and the guided tour starting on its own. Zero means it only starts when the visitor presses play.",
+  "إيش يصير لما تخلص الجولة الإرشادية: تقف عند آخر نقطة، أو ترجع للبداية وتعيد.":
+    "What happens when the guided tour finishes: stop at the last point, or loop back to the start.",
+  "إما يعرض صورة المكان مع زر تشغيل كبير ينتظر ضغطة الزائر، أو يفتح المكان تلقائياً. موقعك يستعمل شاشة تحميل خاصة، فالفتح التلقائي أنسب.":
+    "Either show a cover image with a large play button and wait for the visitor, or open the space automatically. Your site uses its own loading screen, so opening automatically fits better.",
+  "يدخل الزائر مباشرة داخل المكان بدل ما يبدأ من العرض الخارجي.":
+    "Takes the visitor straight inside the space instead of starting from the outside view.",
+  "شرح طريقة التنقل اللي يظهر للزائر. الافتراضي يعرضها لأول زيارة فقط.":
+    "The navigation help shown to visitors. The default shows it on a first visit only.",
+  "أثناء الجولة الإرشادية، تتحرك الكاميرا حركة خفيفة لما توصل علامة جديدة.":
+    "During the guided tour, the camera pans gently when it reaches a new tag.",
+  "أزرار اختيار الطابق. أخفها لو المكان طابق واحد.":
+    "Floor selection buttons. Hide them if the space is a single floor.",
+  "لوحة تظهر للزائر عند نهاية الجولة الإرشادية، مصدرها إعدادات المكان عند Matterport.":
+    "A panel shown at the end of the guided tour, configured on the Matterport space itself.",
+  "اسم المكان أعلى اليسار ولوحة التفاصيل. موقعك يغطي هذي المنطقة بلوجو رؤى، فالأفضل تبقى مخفية.":
+    "The space name at the top-left and its details panel. Your site covers that area with the Roaa logo, so hidden is best.",
+  "سطر «Presented By» وبيانات الشركة المالكة للمسح.":
+    "The “Presented By” line and the scanning company's details.",
+  "يمنع الزائر من تكبير الصورة بالعجلة أو بالإصبعين.":
+    "Stops visitors zooming with the wheel or a pinch.",
+  "زر تشغيل الجولة بنظارة الواقع الافتراضي.":"Button to view the tour in a VR headset.",
+  "وضع جاهز يشيل العلامات التجارية دفعة واحدة، مصمَّم لمواقع العقارات.":
+    "A preset that strips branding in one go, built for real-estate listings.",
+  "مربع البحث داخل المكان.":"The search box inside the space.",
+  "نقاط المعلومات (Mattertags) اللي تنحط على القطع داخل المكان.":
+    "The information points (Mattertags) placed on items inside the space.",
+  "نقاط الانتقال بين مساحات مربوطة ببعضها.":"Transition points between linked spaces.",
+
+  // ── النصوص ──
+  "الترويسة":"Header", "إطار الجولة":"Tour frame",
+  "قسم الخدمات":"Services section", "مكتبة الأعمال ":"Portfolio",
+  "قسم التواصل":"Contact section", "التذييل":"Footer",
+  "معلومات الصفحة":"Page information",
+  "نصوص داخل الجولة (الافتراضية للكل)":"Texts inside tours (defaults for all)",
+  "السطر الصغير فوق":"Small line above",
+  "الوصف — السطر الأول":"Tagline — first line",
+  "الوصف — السطر الثاني":"Tagline — second line",
+  "وسم الجولة":"Tour tag", "وسم المقياس":"Scale tag",
+  "نص زر الخريطة":"Map button label",
+  "العنوان":"Heading", "العنوان الإنجليزي":"English subheading",
+  "نص الفقرة":"Paragraph text",
+  "اسم العلامة":"Brand name", "نص الحقوق":"Copyright line",
+  "عنوان التبويب في المتصفح":"Browser tab title",
+  "وصف الموقع لمحركات البحث":"Search-engine description",
+  "عنوان الحالة الفارغة":"Empty-state heading",
+  "شرح الحالة الفارغة":"Empty-state description",
+  "كل سطر مكتوب في الموقع تقدر تغيّره من هنا.":"Every line on the site can be changed here.",
+  "اترك أي خانة فاضية وبيرجع النص الأصلي المكتوب في الملف.":
+    "Leave a field empty and the original text from the file comes back.",
+
+  // ── الخطوط ──
+  "المقياس العام":"Global scale", "عناصر محددة":"Specific elements",
+  "اللابتوب والشاشات الكبيرة":"Desktop and large screens",
+  "الجوال والتابلت":"Phone and tablet",
+  "وصف الترويسة":"Header tagline", "عناوين الأقسام":"Section headings",
+  "أسماء الجولات في المكتبة":"Tour names in the portfolio",
+  "رجّع الأحجام الأصلية":"Reset to original sizes",
+  "١٠٠٪ هو الحجم الأصلي.":"100% is the original size.",
+
+  // ── الشعارات ──
+  "شعار الترويسة والأيقونة":"Header logo and favicon",
+  "شعار شاشة تحميل الجولة":"Tour loading-screen logo",
+  "الشعار العريض داخل الجولة":"Wide logo inside the tour",
+  "رابط الصورة أو ارفع من الجهاز":"Image URL, or upload from your device",
+  "اترك أي خانة فاضية وبيرجع الشعار الأصلي المرفوع مع الموقع.":
+    "Leave a field empty and the original logo shipped with the site comes back.",
+  "الأفضل ترفع صورة بخلفية شفافة (PNG).":"A transparent-background PNG works best.",
+
+  // ── التواصل ──
+  "رقم الواتساب":"WhatsApp number",
+  "بالصيغة الدولية بدون + وبدون أصفار في البداية.":
+    "International format, without + and without leading zeros.",
+  "رسالة الواتساب الجاهزة":"Pre-filled WhatsApp message",
+  "رابط فيسبوك":"Facebook URL", "رابط لينكدإن":"LinkedIn URL",
+  "نص الشريط — السطر الأول":"Banner text — first line",
+  "نص الشريط — السطر الثاني":"Banner text — second line",
+  "رابط موقعك (لوجو أعلى اليسار داخل الجولة)":
+    "Your site URL (top-left logo inside the tour)",
+  "هذي القيم تظهر للزوار في أزرار التواصل وفي شريط العلامة داخل الجولة.":
+    "These appear to visitors on the contact buttons and on the brand banner inside tours.",
+
+  // ── السجل ──
+  "اضغط أي سطر للرجوع لتلك اللحظة":"Click any row to return to that moment",
+  "آخر نسخة منشورة":"Last published version",
+  "تعديل نص":"Text edit", "تغيير تنسيق":"Style change",
+  "إضافة عنصر":"Element added", "حذف عنصر":"Element deleted",
+  "إخفاء عنصر":"Element hidden", "إرجاع عنصر لأصله":"Element reset",
+  "تغيير ترتيب عنصر":"Element reordered", "مسح كل التعديلات ":"All edits cleared",
+  "تعديل نصوص الموقع":"Site texts edited", "تغيير حجم خط":"Font size changed",
+  "تغيير شعار":"Logo changed", "تعديل بيانات التواصل":"Contact details edited",
+  "لوجو الجولة":"Tour logo", "رابط اللوجو":"Logo link", "شعار التحميل":"Loading logo",
+  "نص الشريط":"Banner text", "نص التحميل":"Loading text",
+  "نص الجاهزية":"Ready text", "نص زر العودة":"Return button text",
+  "موضع الشريط":"Banner position", "حجم الشريط":"Banner size",
+  "إخفاء الشريط":"Banner hidden", "مسح لوجو الجولة":"Tour logo cleared",
+  "إضافة مربع":"Box added", "مقاس مربع":"Box size", "زاوية مربع":"Box corner",
+  "نوع مربع":"Box type", "خلفية مربع":"Box background", "نص مربع":"Box text",
+  "إظهار مربع":"Box visibility", "حذف مربع":"Box deleted",
+  "تعديل مربع":"Box edited", "مربعات الجولة":"Tour boxes", "مربعات عامة":"Global boxes",
+  "رجوع جولة للافتراضي":"Tour reset to defaults",
+  "إعداد عرض للجولة":"Tour display setting", "إعداد عرض عام":"Global display setting",
+  "رجوع الإعدادات العامة للأصل":"Global settings reset",
+  "غطاء زر شريط اللقطات ":"Highlight-reel cover added",
+  "إضافة مربع عام":"Global box added",
+
+  // ── الرسائل ──
+  "تم الحفظ والنشر":"Saved and published", "تم النشر":"Published",
+  "تم الحذف":"Deleted",
+  "تم حفظ الإعدادات ونشرها":"Settings saved and published",
+  "تم حفظ النصوص ونشرها":"Texts saved and published",
+  "تم حفظ الأحجام ونشرها":"Sizes saved and published",
+  "تم حفظ الشعارات ونشرها":"Logos saved and published",
+  "تم حفظ تخصيص الجولة ونشره":"Tour customisation saved and published",
+  "تم حفظ إعدادات العرض العامة ونشرها":"Global display settings saved and published",
+  "تم تجهيز الشعار":"Logo ready", "تم تركيب الصورة":"Image applied",
+  "تم تركيب لوجو العميل":"Client logo applied",
+  "نزّلت النسخة المحدّثة — ارفعها للهوست":"Updated copy downloaded — upload it to your host",
+  "رجّعت آخر نسخة منشورة":"Restored the last published version",
+  "البريد أو كلمة المرور غير صحيحة.":"Email or password is incorrect.",
+  "صيغة البريد الإلكتروني غير صحيحة.":"That email address is not valid.",
+  "لا يوجد حساب بهذا البريد.":"No account exists for that email.",
+  "كلمة المرور غير صحيحة.":"Incorrect password.",
+  "محاولات كثيرة متتالية. انتظر دقيقة وأعد المحاولة.":
+    "Too many attempts in a row. Wait a minute and try again.",
+  "تعذّر الاتصال بالإنترنت.":"Could not reach the internet.",
+  "تعذّرت معالجة الصورة":"Could not process that image",
+  "اكتب العنوان أو المدينة أولاً":"Enter the address or city first",
+  "لغة اللوحة":"Panel language", "جولة":"tour", "جولات":"tours",
+  "النشر متوقف — الحجم كبير":"Publishing paused — data too large",
+  "كل جولة تتخصّص لحالها.":"Each tour is customised on its own.",
+  "الجولة اللي ما تعدّل فيها شي تقعد على الوضع الافتراضي":
+    "A tour you do not touch stays on the defaults",
+  "— أي خانة تتركها فاضية معناها «استعمل الافتراضي العام».":
+    "— any field left empty means “use the global default”.",
+  "هذي تنطبق على كل الجولات، وأي جولة تقدر تخالفها من قسمها بالأسفل.":
+    "These apply to every tour, and any tour can override them from its own section below.",
+  "المربعات الشفافة تغطي أزرار Matterport وتمنع الضغط عليها.":
+    "Cover boxes sit over Matterport's buttons and block clicks on them.",
+  "الغطاء الجاهز يخفي زر شريط اللقطات ويسيب زر التشغيل ▶ شغّالاً.":
+    "The ready-made cover hides the highlight-reel button and leaves the ▶ play button working.",
+  "أي جولة تقدر تخالف هذي المربعات من قسمها بالأسفل.":
+    "Any tour can override these boxes from its own section below.",
+  "المربعات تغطي شعارات Matterport وتمنع الضغط عليها.":
+    "The boxes cover Matterport's logos and block clicks on them.",
+  "القيم بالبكسل من الزاوية المختارة.":"Values are in pixels from the chosen corner.",
+  "هذه الجولة عندها مربعات مخصّصة.":"This tour has its own custom boxes.",
+  "هذه الجولة على المربعات الافتراضية — أول تعديل يخصّصها.":
+    "This tour uses the default boxes — the first change customises it.",
+  "«افتراضي» يعني نفس إعداد بقية الجولات. غيّر فقط اللي تحتاجه.":
+    "“Default” means the same as every other tour. Change only what you need.",
+  "المقياس العام يكبّر أو يصغّر كل شيء بتناسق، والمقاييس تحته تعدّل عناصر بعينها فوق العام.":
+    "The global scale grows or shrinks everything proportionally; the scales below adjust specific elements on top of it.",
+  "واضغط على أي عنصر داخل الموقع تحت — تفتح لك لوحة تتحكم فيه بالكامل. الأحمر يعني عنصر معدّل. التعديلات تبان فوراً هنا، وما تظهر للزوار حتى تضغط":
+    "and click any element in the site below — a panel opens giving you full control over it. Red means an edited element. Changes appear here instantly and stay hidden from visitors until you press",
+  "شغّل":"Turn on",
+  "فاضي = الشعار الأصلي":"Empty = the original logo",
+  "تقدر تستورد الجولات الثمانية الموجودة في موقعك الحالي بضغطة واحدة، أو تضيف جولة جديدة من الصفر.":
+    "You can import the eight tours already on your site in one click, or add a new tour from scratch.",
+  "العناصر الأصلية ما تنحذف نهائياً — تنخفي عن الزوار وتقدر ترجّعها في أي وقت من زر «إرجاع للأصل».":
+    "Original elements are never deleted — they are hidden from visitors and you can bring them back any time with “Reset to original”.",
+  "بيتمسح كل تعديل عملته بمحرّر النقر (النصوص والأحجام والألوان والعناصر المضافة). النصوص من تبويب «النصوص» ما تتأثر.":
+    "This clears every change made with the click editor (texts, sizes, colours and added elements). The Texts tab is unaffected.",
+  "بيتمسح كل تخصيص لهذه الجولة (اللوجو والنصوص والمربعات والإعدادات) وترجع زي بقية الجولات.":
+    "This clears all customisation for this tour (logo, texts, boxes and settings) and returns it to match the other tours.",
+  "بترجع لآخر نسخة منشورة وتضيع التعديلات اللي ما انحفظتش.":
+    "This returns to the last published version and discards unsaved changes.",
+  "حجم البيانات كبير جداً بسبب الصور المرفوعة. استعمل روابط صور بدل الرفع.":
+    "The data is too large because of uploaded images. Use image URLs instead of uploading."
+};
+
+let LANG = "ar";
+try{ LANG = localStorage.getItem("roaaLang") || "ar"; }catch(e){}
+
+/* نسخة بمفاتيح موحَّدة المسافات، حتى تُطابَق النصوص الممتدة على أسطر */
+const I18N_N = {};
+for (const k in I18N) I18N_N[k.replace(/\s+/g, " ").trim()] = I18N[k];
+
+function look(s){
+  const k = String(s).trim();
+  return I18N[k] || I18N_N[k.replace(/\s+/g, " ")] || null;
+}
+
+function t(s){
+  if (LANG !== "en" || s == null) return s;
+  return look(s) || s;
+}
+const tr = t;   // اسم بديل حيث يكون t مستعملاً لمتغير آخر
+
+/* سجل ما تُرجم، حتى نرجّع العربي بلا إعادة تحميل الصفحة
+   (إعادة التحميل كانت تضيّع أي تعديل ما انحفظ) */
+let TRANSLATED = [];
+
+function translateNode(root){
+  if (LANG !== "en" || !root) return;
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+  const jobs = [];
+  let n;
+  while ((n = walk.nextNode())){
+    const raw = n.nodeValue;
+    const key = raw.trim();
+    if (!key || !/[؀-ۿ]/.test(key)) continue;
+    const hit = look(key);
+    if (hit) jobs.push([n, raw, raw.replace(key, hit)]);
+  }
+  jobs.forEach(([node, before, after]) => {
+    TRANSLATED.push({ node, before });
+    node.nodeValue = after;
+  });
+
+  const els = root.nodeType === 1 ? [root, ...root.querySelectorAll("*")] : root.querySelectorAll("*");
+  els.forEach(el => {
+    if (!el.getAttribute) return;
+    ["placeholder","title","aria-label"].forEach(a => {
+      const v = el.getAttribute(a);
+      const hit = v ? look(v) : null;
+      if (hit){
+        TRANSLATED.push({ el, attr:a, before:v });
+        el.setAttribute(a, hit);
+      }
+    });
+  });
+}
+
+function revertLang(){
+  // نرجّع من الآخر للأول حتى تتراكب التعديلات المتتابعة صح
+  for (let i = TRANSLATED.length - 1; i >= 0; i--){
+    const r = TRANSLATED[i];
+    try{
+      if (r.attr) r.el.setAttribute(r.attr, r.before);
+      else if (r.node.isConnected || r.node.parentNode) r.node.nodeValue = r.before;
+    }catch(e){}
+  }
+  TRANSLATED = [];
+}
+
+function applyLang(){
+  const en = LANG === "en";
+  document.documentElement.lang = en ? "en" : "ar";
+  document.documentElement.dir  = en ? "ltr" : "rtl";
+  const btn = document.getElementById("btnLang");
+  if (btn) btn.textContent = en ? "العربية" : "EN";
+  if (en) translateNode(document.body);
+}
+
+/* الأجزاء تُبنى ديناميكياً باستمرار، فنراقب ونترجم الجديد فور ظهوره */
+const langObserver = new MutationObserver((muts) => {
+  if (LANG !== "en") return;
+  muts.forEach(m => m.addedNodes.forEach(n => {
+    if (n.nodeType === 1) translateNode(n);
+    else if (n.nodeType === 3 && n.nodeValue && look(n.nodeValue))
+      n.nodeValue = n.nodeValue.replace(n.nodeValue.trim(), look(n.nodeValue));
+  }));
+});
+langObserver.observe(document.body, { childList:true, subtree:true });
+
+document.addEventListener("click", (e) => {
+  if (!e.target || e.target.id !== "btnLang") return;
+  LANG = LANG === "en" ? "ar" : "en";
+  try{ localStorage.setItem("roaaLang", LANG); }catch(err){}
+  if (LANG === "ar") revertLang();
+  /* الأجزاء اللي تُبنى بنصوص مركّبة (مثل «الأصلي (كاملة)») تحتاج إعادة
+   بناء عشان تتركّب باللغة الجديدة، مش مجرد استبدال نص. */
+function rebuildAfterLang(){
+  try{
+    if (typeof renderTours === "function" && Array.isArray(TOURS) && TOURS.length) renderTours();
+    if (typeof renderTourX === "function") renderTourX();
+    if (typeof fillType === "function") fillType();
+    if (typeof fillLogos === "function") fillLogos();
+    if (typeof paintHist === "function") paintHist();
+    if (LAST_STATUS) setStatus(LAST_STATUS.kind, LAST_STATUS.arKey, LAST_STATUS.count);
+    const eb = document.getElementById("btnEditMode");
+    if (eb) eb.textContent = t("وضع التحرير") + ": " + (EDIT_MODE ? t("شغّال") : t("مغلق"));
+    if (SEL && typeof renderInspector === "function") renderInspector();
+  }catch(e){}
+}
+
+applyLang();
+  rebuildAfterLang();
+});
+
+applyLang();
 
 /* تحذير قبل مغادرة الصفحة وفيه تعديلات */
 window.addEventListener("beforeunload", (e) => {

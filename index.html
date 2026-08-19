@@ -834,6 +834,10 @@
   // ثم يأتي تخصيص كل جولة فوقها.
   let GPARAMS = {};
 
+  // المربعات الافتراضية القادمة من اللوحة — تنطبق على كل الجولات
+  // ما لم تخصّص الجولة مربعاتها.
+  let GCOVERS = null;
+
   // تأخذ أي رابط جولة (خام أو كامل) وتعيده بالإعدادات الموحّدة أعلاه،
   // مع الحفاظ على معرّف الجولة (m) الموجود في الرابط الأصلي.
   function normalizeTourUrl(u, extra){
@@ -973,7 +977,9 @@
 
   function tourCovers(proj){
     const x = tourX(proj);
-    return (Array.isArray(x.covers) && x.covers.length) ? x.covers : defaultCovers();
+    if (Array.isArray(x.covers) && x.covers.length) return x.covers;      // تخصيص الجولة
+    if (Array.isArray(GCOVERS) && GCOVERS.length)   return GCOVERS;       // الافتراضي من اللوحة
+    return defaultCovers();                                              // افتراضي الكود
   }
 
   function coverCssFor(c, box, prefix){
@@ -1723,6 +1729,7 @@
     }
     // إعدادات العرض الافتراضية لكل الجولات
     GPARAMS = (live && live.tparams && typeof live.tparams === "object") ? live.tparams : {};
+    GCOVERS = Array.isArray(live && live.gcovers) && live.gcovers.length ? live.gcovers : null;
     // تخصيص كل جولة
     TOURX = (live && live.tourx && typeof live.tourx === "object") ? live.tourx : {};
 
