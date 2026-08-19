@@ -823,10 +823,16 @@
   // إعدادات واجهة الجولة الموحّدة: تُطبَّق تلقائياً على أي رابط matterport
   // حتى تظهر كل الجولات بنفس الشكل وتنطبق عليها مواضع المربعات نفسها.
   const TOUR_PARAMS = {
-    play: "1", lang: "en-US", brand: "0", title: "0", hl: "0", help: "0",
+    play: "1", lang: "en-US", brand: "0", title: "0",
+    hl: "1",          // شريط اللقطات (زر التشغيل كفيديو) يبقى ظاهراً. 0 = يظهر لحظة ثم يختفي
+    help: "0",
     mt: "1", dh: "1", tour: "0", qs: "1", vr: "0", gt: "0", mls: "0",
     nozoom: "0", search: "0", pin: "0", portal: "0", f: "1", lp: "0"
   };
+
+  // الإعدادات الافتراضية القادمة من لوحة التحكم — تُطبَّق على كل الجولات
+  // ثم يأتي تخصيص كل جولة فوقها.
+  let GPARAMS = {};
 
   // تأخذ أي رابط جولة (خام أو كامل) وتعيده بالإعدادات الموحّدة أعلاه،
   // مع الحفاظ على معرّف الجولة (m) الموجود في الرابط الأصلي.
@@ -839,8 +845,8 @@
       if (!m) return u;
       const out = new URL(url.origin + url.pathname);
       out.searchParams.set("m", m);
-      // الإعدادات الموحّدة، ثم تخصيص هذه الجولة فوقها إن وُجد
-      const merged = Object.assign({}, TOUR_PARAMS, extra || {});
+      // ثلاث طبقات: افتراضي الكود ← الافتراضي العام من اللوحة ← تخصيص الجولة
+      const merged = Object.assign({}, TOUR_PARAMS, GPARAMS, extra || {});
       for (const [k, v] of Object.entries(merged)){
         if (v === "" || v == null) out.searchParams.delete(k);
         else out.searchParams.set(k, v);
@@ -1715,6 +1721,8 @@
         if (typeof tx[k] === "string" && tx[k].trim() !== "") SITE_TOUR_TEXTS[k] = tx[k];
       });
     }
+    // إعدادات العرض الافتراضية لكل الجولات
+    GPARAMS = (live && live.tparams && typeof live.tparams === "object") ? live.tparams : {};
     // تخصيص كل جولة
     TOURX = (live && live.tourx && typeof live.tourx === "object") ? live.tourx : {};
 

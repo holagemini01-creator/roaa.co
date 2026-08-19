@@ -562,6 +562,17 @@
         كل جولة تتخصّص لحالها. <b>الجولة اللي ما تعدّل فيها شي تقعد على الوضع الافتراضي</b> —
         أي خانة تتركها فاضية معناها «استعمل الافتراضي العام».
       </div>
+      <div class="group"><h3>إعدادات العرض الافتراضية — لكل الجولات</h3></div>
+      <div class="note" style="margin-bottom:12px">
+        هذي تنطبق على كل الجولات، وأي جولة تقدر تخالفها من قسمها بالأسفل.
+      </div>
+      <div class="param-grid" id="gParams"></div>
+      <div class="bar" style="margin-top:16px">
+        <button class="btn primary" id="btnSaveGParams">حفظ ونشر</button>
+        <button class="btn" id="btnResetGParams">رجّع الافتراضي الأصلي</button>
+      </div>
+
+      <div class="group" style="margin-top:32px"><h3>تخصيص جولة بعينها</h3></div>
       <div class="field">
         <label>اختر الجولة</label>
         <select id="txPick"></select>
@@ -887,7 +898,7 @@ function slugify(s){
 /* ============================================================
    الحالة
    ============================================================ */
-let TOURS = [], SETTINGS = {}, TEXTS = {}, TYPE = {}, LOGOS = {}, EDITS = {}, BLOCKS = [], TOURX = {};
+let TOURS = [], SETTINGS = {}, TEXTS = {}, TYPE = {}, LOGOS = {}, EDITS = {}, BLOCKS = [], TOURX = {}, GPARAMS = {};
 let editingId = null, imgMode = "auto", imgData = "";
 let DIRTY = false;
 
@@ -1012,6 +1023,7 @@ async function loadAll(){
     EDITS    = Object.assign({}, (pub && pub.edits) || {});
     BLOCKS   = Array.isArray(pub && pub.blocks) ? pub.blocks.slice() : [];
     TOURX    = Object.assign({}, (pub && pub.tourx) || {});
+    GPARAMS  = Object.assign({}, (pub && pub.tparams) || {});
 
     fillSettings(); fillTexts(); fillType(); fillLogos(); renderTours(); renderTourX();
     HIST = []; HPTR = -1; pushHist("آخر نسخة منشورة");
@@ -1394,7 +1406,7 @@ function draft(){
     if (v && Object.keys(v).length) tourx[k] = v;
   }
   return { tours:pub, settings:SETTINGS, texts:TEXTS, type:TYPE,
-           logos:LOGOS, edits:EDITS, blocks:BLOCKS, tourx };
+           logos:LOGOS, edits:EDITS, blocks:BLOCKS, tourx, tparams:GPARAMS };
 }
 
 async function publish(){
@@ -1880,13 +1892,13 @@ let HIST = [], HPTR = -1, histTimer = null;
 const HIST_MAX = 60;
 
 function snap(){
-  return JSON.stringify({ EDITS, BLOCKS, TEXTS, TYPE, LOGOS, SETTINGS, TOURX });
+  return JSON.stringify({ EDITS, BLOCKS, TEXTS, TYPE, LOGOS, SETTINGS, TOURX, GPARAMS });
 }
 function restore(json){
   const s = JSON.parse(json);
   EDITS = s.EDITS || {}; BLOCKS = s.BLOCKS || []; TEXTS = s.TEXTS || {};
   TYPE = s.TYPE || {}; LOGOS = s.LOGOS || {}; SETTINGS = s.SETTINGS || {};
-  TOURX = s.TOURX || {};
+  TOURX = s.TOURX || {}; GPARAMS = s.GPARAMS || {};
   fillSettings(); fillTexts(); fillType(); fillLogos(); renderTourX();
   closeInspector(); pushDraft(); setDirty(true); paintHist();
 }
@@ -1952,28 +1964,41 @@ document.addEventListener("keydown", (e) => {
    تخصيص كل جولة
    ═══════════════════════════════════════════════════════════════ */
 const PARAM_DEFS = [
-  { k:"play",   label:"تشغيل تلقائي",        on:"1", off:"0" },
-  { k:"qs",     label:"بدء سريع",             on:"1", off:"0" },
-  { k:"dh",     label:"عرض المخطط (Dollhouse)", on:"1", off:"0" },
-  { k:"mt",     label:"شريط القياس",          on:"1", off:"0" },
-  { k:"tour",   label:"الجولة الإرشادية",     on:"1", off:"0" },
-  { k:"hl",     label:"قائمة الطوابق",        on:"1", off:"0" },
-  { k:"help",   label:"زر المساعدة",          on:"1", off:"0" },
-  { k:"vr",     label:"وضع VR",               on:"1", off:"0" },
-  { k:"gt",     label:"زر الجولة الإرشادية",  on:"1", off:"0" },
-  { k:"mls",    label:"تحميل مسبق",           on:"1", off:"0" },
-  { k:"nozoom", label:"منع التكبير",          on:"1", off:"0" },
-  { k:"search", label:"البحث",                on:"1", off:"0" },
-  { k:"pin",    label:"العلامات",             on:"1", off:"0" },
-  { k:"portal", label:"البوابات",             on:"1", off:"0" },
-  { k:"f",      label:"التنقل الحر",          on:"1", off:"0" },
-  { k:"lp",     label:"نقطة البداية",         on:"1", off:"0" },
-  { k:"title",  label:"عنوان Matterport",     on:"1", off:"0" },
-  { k:"brand",  label:"علامة Matterport",     on:"1", off:"0" }
+  { k:"hl", label:"شريط اللقطات — زر التشغيل كفيديو", hint:"هذا هو الزر اللي يشغّل الجولة كأنها فيديو",
+    opts:[["0","يظهر لحظة ثم يختفي"],["1","يبقى ظاهراً"],["2","يبقى مطوياً"]] },
+  { k:"gt", label:"بدء الجولة الإرشادية تلقائياً", hint:"عدد الثواني بعد فتح المكان",
+    opts:[["0","لا تبدأ تلقائياً"],["1","بعد ثانية"],["3","بعد ٣ ثوان"],["5","بعد ٥ ثوان"],["10","بعد ١٠ ثوان"]] },
+  { k:"tour", label:"نهاية الجولة الإرشادية",
+    opts:[["0","تتوقف في النهاية"],["1","تعيد من البداية"]] },
+  { k:"play", label:"عند فتح الصفحة",
+    opts:[["0","يعرض زر التشغيل"],["1","يفتح المكان تلقائياً"]] },
+  { k:"qs", label:"الدخول السريع للعرض الداخلي",
+    opts:[["0","معطّل"],["1","مفعّل"]] },
+  { k:"dh", label:"شاشة المساعدة",
+    opts:[["","للزائر الجديد فقط"],["0","مخفية"],["1","كاملة"],["2","مختصرة"]] },
+  { k:"mt", label:"تحريك الكاميرا عند العلامات",
+    opts:[["0","بلا تحريك"],["1","تحريك خفيف"]] },
+  { k:"f", label:"التنقل بين الطوابق",
+    opts:[["0","مخفي"],["1","متاح"]] },
+  { k:"lp", label:"دعوة لاتخاذ إجراء في النهاية",
+    opts:[["0","بلا"],["1","كبيرة"],["2","صغيرة"]] },
+  { k:"title", label:"عنوان المكان ولوحة المعلومات",
+    opts:[["0","الاثنان مخفيان"],["1","الاثنان ظاهران"],["2","العنوان مخفي واللوحة ظاهرة"]] },
+  { k:"brand", label:"علامة Matterport (Presented By)",
+    opts:[["0","مخفية"],["1","ظاهرة"]] },
+  { k:"nozoom", label:"التكبير والتصغير",
+    opts:[["0","متاح"],["1","معطّل"]] },
+  { k:"vr", label:"زر VR",
+    opts:[["0","مخفي"],["1","ظاهر"]] },
+  { k:"mls", label:"وضع MLS",
+    opts:[["0","العلامة ظاهرة"],["1","بلا علامة وبلا VR"],["2","بلا لوحة معلومات كذلك"]] },
+  { k:"search", label:"البحث", opts:[["0","مخفي"],["1","ظاهر"]] },
+  { k:"pin", label:"العلامات", opts:[["0","مخفية"],["1","ظاهرة"]] },
+  { k:"portal", label:"البوابات", opts:[["0","مخفية"],["1","ظاهرة"]] }
 ];
 
 const DEFAULT_PARAMS = {
-  play:"1", lang:"en-US", brand:"0", title:"0", hl:"0", help:"0",
+  play:"1", lang:"en-US", brand:"0", title:"0", hl:"1", help:"0",
   mt:"1", dh:"1", tour:"0", qs:"1", vr:"0", gt:"0", mls:"0",
   nozoom:"0", search:"0", pin:"0", portal:"0", f:"1", lp:"0"
 };
@@ -2001,11 +2026,13 @@ function renderTourX(){
   const pick = $("#txPick");
   if (!pick) return;
   const list = TOURS.slice().sort((a,b) => (a.order??0)-(b.order??0));
+  renderGlobalParams();
   if (!list.length){
     pick.innerHTML = '<option value="">ما فيه جولات بعد</option>';
     $("#txBody").innerHTML = '<div class="empty"><p>ضيف جولة أول من تبويب «الجولات».</p></div>';
     return;
   }
+  renderGlobalParams();
   if (!TX_SLUG || !list.some(t => t.slug === TX_SLUG)) TX_SLUG = list[0].slug;
   pick.innerHTML = list.map(t => {
     const custom = TOURX[t.slug] && Object.keys(TOURX[t.slug]).length;
@@ -2289,23 +2316,59 @@ function renderCovers(covers, isCustom){
   }));
 }
 
-function renderParams(cur){
-  $("#txParams").innerHTML = PARAM_DEFS.map(d => `
+/* يبني شبكة إعدادات العرض. inherited = القيمة الموروثة اللي يعني «افتراضي» */
+function paramGrid(boxSel, cur, inherited, onChange, inheritLabel){
+  const box = $(boxSel);
+  const nameOf = (d, v) => {
+    const o = d.opts.find(x => x[0] === String(v));
+    return o ? o[1] : v;
+  };
+  box.innerHTML = PARAM_DEFS.map(d => {
+    const inh = inherited[d.k];
+    return `
     <div class="p">
       <label>${d.label}</label>
       <select data-param="${d.k}">
-        <option value="">افتراضي (${DEFAULT_PARAMS[d.k] === "1" ? "مفعّل" : "مطفي"})</option>
-        <option value="1" ${cur[d.k]==="1"?"selected":""}>مفعّل</option>
-        <option value="0" ${cur[d.k]==="0"?"selected":""}>مطفي</option>
+        <option value="">${inheritLabel} (${esc(nameOf(d, inh == null ? "" : inh))})</option>
+        ${d.opts.map(([v,t]) => `<option value="${v}" ${String(cur[d.k])===v?"selected":""}>${t}</option>`).join("")}
       </select>
-    </div>`).join("");
-  $("#txParams").querySelectorAll("[data-param]").forEach(s => s.addEventListener("change", () => {
-    const o = tx(); o.params = o.params || {};
-    if (s.value === "") delete o.params[s.dataset.param];
-    else o.params[s.dataset.param] = s.value;
-    tidyTx(); live("إعداد عرض");
-  }));
+      ${d.hint ? `<div style="font-size:.66rem;color:var(--gold-soft);margin-top:5px;line-height:1.6">${d.hint}</div>` : ""}
+    </div>`;
+  }).join("");
+  box.querySelectorAll("[data-param]").forEach(s =>
+    s.addEventListener("change", () => onChange(s.dataset.param, s.value)));
 }
+
+/* إعدادات جولة واحدة — ترث الافتراضي العام */
+function renderParams(cur){
+  paramGrid("#txParams", cur, Object.assign({}, DEFAULT_PARAMS, GPARAMS), (k, v) => {
+    const o = tx(); o.params = o.params || {};
+    if (v === "") delete o.params[k]; else o.params[k] = v;
+    tidyTx(); live("إعداد عرض للجولة");
+  }, "زي بقية الجولات");
+}
+
+/* الإعدادات الافتراضية لكل الجولات */
+function renderGlobalParams(){
+  if (!$("#gParams")) return;
+  paramGrid("#gParams", GPARAMS, DEFAULT_PARAMS, (k, v) => {
+    if (v === "") delete GPARAMS[k]; else GPARAMS[k] = v;
+    // قسم الجولة يعرض القيمة الموروثة، فلازم يتحدّث معه
+    if ($("#txParams")) renderParams(((TOURX[TX_SLUG] || {}).params) || {});
+    setDirty(true); pushDraftTour(); pushHistSoon("إعداد عرض عام");
+  }, "الأصلي");
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target && e.target.id === "btnSaveGParams"){
+    saveWith(e.target, "تم حفظ إعدادات العرض العامة ونشرها");
+  }
+  if (e.target && e.target.id === "btnResetGParams"){
+    GPARAMS = {}; renderGlobalParams(); setDirty(true);
+    pushDraftTour(); pushHist("رجوع إعدادات العرض للأصل");
+    toast("رجّعت الإعدادات الأصلية — اضغط حفظ ونشر لتثبيتها");
+  }
+});
 
 /* ═══════════════════════════════════════════════════════════════
    تصدير نسخة محدّثة من الموقع
