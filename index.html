@@ -810,7 +810,8 @@
     topLeftLogo: "roaa-logo-wide.png",       // لوجو فوق-اليسار داخل الجولة
     veil1: "استكشف المكان",                  // نص الشريط — السطر الأول
     veil2: "بتقنية رؤى",                     // نص الشريط — السطر الثاني
-    topLeftLink: "https://roaa.ly"           // لوجو رؤى فوق-اليسار = رابط لموقعك
+    topLeftLink: "https://roaa.ly",          // لوجو رؤى فوق-اليسار = رابط لموقعك
+    exitFs: {}                                // الافتراضي العام لموضع/حجم زر الخروج من ملء الشاشة (من لوحة التحكم)
   };
 
   function isSafeEmbedUrl(u){
@@ -823,20 +824,10 @@
   // إعدادات واجهة الجولة الموحّدة: تُطبَّق تلقائياً على أي رابط matterport
   // حتى تظهر كل الجولات بنفس الشكل وتنطبق عليها مواضع المربعات نفسها.
   const TOUR_PARAMS = {
-    play: "1", lang: "en-US", brand: "0", title: "0",
-    hl: "1",          // شريط اللقطات (زر التشغيل كفيديو) يبقى ظاهراً. 0 = يظهر لحظة ثم يختفي
-    help: "0",
+    play: "1", lang: "en-US", brand: "0", title: "0", hl: "0", help: "0",
     mt: "1", dh: "1", tour: "0", qs: "1", vr: "0", gt: "0", mls: "0",
     nozoom: "0", search: "0", pin: "0", portal: "0", f: "1", lp: "0"
   };
-
-  // الإعدادات الافتراضية القادمة من لوحة التحكم — تُطبَّق على كل الجولات
-  // ثم يأتي تخصيص كل جولة فوقها.
-  let GPARAMS = {};
-
-  // المربعات الافتراضية القادمة من اللوحة — تنطبق على كل الجولات
-  // ما لم تخصّص الجولة مربعاتها.
-  let GCOVERS = null;
 
   // تأخذ أي رابط جولة (خام أو كامل) وتعيده بالإعدادات الموحّدة أعلاه،
   // مع الحفاظ على معرّف الجولة (m) الموجود في الرابط الأصلي.
@@ -849,8 +840,8 @@
       if (!m) return u;
       const out = new URL(url.origin + url.pathname);
       out.searchParams.set("m", m);
-      // ثلاث طبقات: افتراضي الكود ← الافتراضي العام من اللوحة ← تخصيص الجولة
-      const merged = Object.assign({}, TOUR_PARAMS, GPARAMS, extra || {});
+      // الإعدادات الموحّدة، ثم تخصيص هذه الجولة فوقها إن وُجد
+      const merged = Object.assign({}, TOUR_PARAMS, extra || {});
       for (const [k, v] of Object.entries(merged)){
         if (v === "" || v == null) out.searchParams.delete(k);
         else out.searchParams.set(k, v);
@@ -871,7 +862,7 @@
 
   // تحضير مسبق للاتصالات لتسريع تحميل الجولة (Matterport)
   (function preconnect(){
-    const origins = ["https://my.matterport.com", "https://static.matterport.com"];
+    const origins = ["https://my.matterport.com", "https://static.matterport.com", "https://mpembed.com"];
     origins.forEach(o => {
       if(!o || o === "null") return;
       const l = document.createElement("link");
@@ -971,15 +962,14 @@
       tourLoading: pick(t.tourLoading, SITE_TOUR_TEXTS.tourLoading),
       tourReady:   pick(t.tourReady,   SITE_TOUR_TEXTS.tourReady),
       tourResume:  pick(t.tourResume,  SITE_TOUR_TEXTS.tourResume),
-      veilStyle:   x.veil || {}
+      veilStyle:   x.veil || {},
+      exitFsStyle: Object.assign({}, BRAND.exitFs, x.exitFs || {})
     };
   }
 
   function tourCovers(proj){
     const x = tourX(proj);
-    if (Array.isArray(x.covers) && x.covers.length) return x.covers;      // تخصيص الجولة
-    if (Array.isArray(GCOVERS) && GCOVERS.length)   return GCOVERS;       // الافتراضي من اللوحة
-    return defaultCovers();                                              // افتراضي الكود
+    return (Array.isArray(x.covers) && x.covers.length) ? x.covers : defaultCovers();
   }
 
   function coverCssFor(c, box, prefix){
@@ -1052,6 +1042,16 @@
     if (v.top     != null) vf.style.top = (+v.top) + "%";
     if (v.topMob  != null) vn.style.top = (+v.topMob) + "%";
     if (v.size    != null){ vn.style.fontSize = (+v.size) + "px"; vf.style.fontSize = (+v.size) + "px"; }
+  }
+
+  // زر الخروج (X) من ملء الشاشة المزيّف: موضعه (من فوق/من اليمين) وحجمه (دائرة) قابلة للتخصيص لكل جولة.
+  // الفاضي = القيمة الافتراضية من CSS (top:10px; right:10px; 38×38px).
+  function applyExitFsStyle(btn, TB){
+    const e = TB.exitFsStyle || {};
+    if (e.hidden){ btn.style.display = "none"; return; }
+    if (e.top   != null) btn.style.top   = (+e.top) + "px";
+    if (e.right != null) btn.style.right = (+e.right) + "px";
+    if (e.size  != null){ btn.style.width = (+e.size) + "px"; btn.style.height = (+e.size) + "px"; }
   }
 
   const viewport = document.getElementById("tourViewport");
@@ -1132,6 +1132,7 @@
     exitBtn.setAttribute("aria-label", "خروج من ملء الشاشة");
     exitBtn.innerHTML = "&times;";
     viewport.appendChild(exitBtn);
+    applyExitFsStyle(exitBtn, TB);
 
     const isMobile = () => window.matchMedia("(max-width:1024px)").matches;
 
@@ -1709,6 +1710,7 @@
       if (s.veil1)       BRAND.veil1 = s.veil1;
       if (s.veil2)       BRAND.veil2 = s.veil2;
       if (s.topLeftLink) BRAND.topLeftLink = s.topLeftLink;
+      if (s.exitFsDefault && typeof s.exitFsDefault === "object") BRAND.exitFs = s.exitFsDefault;
     }
     const lg = live && live.logos;
     if (lg){
@@ -1727,9 +1729,6 @@
         if (typeof tx[k] === "string" && tx[k].trim() !== "") SITE_TOUR_TEXTS[k] = tx[k];
       });
     }
-    // إعدادات العرض الافتراضية لكل الجولات
-    GPARAMS = (live && live.tparams && typeof live.tparams === "object") ? live.tparams : {};
-    GCOVERS = Array.isArray(live && live.gcovers) && live.gcovers.length ? live.gcovers : null;
     // تخصيص كل جولة
     TOURX = (live && live.tourx && typeof live.tourx === "object") ? live.tourx : {};
 
