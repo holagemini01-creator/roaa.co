@@ -1149,51 +1149,19 @@
     viewport.appendChild(tapShield);
     viewport.appendChild(resumeBtn);
 
-    // موضع "الرسو" الطبيعي داخل الصفحة (خارج ملء الشاشة). يُبنى أول مرة يُطلب فيها
-    // الدخول لملء الشاشة، ويبقى ثابتاً طول عمر الصفحة — لا نعيد العنصر لمكانه القديم
-    // بعدها أبداً، لأن أي نقل للعنصر (حتى مجرد appendChild) يفقّد الـ iframe حالته
-    // ويعيد تحميله من الصفر في كل المتصفحات (سلوك موحّد بالمواصفة، ليس علّة عندنا).
-    // بدل النقل: بعد الخروج من ملء الشاشة نـ"يصغّر" العنصر بصرياً فوق مكانه الأصلي
-    // (نفس الموضع والمقاس بالضبط) عبر position:absolute، والـ iframe يبقى بحاله.
-    function dockOverSlot(){
-      const slot = viewport._dockSlot;
-      if (!slot) return; // ما دخل ملء الشاشة أبداً بعد — لسا بمكانه الطبيعي داخل الصفحة
-      const r = slot.getBoundingClientRect();
-      viewport.style.position = "absolute";
-      viewport.style.top    = (r.top  + window.scrollY) + "px";
-      viewport.style.left   = (r.left + window.scrollX) + "px";
-      viewport.style.width  = r.width  + "px";
-      viewport.style.height = r.height + "px";
-      viewport.style.margin = "0";
+    // نحفظ الموضع الأصلي للعنصر كي نعيده إليه بعد الخروج (مرساة واحدة تُعاد تسميتها)
+    if (!viewport._homeAnchor) {
+      viewport._homeAnchor = document.createComment("viewport-home");
+      viewport.parentNode.insertBefore(viewport._homeAnchor, viewport);
     }
+    const homeAnchor = viewport._homeAnchor;
 
     let veilTimer = null;
 
     const enterFs = () => {
       if (!isMobile()) return;
-      if (!viewport._dockSlot) {
-        // أول دخول لملء الشاشة فقط: ننشئ حاجزاً فاضياً يحجز نفس المكان والمقاس
-        // داخل الصفحة، وننقل العنصر الحقيقي لمرة واحدة يتيمة طول عمر الصفحة.
-        const slot = document.createElement("div");
-        slot.className = viewport.className;
-        const de = viewport.getAttribute("data-el");
-        if (de) slot.setAttribute("data-el", de);
-        slot.setAttribute("aria-hidden", "true");
-        slot.style.visibility = "hidden";
-        viewport.parentNode.insertBefore(slot, viewport);
-        viewport._dockSlot = slot;
-        // ننقل العنصر إلى body للخروج من stacking context الذي يبقي بقية الموقع فوقه
-        document.body.appendChild(viewport);
-      } else {
-        // دخول متكرر: العنصر أصلاً داخل body من المرة الأولى — بس نمسح ستايلات
-        // «الرسو» المؤقتة حتى تتحكم قواعد is-fs في الموضع والمقاس بالكامل.
-        viewport.style.position = "";
-        viewport.style.top = "";
-        viewport.style.left = "";
-        viewport.style.width = "";
-        viewport.style.height = "";
-        viewport.style.margin = "";
-      }
+      // ننقل العنصر إلى body للخروج من stacking context الذي يبقي بقية الموقع فوقه
+      document.body.appendChild(viewport);
       viewport.classList.add("fs-host", "is-fs");
       document.body.classList.add("fs-lock");
       resumeBtn.hidden = true;
@@ -1215,9 +1183,10 @@
       veilFs.hidden = true;
       // الجملة الدائمة تظهر بعد الخروج من ملء الشاشة
       veilNormal.hidden = false;
-      // نصغّر العنصر بصرياً فوق مكانه الطبيعي — بلا أي نقل للعنصر ولا لمس للـ iframe،
-      // فتبقى الجولة بالضبط من حيث تركها الزائر.
-      dockOverSlot();
+      // إعادة العنصر إلى مكانه الأصلي داخل الصفحة
+      if (homeAnchor.parentNode) {
+        homeAnchor.parentNode.insertBefore(viewport, homeAnchor);
+      }
       // إظهار زر العودة فوق الـ iframe
       if (isMobile()) { resumeBtn.hidden = false; tapShield.hidden = false; }
     };
@@ -1228,17 +1197,6 @@
     if (viewport._escHandler) window.removeEventListener("keydown", viewport._escHandler);
     viewport._escHandler = (e) => { if (e.key === "Escape") exitFs(); };
     window.addEventListener("keydown", viewport._escHandler);
-
-    // إعادة محاذاة الرسو عند تدوير الشاشة أو تغيير حجم النافذة وهو خارج ملء الشاشة
-    if (viewport._dockResizeHandler) {
-      window.removeEventListener("resize", viewport._dockResizeHandler);
-      window.removeEventListener("orientationchange", viewport._dockResizeHandler);
-    }
-    viewport._dockResizeHandler = () => {
-      if (viewport._dockSlot && !viewport.classList.contains("is-fs")) dockOverSlot();
-    };
-    window.addEventListener("resize", viewport._dockResizeHandler);
-    window.addEventListener("orientationchange", viewport._dockResizeHandler);
 
     let dismissed = false;
     const dismiss = () => {
