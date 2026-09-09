@@ -266,9 +266,9 @@ function applyResponsiveCamera() {
   const aspect = window.innerWidth / window.innerHeight;
   camera.aspect = aspect;
 
-  const narrowness = THREE.MathUtils.clamp((1 - aspect) / 0.65, 0, 1);
-  const fov = THREE.MathUtils.lerp(38, 60, narrowness);
-  const distScale = THREE.MathUtils.lerp(1, 1.55, narrowness);
+  const narrowness = THREE.MathUtils.clamp((1 - aspect) / 0.7, 0, 1);
+  const fov = THREE.MathUtils.lerp(38, 50, narrowness);
+  const distScale = THREE.MathUtils.lerp(1, 1.2, narrowness);
 
   camera.fov = fov;
   camera.updateProjectionMatrix();
