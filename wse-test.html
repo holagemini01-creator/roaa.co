@@ -4,6 +4,14 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>Wall Street English — Explore our branches</title>
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Wall Street English — Explore our branches" />
+<meta property="og:description" content="A demo prototype: tap a branch to step inside its virtual tour." />
+<meta property="og:image" content="wse-logo.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Wall Street English — Explore our branches" />
+<meta name="twitter:description" content="A demo prototype: tap a branch to step inside its virtual tour." />
+<meta name="twitter:image" content="wse-logo.png" />
 <style>
   :root{
     --navy: #02335a;
@@ -229,6 +237,11 @@ const scene = new THREE.Scene();
 const world = new THREE.Group();
 scene.add(world);
 
+let activeIndex = -1;
+let hoveredIndex = -1;
+let cameraAnim = null;
+let currentLook = new THREE.Vector3(0, 0.5, 0);
+
 const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 200);
 const overviewPos = new THREE.Vector3(0, 6.6, 11.5);
 camera.position.copy(overviewPos);
@@ -247,18 +260,34 @@ const rim = new THREE.DirectionalLight(0xf02c3e, 0.5);
 rim.position.set(-5, 2, -4);
 scene.add(rim);
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+// on narrow (portrait) screens, widen the field of view and back the camera off
+// so the full 2x2 grid stays inside the frame instead of spilling off the edges
+function applyResponsiveCamera() {
+  const aspect = window.innerWidth / window.innerHeight;
+  camera.aspect = aspect;
+
+  const narrowness = THREE.MathUtils.clamp((1 - aspect) / 0.65, 0, 1);
+  const fov = THREE.MathUtils.lerp(38, 60, narrowness);
+  const distScale = THREE.MathUtils.lerp(1, 1.55, narrowness);
+
+  camera.fov = fov;
   camera.updateProjectionMatrix();
+  overviewPos.set(0, 6.6 * distScale, 11.5 * distScale);
+
+  if (activeIndex === -1 && !cameraAnim) {
+    camera.position.copy(overviewPos);
+    camera.lookAt(0, 0.5, 0);
+  }
+}
+
+window.addEventListener('resize', () => {
+  applyResponsiveCamera();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+applyResponsiveCamera();
 
 const buildingEntries = [];
 const raycaster = new THREE.Raycaster();
-let activeIndex = -1;
-let hoveredIndex = -1;
-let cameraAnim = null;
-let currentLook = new THREE.Vector3(0, 0.5, 0);
 
 // grid positions (2x2), spaced further apart so buildings read as separate
 const gridPositions = [
