@@ -513,6 +513,19 @@
   .gc-progress.on{ display:block; }
   .gc-progress .bar{ height:100%; width:0%; background:var(--gold); transition:.25s; }
 
+  /* سلايدرز خاصة بتبويب الضغط — مستقلة عن .slider تبع تبويب الخطوط
+     حتى لا يتداخل الاثنين في المنطق */
+  .gc-slider{
+    background:var(--panel); border:1px solid var(--panel-line);
+    border-radius:var(--radius); padding:13px 15px; margin-bottom:10px;
+  }
+  .gc-slider-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .gc-slider-head span{ font-size:.85rem; }
+  .gc-slider-head b{
+    font-family:'JetBrains Mono',monospace; font-size:.78rem; color:var(--gold);
+    background:var(--gold-dim); padding:2px 9px; border-radius:var(--radius);
+  }
+
   .gc-presets{ flex-wrap:wrap; }
   .gc-presets .seg{ flex:1 1 32%; min-width:88px; border-top:1px solid var(--panel-line); }
   .gc-presets .seg:nth-child(-n+3){ border-top:none; }
@@ -834,12 +847,12 @@
         التفاصيل الدقيقة ووضوح الصور. جرّب المعاينة تحت قبل ما تعتمد أي إعداد على جولة حقيقية.
       </div>
 
-      <div class="slider">
-        <div class="slider-head"><span>تبسيط الشكل الهندسي (تقليل المضلعات)</span><b id="gcVRatio">50٪</b></div>
+      <div class="gc-slider">
+        <div class="gc-slider-head"><span>تبسيط الشكل الهندسي (تقليل المضلعات)</span><b id="gcVRatio">50٪</b></div>
         <input type="range" id="gcRatio" min="1" max="100" value="50" step="1" />
       </div>
-      <div class="slider">
-        <div class="slider-head"><span>سماحية الخطأ في التبسيط</span><b id="gcVError">0.010</b></div>
+      <div class="gc-slider">
+        <div class="gc-slider-head"><span>سماحية الخطأ في التبسيط</span><b id="gcVError">0.010</b></div>
         <input type="range" id="gcError" min="1" max="150" value="10" step="1" />
       </div>
 
@@ -868,8 +881,8 @@
         </div>
       </div>
 
-      <div class="slider">
-        <div class="slider-head"><span>جودة ضغط الصور</span><b id="gcVQuality">80٪</b></div>
+      <div class="gc-slider">
+        <div class="gc-slider-head"><span>جودة ضغط الصور</span><b id="gcVQuality">80٪</b></div>
         <input type="range" id="gcQuality" min="15" max="95" value="80" step="1" />
       </div>
 
@@ -1598,17 +1611,22 @@ $("#btnSaveTexts").addEventListener("click", async () => {
 const PREV_VARS = { desktop:"--p-base", tagline:"--p-tagline", heading:"--p-heading", card:"--p-card" };
 function fillType(){
   $$(".slider").forEach(box => {
+    // تحصين: أي سلايدر مو تبع الخطوط ما يوقف تحميل اللوحة كلها
+    const inp = box.querySelector("input"), val = box.querySelector(".val");
+    if (!inp || !val || !box.dataset.y) return;
     const pct = Math.round((Number(TYPE[box.dataset.y]) || 1) * 100);
-    box.querySelector("input").value = pct;
-    box.querySelector(".val").textContent = pct + "٪";
+    inp.value = pct;
+    val.textContent = pct + "٪";
   });
   const prev = $(".tprev");
   for (const k in PREV_VARS) prev.style.setProperty(PREV_VARS[k], String(Number(TYPE[k]) || 1));
 }
 $$(".slider input").forEach(inp => inp.addEventListener("input", () => {
   const box = inp.closest(".slider");
+  const val = box && box.querySelector(".val");
+  if (!box || !val || !box.dataset.y) return;
   TYPE[box.dataset.y] = Number(inp.value) / 100;
-  box.querySelector(".val").textContent = inp.value + "٪";
+  val.textContent = inp.value + "٪";
   const prev = $(".tprev");
   for (const k in PREV_VARS) prev.style.setProperty(PREV_VARS[k], String(Number(TYPE[k]) || 1));
   pushStyles(); pushHistSoon("تغيير حجم خط");
