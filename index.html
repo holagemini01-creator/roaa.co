@@ -399,6 +399,56 @@
     0%,100%{ transform:scale(1); }
     50%{ transform:scale(1.05); }
   }
+
+  /* ---------- مسرح النموذج ثلاثي الأبعاد (بديل شاشة التحميل) ----------
+     يظهر بدل شاشة التحميل للجولات اللي اختير لها وضع «نموذج 3D» من لوحة
+     التحكم. الزائر يلف المبنى بإصبعه، وبالضغط عليه تفتح الجولة المحمّلة
+     مسبقاً بلا أي شاشة تحميل ثانية. */
+  .stage3d{
+    position:absolute; inset:0; z-index:6;
+    background: radial-gradient(ellipse at 50% 42%, #ffffff 0%, #f3efe6 60%, #e6e0d2 100%);
+    overflow:hidden;
+    transition: opacity 0.7s ease;
+    touch-action:none;               /* حتى لا تتحرك الصفحة أثناء تدوير المبنى */
+    -webkit-user-select:none; user-select:none;
+    cursor:grab;
+  }
+  .stage3d.dragging{ cursor:grabbing; }
+  .stage3d.hide{ opacity:0; pointer-events:none; }
+  .stage3d[hidden]{ display:none !important; }
+  .stage3d canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  /* طبقة تحميل النموذج نفسه: اللوجو والدوّارة ونسبة التحميل */
+  .stage3d-load{
+    position:absolute; inset:0; z-index:2;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:20px;
+    transition: opacity 0.5s ease;
+  }
+  .stage3d-load.hide{ opacity:0; pointer-events:none; }
+  .stage3d-load img{ width:min(42%, 170px); max-height:34%; object-fit:contain; }
+  .stage3d-txt{
+    font-family:'Kufam', system-ui, sans-serif; font-size:0.8rem;
+    letter-spacing:.02em; color:#1e2430; opacity:.7;
+  }
+
+  /* دعوة الدخول للجولة */
+  .stage3d-hint{
+    position:absolute; z-index:3; left:50%; bottom:8%;
+    transform:translateX(-50%);
+    padding:10px 22px; border-radius:999px;
+    background:#1e2430; color:#f3efe6;
+    font-family:'Kufam', system-ui, sans-serif; font-size:0.86rem;
+    white-space:nowrap; pointer-events:none;
+    opacity:0; transition:opacity 0.5s ease;
+    animation: roaa-pulse 1.8s ease-in-out infinite;
+  }
+  .stage3d-hint.on{ opacity:1; }
+  .stage3d-hint[hidden]{ display:none !important; }
+
+  /* زر الرجوع للنموذج — في وضع 3D يظهر على كل الأجهزة (مو الجوال فقط) */
+  .exit-fs.fs-3d{ display:flex; }
+  .exit-fs.fs-3d[hidden]{ display:none !important; }
   .empty-state{
     text-align:center; padding: 24px; max-width: 380px;
   }
@@ -1054,6 +1104,381 @@
     if (e.size  != null){ btn.style.width = (+e.size) + "px"; btn.style.height = (+e.size) + "px"; }
   }
 
+  /* ============================================================
+     وضع النموذج ثلاثي الأبعاد — بديل شاشة التحميل
+     يُفعَّل لكل جولة على حدة من لوحة التحكم (حقل رابط GLB).
+     الجولات اللي ما عندها نموذج تبقى على شاشة التحميل التقليدية
+     بلا أي تغيير، وكذلك الأجهزة اللي ما تدعم WebGL.
+     ============================================================ */
+  const THREE_CORE = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+  const THREE_GLTF = "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js";
+  let threePromise = null;
+
+  function loadScriptOnce(src){
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src; s.async = false;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("تعذّر تحميل " + src));
+      document.head.appendChild(s);
+    });
+  }
+  // تُحمَّل المكتبة عند أول جولة تحتاجها فقط — الجولات التقليدية ما تحمّل شيئاً
+  function loadThree(){
+    if (window.THREE && window.THREE.GLTFLoader) return Promise.resolve();
+    if (!threePromise){
+      threePromise = loadScriptOnce(THREE_CORE)
+        .then(() => loadScriptOnce(THREE_GLTF))
+        .catch(err => { threePromise = null; throw err; });
+    }
+    return threePromise;
+  }
+  let _webglOk = null;   // نفحص مرة واحدة فقط حتى لا نستهلك سياقات WebGL
+  function hasWebGL(){
+    if (_webglOk !== null) return _webglOk;
+    try{
+      const c = document.createElement("canvas");
+      const gl = window.WebGLRenderingContext &&
+                (c.getContext("webgl") || c.getContext("experimental-webgl"));
+      if (gl){
+        const lose = gl.getExtension("WEBGL_lose_context");
+        if (lose) lose.loseContext();
+      }
+      _webglOk = !!gl;
+    }catch(e){ _webglOk = false; }
+    return _webglOk;
+  }
+  // تحميل ملف النموذج مع نسبة تقدّم، ويبدأ فوراً بالتوازي مع تحميل الجولة
+  async function fetchModelBuffer(url, onProgress){
+    const res = await fetch(url, { credentials:"omit" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const total = Number(res.headers.get("content-length") || 0);
+    if (!total || !res.body || typeof res.body.getReader !== "function"){
+      return await res.arrayBuffer();
+    }
+    const reader = res.body.getReader();
+    const chunks = []; let received = 0;
+    for(;;){
+      const step = await reader.read();
+      if (step.done) break;
+      chunks.push(step.value); received += step.value.length;
+      if (onProgress) onProgress(Math.min(0.99, received / total));
+    }
+    const out = new Uint8Array(received);
+    let at = 0;
+    for (const c of chunks){ out.set(c, at); at += c.length; }
+    if (onProgress) onProgress(1);
+    return out.buffer;
+  }
+
+  /* يبني مسرح المبنى الطايف: تحميل + عرض + تدوير تلقائي + تدوير بالإصبع
+     + دعوة الدخول + زوم الدخول والرجوع. يرجّع واجهة تتحكم بها buildTour. */
+  function buildStage3d(url, TB, introMs){
+    const el = document.createElement("div");
+    el.className = "stage3d";
+    const canvas = document.createElement("canvas");
+    const loadBox = document.createElement("div"); loadBox.className = "stage3d-load";
+    const lImg = document.createElement("img"); lImg.src = TB.loadingLogo; lImg.alt = "";
+    const lSpin = document.createElement("div"); lSpin.className = "loading-spinner";
+    const lTxt = document.createElement("div"); lTxt.className = "stage3d-txt";
+    lTxt.textContent = TB.tourLoading;
+    loadBox.appendChild(lImg); loadBox.appendChild(lSpin); loadBox.appendChild(lTxt);
+    const hint = document.createElement("div");
+    hint.className = "stage3d-hint"; hint.hidden = true; hint.textContent = TB.tourReady;
+    el.appendChild(canvas); el.appendChild(loadBox); el.appendChild(hint);
+
+    const api = { el, onEnter:null, onFail:null, entered:false };
+
+    let renderer = null, scene = null, camera = null, root = null, model = null;
+    let raf = 0, ro = null, disposed = false, failed = false;
+    let modelReady = false, tourReady = false, introDone = false;
+    let armed = false, pendingEnter = false;
+    let anim = null;                          // حركة الزوم الحالية
+    let autoRotate = true, idleTimer = 0, introTimer = 0;
+    let modelH = 1, hoverBase = 0.14, fitRadius = 3.2;
+    const FOV_BASE = 38, FOV_ZOOM = 54;
+    const orbit = { radius: 3.6, az: -0.62, el: 0.30 };
+    const baseOrbit = { radius: 3.6, az: -0.62, el: 0.30 };
+    const target = { y: 0.5 };
+    const t0 = performance.now();
+
+    const timers = [];
+    const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+    const easeIn  = (t) => t * t * t;
+
+    function fail(err){
+      if (failed || disposed) return;
+      failed = true;
+      console.warn("[رؤى] تعذّر عرض النموذج ثلاثي الأبعاد — سنكمل بشاشة التحميل التقليدية", err);
+      if (typeof api.onFail === "function") api.onFail();
+    }
+
+    /* ---------- التحميل ---------- */
+    (async function start(){
+      try{
+        // الملف والمكتبة ينزلوا بالتوازي، ما ننتظر واحد فوق الثاني
+        const bufP = fetchModelBuffer(url, (p) => {
+          if (!disposed) lTxt.textContent = TB.tourLoading + "  " + Math.round(p * 100) + "٪";
+        });
+        await loadThree();
+        const buf = await bufP;
+        if (disposed) return;
+        initScene();
+        new THREE.GLTFLoader().parse(buf, "", (gltf) => {
+          if (disposed) return;
+          try{ placeModel(gltf.scene); }catch(e){ fail(e); }
+        }, (e) => fail(e));
+      }catch(err){ fail(err); }
+    })();
+
+    /* ---------- المشهد ---------- */
+    function initScene(){
+      renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(FOV_BASE, 16/10, 0.01, 120);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.95));
+      const key = new THREE.DirectionalLight(0xffffff, 0.85);
+      key.position.set(3.5, 5.5, 4);
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0xc6a35d, 0.35);
+      rim.position.set(-4, 2.4, -3.2);
+      scene.add(rim);
+      root = new THREE.Group();
+      scene.add(root);
+      resize();
+      if (window.ResizeObserver){
+        ro = new ResizeObserver(resize);
+        ro.observe(el);
+      }else{
+        window.addEventListener("resize", resize);
+      }
+    }
+
+    function placeModel(obj){
+      model = obj;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const center = new THREE.Vector3(); box.getCenter(center);
+      // نوسّط أفقياً فقط، ونخلي قاعدة المبنى على y=0 حتى يطفو فوق الحلقة
+      model.position.x -= center.x;
+      model.position.z -= center.z;
+      model.position.y -= box.min.y;
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      const k = 1.3 / maxDim;
+      model.scale.setScalar(k);
+      modelH = size.y * k;
+      const footprint = Math.max(size.x, size.z) * k;
+
+      const holder = new THREE.Group();
+      holder.position.y = hoverBase;
+      holder.add(model);
+      root.add(holder);
+      root.userData.holder = holder;
+
+      // حلقة ذهبية خفيفة تحت المبنى (نفس هوية رؤى)
+      const ringGeo = new THREE.RingGeometry(footprint*0.62, footprint*0.66, 96);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color:0xc6a35d, transparent:true, opacity:0.4, side:THREE.DoubleSide
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = -Math.PI/2;
+      ring.position.y = 0.001;
+      root.add(ring);
+      const glowGeo = new THREE.CircleGeometry(footprint*0.6, 64);
+      const glowMat = new THREE.MeshBasicMaterial({ color:0xc6a35d, transparent:true, opacity:0.07 });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      glow.rotation.x = -Math.PI/2;
+      root.add(glow);
+
+      target.y = hoverBase + modelH * 0.5;
+      resize();
+      orbit.radius = baseOrbit.radius = fitRadius;
+      modelReady = true;
+      loadBox.classList.add("hide");
+      later(() => { if (loadBox.parentNode) loadBox.remove(); }, 600);
+      // مدة الاستعراض تبدأ من لحظة ظهور المبنى فعلاً
+      introTimer = later(() => { introDone = true; refreshArm(); }, Math.max(0, introMs));
+      startLoop();
+    }
+
+    function resize(){
+      if (!renderer || !camera || disposed) return;
+      const w = el.clientWidth || 640, h = el.clientHeight || 400;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      // نضمن دخول المبنى داخل الكادر عرضاً وطولاً مهما كان شكل الشاشة
+      const half = Math.max(0.72, modelH * 0.62);
+      const vFit = half / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      fitRadius = (vFit / Math.min(1, camera.aspect)) * 1.28;
+      baseOrbit.radius = fitRadius;
+      if (!anim && !api.entered) orbit.radius = fitRadius;
+      camera.updateProjectionMatrix();
+      applyCamera();
+    }
+
+    function applyCamera(){
+      if (!camera) return;
+      const r = orbit.radius, a = orbit.az, e = orbit.el;
+      camera.position.set(
+        r * Math.cos(e) * Math.sin(a),
+        target.y + r * Math.sin(e),
+        r * Math.cos(e) * Math.cos(a)
+      );
+      camera.lookAt(0, target.y, 0);
+    }
+
+    /* ---------- حلقة الرسم ---------- */
+    function startLoop(){
+      if (raf || disposed || !renderer) return;
+      const tick = () => {
+        raf = requestAnimationFrame(tick);
+        const now = performance.now();
+        if (anim){
+          const t = Math.min(1, (now - anim.start) / anim.ms);
+          const k = anim.ease(t);
+          orbit.radius = anim.from.radius + (anim.to.radius - anim.from.radius) * k;
+          orbit.el     = anim.from.el     + (anim.to.el     - anim.from.el)     * k;
+          if (anim.fov != null){
+            camera.fov = anim.fromFov + (anim.fov - anim.fromFov) * k;
+            camera.updateProjectionMatrix();
+          }
+          if (t >= 1){ const done = anim.done; anim = null; if (done) done(); }
+        }else if (autoRotate){
+          orbit.az += 0.0032;
+        }
+        // طفو خفيف للمبنى
+        const holder = root && root.userData.holder;
+        if (holder) holder.position.y = hoverBase + Math.sin((now - t0) / 1400) * modelH * 0.012;
+        applyCamera();
+        renderer.render(scene, camera);
+      };
+      raf = requestAnimationFrame(tick);
+    }
+    function stopLoop(){ if (raf){ cancelAnimationFrame(raf); raf = 0; } }
+
+    /* ---------- التفاعل: تدوير بالإصبع + نقرة للدخول ---------- */
+    let dragging = false, moved = 0, lastX = 0, lastY = 0, pid = null;
+
+    function onDown(e){
+      if (!modelReady || api.entered || anim) return;
+      dragging = true; moved = 0;
+      lastX = e.clientX; lastY = e.clientY; pid = e.pointerId;
+      autoRotate = false;
+      clearTimeout(idleTimer);
+      el.classList.add("dragging");
+      if (el.setPointerCapture && pid != null){ try{ el.setPointerCapture(pid); }catch(err){} }
+    }
+    function onMove(e){
+      if (!dragging) return;
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      moved += Math.abs(dx) + Math.abs(dy);
+      orbit.az -= dx * 0.0075;
+      orbit.el = Math.max(-0.12, Math.min(1.15, orbit.el + dy * 0.005));
+    }
+    function onUp(e){
+      if (!dragging) return;
+      dragging = false;
+      el.classList.remove("dragging");
+      if (el.releasePointerCapture && pid != null){ try{ el.releasePointerCapture(pid); }catch(err){} }
+      pid = null;
+      // حركة بسيطة جداً = نقرة (دخول)، وأي سحب حقيقي = تدوير فقط
+      if (moved < 10){ tryEnter(); return; }
+      // رجوع الدوران التلقائي بعد ما يسيب الزائر المبنى
+      clearTimeout(idleTimer);
+      idleTimer = later(() => { if (!api.entered && !anim) autoRotate = true; }, 2600);
+    }
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("pointerup", onUp);
+    el.addEventListener("pointercancel", onUp);
+    el.addEventListener("contextmenu", (e) => e.preventDefault());
+
+    /* ---------- الجاهزية والدخول ---------- */
+    function refreshArm(){
+      if (disposed || api.entered) return;
+      armed = introDone && tourReady && modelReady;
+      if (armed){
+        hint.textContent = TB.tourReady;
+        hint.hidden = false;
+        requestAnimationFrame(() => hint.classList.add("on"));
+        if (pendingEnter){ pendingEnter = false; zoomIn(); }
+      }
+    }
+    function tryEnter(){
+      if (api.entered || anim) return;
+      if (!armed){
+        // ضغط قبل الجاهزية: نسجّل رغبته وندخل فوراً أول ما تجهز الجولة
+        pendingEnter = true;
+        hint.textContent = TB.tourLoading;
+        hint.hidden = false;
+        requestAnimationFrame(() => hint.classList.add("on"));
+        return;
+      }
+      zoomIn();
+    }
+    function zoomIn(){
+      if (api.entered || anim) return;
+      api.entered = true;
+      autoRotate = false;
+      clearTimeout(idleTimer);
+      hint.classList.remove("on");
+      anim = {
+        start: performance.now(), ms: 850, ease: easeIn,
+        from: { radius: orbit.radius, el: orbit.el },
+        to:   { radius: Math.max(0.06, fitRadius * 0.10), el: 0.06 },
+        fromFov: camera.fov, fov: FOV_ZOOM,
+        done: () => {
+          hint.hidden = true;
+          if (typeof api.onEnter === "function") api.onEnter();
+        }
+      };
+    }
+
+    /* ---------- واجهة التحكم من buildTour ---------- */
+    api.setTourReady = () => { tourReady = true; refreshArm(); };
+    api.hide = () => {
+      el.classList.add("hide");
+      later(() => { if (!disposed) stopLoop(); }, 750);
+    };
+    api.restore = () => {                       // الرجوع من الجولة إلى المبنى
+      if (disposed) return;
+      api.entered = false;
+      el.classList.remove("hide");
+      startLoop();
+      anim = {
+        start: performance.now(), ms: 700, ease: easeOut,
+        from: { radius: orbit.radius, el: orbit.el },
+        to:   { radius: fitRadius, el: baseOrbit.el },
+        fromFov: camera ? camera.fov : FOV_BASE, fov: FOV_BASE,
+        done: () => {
+          autoRotate = true;
+          hint.hidden = false;
+          requestAnimationFrame(() => hint.classList.add("on"));
+        }
+      };
+    };
+    api.dispose = () => {
+      disposed = true;
+      stopLoop();
+      timers.forEach(clearTimeout);
+      if (ro){ try{ ro.disconnect(); }catch(e){} ro = null; }
+      else window.removeEventListener("resize", resize);
+      if (renderer){
+        try{
+          renderer.dispose();
+          if (renderer.forceContextLoss) renderer.forceContextLoss();
+        }catch(e){}
+        renderer = null;
+      }
+      scene = camera = root = model = null;
+    };
+    return api;
+  }
+
   const viewport = document.getElementById("tourViewport");
 
   // تبني الجولة من الصفر: تُستدعى عند فتح الصفحة، وعند اختيار مشروع من المكتبة
@@ -1062,6 +1487,8 @@
     // إيقاف أي مؤقّتات سابقة وتنظيف الإطار قبل البناء من جديد
     if (viewport._timers) viewport._timers.forEach(clearTimeout);
     viewport._timers = [];
+    // تحرير مشهد ثلاثي الأبعاد سابق (إن وُجد) قبل بناء جولة جديدة
+    if (viewport._stage3d){ try{ viewport._stage3d.dispose(); }catch(e){} viewport._stage3d = null; }
     viewport.classList.remove("is-fs", "fs-host");
     document.body.classList.remove("fs-lock");
     viewport.innerHTML = "";
@@ -1115,10 +1542,23 @@
     lTxt.textContent = TB.tourLoading;
     loading.appendChild(lImg); loading.appendChild(lSpin); loading.appendChild(lTxt);
 
+    // ── وضع العرض: نموذج 3D بدل شاشة التحميل (إن كان مضبوطاً لهذي الجولة) ──
+    // يشترط: رابط نموذج صالح + دعم WebGL. غير كذا نكمل بالشاشة التقليدية.
+    const model3dUrl = (proj.model3d || "").trim();
+    const intro3dMs  = Math.max(0, Number(proj.intro3d || 12) * 1000) || 12000;
+    let use3d = !!model3dUrl && isSafeEmbedUrl(model3dUrl) && hasWebGL();
+    let stage3d = null;
+
     coverNodes.forEach(n => viewport.appendChild(n));
     viewport.appendChild(veilNormal);
     viewport.appendChild(veilFs);
-    viewport.appendChild(loading);
+    if (use3d){
+      stage3d = buildStage3d(model3dUrl, TB, intro3dMs);
+      viewport._stage3d = stage3d;
+      viewport.appendChild(stage3d.el);
+    }else{
+      viewport.appendChild(loading);
+    }
 
     // بعد 8 ثوانٍ: تتحول شاشة التحميل إلى شاشة بدء بلمسة واحدة.
     // هذا يحل مشكلة الجوال: المتصفح يشترط تفاعل المستخدم لبدء التشغيل،
@@ -1133,6 +1573,9 @@
     exitBtn.innerHTML = "&times;";
     viewport.appendChild(exitBtn);
     applyExitFsStyle(exitBtn, TB);
+    // في وضع 3D: نفس الزر يشتغل على كل الأجهزة ومعناه «رجوع للمبنى»،
+    // ويبقى مخفياً ما دام المبنى معروضاً.
+    if (use3d){ exitBtn.classList.add("fs-3d"); exitBtn.hidden = true; }
 
     const isMobile = () => window.matchMedia("(max-width:1024px)").matches;
 
@@ -1187,6 +1630,13 @@
       if (homeAnchor.parentNode) {
         homeAnchor.parentNode.insertBefore(viewport, homeAnchor);
       }
+      // وضع 3D: الخروج يرجّع الزائر للمبنى الطايف نفسه (الجولة تبقى محمّلة تحته)
+      if (use3d && stage3d){
+        exitBtn.hidden = true;
+        veilNormal.hidden = true;
+        stage3d.restore();
+        return;
+      }
       // إظهار زر العودة فوق الـ iframe
       if (isMobile()) { resumeBtn.hidden = false; tapShield.hidden = false; }
     };
@@ -1198,10 +1648,8 @@
     viewport._escHandler = (e) => { if (e.key === "Escape") exitFs(); };
     window.addEventListener("keydown", viewport._escHandler);
 
-    let dismissed = false;
-    const dismiss = () => {
-      if (dismissed) return;
-      dismissed = true;
+    // كشف الجولة نفسها (ملء شاشة مزيّف في الجوال، أو داخل الإطار في اللابتوب)
+    const revealTour = () => {
       if (isMobile() && !IS_EMBED) {
         enterFs();                 // الجوال (خارج التضمين): ملء الشاشة المزيّف + الجملة المؤقتة
       } else {
@@ -1211,9 +1659,27 @@
         clearTimeout(veilTimer);
         veilTimer = track(() => veilFs.classList.add("fade"), 12000);
       }
+    };
+
+    let dismissed = false;
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      revealTour();
       loading.classList.add("hide");
       track(() => loading.remove(), 900);
     };
+
+    // الدخول من المبنى ثلاثي الأبعاد (بعد حركة الزوم) — يتكرر كل ما رجع ودخل
+    const enterFrom3d = () => {
+      dismissed = true;            // حتى لا تتدخل الشاشة التقليدية
+      // نخفي المبنى ونظهر زر الرجوع أولاً حتى لا يعلق الزائر أمام المبنى
+      // لو صار أي خلل في كشف الجولة
+      if (stage3d) stage3d.hide();
+      exitBtn.hidden = false;
+      revealTour();
+    };
+    if (use3d && stage3d) stage3d.onEnter = enterFrom3d;
 
     // ── إخفاء شاشة التحميل ──
     // بعد تحميل إطار Matterport ننتظر SPLASH_COVER_MS لتغطية مقدمة "powered by matterport"
@@ -1222,9 +1688,8 @@
     const LOAD_TIMEOUT    = 15000;  // حدّ أقصى احتياطي
     let proceeded = false;
 
-    const proceed = () => {
-      if (proceeded || dismissed) return;
-      proceeded = true;
+    // حالة «الجولة جاهزة» على شاشة التحميل التقليدية
+    const showReadyState = () => {
       if (isMobile()) {
         // الجوال/التابلت: يشترط المتصفح لمسة من المستخدم لبدء التشغيل/ملء الشاشة
         if (spinner) spinner.style.display = "none";
@@ -1236,6 +1701,31 @@
         // اللابتوب: تبدأ الجولة مباشرة بلا زر
         dismiss();
       }
+    };
+
+    // لو فشل تحميل النموذج أو المكتبة: نرجع بهدوء للشاشة التقليدية
+    if (use3d && stage3d){
+      stage3d.onFail = () => {
+        use3d = false;
+        exitBtn.classList.remove("fs-3d");
+        exitBtn.hidden = false;
+        if (stage3d.el.parentNode) stage3d.el.remove();
+        try{ stage3d.dispose(); }catch(e){}
+        viewport._stage3d = null;
+        stage3d = null;
+        if (!dismissed){
+          viewport.insertBefore(loading, exitBtn);
+          if (proceeded) showReadyState();
+        }
+      };
+    }
+
+    const proceed = () => {
+      if (proceeded || dismissed) return;
+      proceeded = true;
+      // وضع 3D: ما نفتح الجولة تلقائياً — نعلّم إنها جاهزة وننتظر ضغطة الزائر
+      if (use3d && stage3d){ stage3d.setTourReady(); return; }
+      showReadyState();
     };
 
     // عند تحميل الإطار: انتظر مهلة التغطية ثم اكشف

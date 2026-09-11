@@ -461,7 +461,79 @@
   }
 
   #loader{ text-align:center; padding:60px 20px; color:var(--muted); font-size:.85rem; }
+
+  /* ═══════════ ضغط النماذج GLB ═══════════ */
+  .gc-drop{
+    border:2px dashed var(--panel-line); border-radius:var(--radius); background:var(--ink-2);
+    padding:30px 16px; text-align:center; cursor:pointer; transition:.18s;
+  }
+  .gc-drop:hover, .gc-drop.drag{ border-color:var(--gold); background:var(--gold-dim); }
+  .gc-drop .ic{ font-size:1.8rem; margin-bottom:8px; opacity:.8; }
+  .gc-drop .t1{ font-weight:700; font-size:.9rem; margin-bottom:4px; }
+  .gc-drop .t2{ color:var(--muted); font-size:.74rem; font-family:'JetBrains Mono',monospace; }
+  .gc-drop input[type=file]{ display:none; }
+
+  .gc-filebox{
+    display:none; align-items:center; gap:12px; background:var(--ink-2); border:1px solid var(--panel-line);
+    border-radius:var(--radius); padding:12px 14px; margin-top:12px;
+  }
+  .gc-filebox.on{ display:flex; }
+  .gc-filebox .fi{ font-size:1.3rem; }
+  .gc-filebox .fname{ font-weight:600; font-size:.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .gc-filebox .fsize{ color:var(--muted); font-size:.74rem; font-family:'JetBrains Mono',monospace; }
+  .gc-filebox .fclear{ margin-inline-start:auto; background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.05rem; padding:4px 8px; }
+  .gc-filebox .fclear:hover{ color:var(--bad); }
+
+  .gc-log{
+    margin-top:16px; background:var(--ink); border:1px solid var(--panel-line); border-radius:var(--radius);
+    padding:12px 14px; max-height:170px; overflow-y:auto; font-family:'JetBrains Mono',monospace;
+    font-size:.7rem; color:var(--muted); line-height:1.9; display:none; direction:ltr; text-align:left;
+  }
+  .gc-log.on{ display:block; }
+  .gc-log .l-ok{ color:#7fae7a; }
+  .gc-log .l-err{ color:var(--bad); }
+  .gc-log .l-t{ color:#5f6165; margin-inline-end:6px; }
+
+  .gc-result{ display:none; margin-top:18px; }
+  .gc-result.on{ display:block; }
+  .gc-stat-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; }
+  @media(max-width:600px){ .gc-stat-grid{ grid-template-columns:1fr; } }
+  .gc-stat{
+    background:var(--ink-2); border:1px solid var(--panel-line); border-radius:var(--radius);
+    padding:12px; text-align:center;
+  }
+  .gc-stat .v{ font-family:'JetBrains Mono',monospace; font-size:1.1rem; font-weight:600; color:var(--paper); }
+  .gc-stat .v.gold{ color:var(--gold); }
+  .gc-stat .k{ font-size:.7rem; color:var(--muted); margin-top:4px; }
+
+  .gc-progress{
+    height:5px; background:var(--ink-2); border-radius:99px; overflow:hidden; margin-top:14px;
+    border:1px solid var(--panel-line); display:none;
+  }
+  .gc-progress.on{ display:block; }
+  .gc-progress .bar{ height:100%; width:0%; background:var(--gold); transition:.25s; }
+
+  .gc-presets{ flex-wrap:wrap; }
+  .gc-presets .seg{ flex:1 1 32%; min-width:88px; border-top:1px solid var(--panel-line); }
+  .gc-presets .seg:nth-child(-n+3){ border-top:none; }
+
+  .gc-preview{
+    margin-top:16px; background:var(--ink-2); border:1px solid var(--panel-line); border-radius:var(--radius);
+    overflow:hidden; height:220px; position:relative;
+  }
+  .gc-preview canvas{ display:block; width:100%; height:100%; }
+  .gc-preview .tag{
+    position:absolute; top:8px; inset-inline-start:10px; font-family:'JetBrains Mono',monospace;
+    font-size:.66rem; letter-spacing:.06em; color:var(--gold); text-transform:uppercase; opacity:.85;
+  }
+  .gc-extra-stats{
+    font-size:.74rem; color:var(--muted); text-align:center; margin-top:10px; line-height:1.8;
+    font-family:'JetBrains Mono',monospace; direction:ltr;
+  }
+  .gc-extra-stats b{ color:var(--paper); font-weight:600; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 <body>
 
@@ -514,6 +586,7 @@
       <button class="tab" data-pane="type">الخطوط</button>
       <button class="tab" data-pane="logos">الشعارات</button>
       <button class="tab" data-pane="settings">التواصل</button>
+      <button class="tab" data-pane="glb">ضغط النماذج</button>
     </div>
   </nav>
 
@@ -724,6 +797,109 @@
 
       <button class="btn primary" id="btnSaveSettings">حفظ ونشر</button>
     </section>
+
+    <!-- ──── ضغط النماذج GLB ──── -->
+    <section class="pane" id="pane-glb">
+      <div class="note">
+        قلّل حجم ملفات <b>GLB</b> ثلاثية الأبعاد قبل استخدامها في أي جولة — تبسيط الشكل الهندسي، ضغط دقة الإحداثيات،
+        وإعادة ضغط الصور. المعالجة تتم بالكامل داخل المتصفح، وملفك ما يترفع لأي سيرفر.
+      </div>
+
+      <label class="gc-drop" id="gcDrop">
+        <div class="ic">📦</div>
+        <div class="t1">اسحب ملف GLB هنا أو اضغط للاختيار</div>
+        <div class="t2">.glb only</div>
+        <input type="file" id="gcFileInput" accept=".glb,model/gltf-binary" />
+      </label>
+      <div class="gc-filebox" id="gcFilebox">
+        <div class="fi">🗂️</div>
+        <div>
+          <div class="fname" id="gcFname">—</div>
+          <div class="fsize" id="gcFsizeOrig">—</div>
+        </div>
+        <button class="fclear" id="gcFclear" type="button" title="إزالة">✕</button>
+      </div>
+
+      <div class="group"><h3>مستوى الضغط</h3></div>
+      <div class="segs gc-presets" id="gcPresetSegs">
+        <button class="seg" type="button" data-preset="light">خفيف</button>
+        <button class="seg on" type="button" data-preset="medium">متوسط</button>
+        <button class="seg" type="button" data-preset="strong">قوي</button>
+        <button class="seg" type="button" data-preset="stronger">قوي جداً</button>
+        <button class="seg" type="button" data-preset="max">أقصى ضغط</button>
+        <button class="seg" type="button" data-preset="custom">مخصص</button>
+      </div>
+      <div class="note" style="margin-top:-6px">
+        حتى في "أقصى ضغط" شكل المبنى العام يبقى محفوظ لأن التبسيط يقفل على الحواف الخارجية للمجسّم — اللي يتأثر أكثر هو
+        التفاصيل الدقيقة ووضوح الصور. جرّب المعاينة تحت قبل ما تعتمد أي إعداد على جولة حقيقية.
+      </div>
+
+      <div class="slider">
+        <div class="slider-head"><span>تبسيط الشكل الهندسي (تقليل المضلعات)</span><b id="gcVRatio">50٪</b></div>
+        <input type="range" id="gcRatio" min="1" max="100" value="50" step="1" />
+      </div>
+      <div class="slider">
+        <div class="slider-head"><span>سماحية الخطأ في التبسيط</span><b id="gcVError">0.010</b></div>
+        <input type="range" id="gcError" min="1" max="150" value="10" step="1" />
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>الحد الأقصى لدقة الصور</label>
+          <select id="gcTexSize">
+            <option value="0">بدون تغيير</option>
+            <option value="4096">4096px</option>
+            <option value="2048">2048px</option>
+            <option value="1024" selected>1024px</option>
+            <option value="512">512px</option>
+            <option value="256">256px</option>
+            <option value="128">128px</option>
+            <option value="64">64px (أقصى تصغير)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>تنسيق الصور</label>
+          <select id="gcTexFormat">
+            <option value="auto" selected>تلقائي (JPEG إلا الشفاف)</option>
+            <option value="image/jpeg">JPEG دائماً</option>
+            <option value="image/webp">WebP</option>
+            <option value="keep">الإبقاء على النوع الأصلي</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="slider">
+        <div class="slider-head"><span>جودة ضغط الصور</span><b id="gcVQuality">80٪</b></div>
+        <input type="range" id="gcQuality" min="15" max="95" value="80" step="1" />
+      </div>
+
+      <label class="toggle" style="margin-bottom:20px">
+        <input type="checkbox" id="gcQuantizeToggle" checked />
+        <span class="track"></span>
+        ضغط دقة الإحداثيات (Quantize) — يُفضّل تركه مفعّلاً
+      </label>
+
+      <button class="btn primary" id="gcBtnCompress" disabled style="width:100%">ابدأ الضغط</button>
+
+      <div class="gc-progress" id="gcProgress"><div class="bar" id="gcProgressBar"></div></div>
+      <div class="gc-log" id="gcLog"></div>
+
+      <div class="gc-result" id="gcResult">
+        <div class="group"><h3>النتيجة</h3></div>
+        <div class="gc-stat-grid">
+          <div class="gc-stat"><div class="v" id="gcStatOrig">—</div><div class="k">الحجم الأصلي</div></div>
+          <div class="gc-stat"><div class="v gold" id="gcStatNew">—</div><div class="k">الحجم الجديد</div></div>
+          <div class="gc-stat"><div class="v" id="gcStatPct">—</div><div class="k">نسبة التوفير</div></div>
+        </div>
+        <div class="gc-extra-stats" id="gcExtraStats"></div>
+
+        <div class="gc-preview" id="gcPreview" style="display:none">
+          <div class="tag">معاينة النموذج بعد الضغط</div>
+        </div>
+
+        <a class="btn primary" id="gcBtnDownload" download="compressed.glb" style="width:100%;margin-top:16px">⬇ تنزيل الملف المضغوط</a>
+      </div>
+    </section>
   </main>
 
   <!-- شريط الحفظ العائم -->
@@ -792,6 +968,32 @@
         <input type="file" id="fImgFile" accept="image/*" style="display:none" />
         <div class="imgprev" id="imgPrev"><div class="ph">لا توجد صورة</div></div>
         <div class="hint" id="imgHint">تُسحب الصورة المصغّرة من Matterport تلقائياً (حتى مع روابط MPembed) — بدون رفع ولا مساحة تخزين.</div>
+      </div>
+      <div class="field">
+        <label>شاشة العرض قبل الدخول للجولة</label>
+        <div class="segs">
+          <button class="seg on" type="button" data-disp="classic">شاشة التحميل التقليدية</button>
+          <button class="seg" type="button" data-disp="model3d">نموذج ثلاثي الأبعاد</button>
+        </div>
+        <div id="disp3dBox" style="display:none">
+          <div class="field">
+            <label>رابط ملف النموذج (GLB) <span class="req">*</span></label>
+            <input type="text" id="fModel3d" class="ltr" placeholder="models/alam-albunian.glb" />
+            <div class="hint">
+              ارفع الملف جنب ملفات الموقع وحط رابطه هنا (يفضّل من نفس نطاق الموقع عشان أسرع تحميل).
+              صغّر الملف أول من تبويب <b>ضغط النماذج</b>.
+            </div>
+            <div class="err" id="eModel" style="display:none"></div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>مدة استعراض المبنى قبل دعوة الدخول (ثواني)</label>
+            <input type="number" id="fIntro3d" min="0" max="120" step="1" placeholder="12" />
+            <div class="hint">
+              الزائر يلف المبنى بإصبعه طول هذي المدة (والمبنى يلف تلقائياً لما يسيبه).
+              بعدها تظهر دعوة «اضغط لبدء الجولة» — والدخول ما يصير إلا بضغطة منه.
+            </div>
+          </div>
+        </div>
       </div>
       <div class="field" style="margin-bottom:0">
         <label class="toggle">
@@ -910,7 +1112,7 @@ function slugify(s){
    الحالة
    ============================================================ */
 let TOURS = [], SETTINGS = {}, TEXTS = {}, TYPE = {}, LOGOS = {}, EDITS = {}, BLOCKS = [], TOURX = {};
-let editingId = null, imgMode = "auto", imgData = "";
+let editingId = null, imgMode = "auto", imgData = "", dispMode = "classic";
 let DIRTY = false;
 
 const DEFAULT_SETTINGS = {
@@ -1154,6 +1356,11 @@ function openEditor(id){
   imgMode = t ? (t.imageMode || "auto") : "auto";
   imgData = t ? (t.image || "") : "";
   $("#fImgUrl").value = (imgMode === "url") ? imgData : "";
+  // وضع العرض: نموذج 3D أو شاشة التحميل التقليدية
+  dispMode = (t && t.model3d) ? "model3d" : "classic";
+  $("#fModel3d").value = t ? (t.model3d || "") : "";
+  $("#fIntro3d").value = (t && t.intro3d) ? t.intro3d : "";
+  syncDispMode();
   syncImgMode(); updateSlugPreview(); clearErrors();
   $("#editor").classList.add("on");
   setTimeout(() => $("#fTitle").focus(), 60);
@@ -1185,6 +1392,16 @@ $("#genMap").addEventListener("click", (e) => {
   if (!q) return toast("اكتب العنوان أو المدينة أولاً");
   $("#fMap").value = "https://maps.google.com/?q=" + encodeURIComponent(q);
 });
+
+/* ---------- وضع العرض قبل الجولة: تقليدي أو نموذج ثلاثي الأبعاد ---------- */
+$$(".seg[data-disp]").forEach(b => b.addEventListener("click", () => {
+  dispMode = b.dataset.disp;
+  syncDispMode();
+}));
+function syncDispMode(){
+  $$(".seg[data-disp]").forEach(b => b.classList.toggle("on", b.dataset.disp === dispMode));
+  $("#disp3dBox").style.display = dispMode === "model3d" ? "block" : "none";
+}
 
 $$(".seg[data-img]").forEach(b => b.addEventListener("click", () => {
   imgMode = b.dataset.img;
@@ -1237,7 +1454,11 @@ function compressImage(file, maxW, quality){
   });
 }
 
-function clearErrors(){ $("#eSlug").style.display = "none"; $("#eTour").style.display = "none"; }
+function clearErrors(){
+  $("#eSlug").style.display = "none";
+  $("#eTour").style.display = "none";
+  $("#eModel").style.display = "none";
+}
 
 $("#edSave").addEventListener("click", async () => {
   clearErrors();
@@ -1255,7 +1476,19 @@ $("#edSave").addEventListener("click", async () => {
     $("#eSlug").textContent = "المعرّف مستخدم في جولة أخرى — اختر واحد غيره.";
     $("#eSlug").style.display = "block"; ok = false;
   }
+  const model3d = dispMode === "model3d" ? $("#fModel3d").value.trim() : "";
+  if (dispMode === "model3d" && !model3d){
+    $("#eModel").textContent = "حط رابط ملف النموذج (GLB)، أو ارجع لشاشة التحميل التقليدية.";
+    $("#eModel").style.display = "block"; ok = false;
+  }
   if (!ok) return;
+
+  // مدة الاستعراض: 12 ثانية افتراضياً، وتُحفظ فقط مع وضع النموذج
+  let intro3d = 0;
+  if (model3d){
+    const raw = parseInt($("#fIntro3d").value, 10);
+    intro3d = (isFinite(raw) && raw >= 0 && raw <= 120) ? raw : 12;
+  }
 
   const image = imgMode === "auto" ? autoThumb(tour)
               : imgMode === "url"  ? $("#fImgUrl").value.trim() : imgData;
@@ -1263,6 +1496,7 @@ $("#edSave").addEventListener("click", async () => {
     title, slug, tour, image, imageMode:imgMode,
     location:$("#fLocation").value.trim(), address:$("#fAddress").value.trim(),
     mapLink:$("#fMap").value.trim(), published:$("#fPub").checked,
+    model3d, intro3d,
     updatedAt:serverTimestamp()
   };
   const btn = $("#edSave");
@@ -1441,9 +1675,17 @@ async function saveWith(btn, okMsg){
 function draft(){
   const pub = TOURS.filter(t => t.published !== false)
     .sort((a,b) => (a.order ?? 0) - (b.order ?? 0))
-    .map(t => ({ slug:t.slug||"", title:t.title||"", location:t.location||"",
-                 address:t.address||"", mapLink:t.mapLink||"",
-                 image:t.image||"", tour:t.tour||"" }));
+    .map(t => {
+      const o = { slug:t.slug||"", title:t.title||"", location:t.location||"",
+                  address:t.address||"", mapLink:t.mapLink||"",
+                  image:t.image||"", tour:t.tour||"" };
+      // حقول وضع النموذج ثلاثي الأبعاد تُنشر فقط للجولات اللي مفعّل عندها
+      if (t.model3d){
+        o.model3d = t.model3d;
+        o.intro3d = Number(t.intro3d) > 0 ? Number(t.intro3d) : 12;
+      }
+      return o;
+    });
   // نستبعد الجولات اللي فُتحت في التبويب بلا تعديل فعلي، حتى لا
   // تُنشر مدخلات فاضية توهم أن الجولة مخصّصة
   const tourx = {};
@@ -2491,6 +2733,369 @@ window.addEventListener("beforeunload", (e) => {
   if (DIRTY){ e.preventDefault(); e.returnValue = ""; }
 });
 
+</script>
+<script type="module">
+/* ============================================================
+   ضغط النماذج GLB — ميزة جانبية مستقلة عن باقي لوحة التحكم
+   ============================================================ */
+import { WebIO } from 'https://esm.sh/@gltf-transform/core@4.5.0';
+import { weld, simplify, quantize, dedup, prune } from 'https://esm.sh/@gltf-transform/functions@4.5.0?exports=weld,simplify,quantize,dedup,prune';
+import { MeshoptSimplifier } from 'https://esm.sh/meshoptimizer@1.2.0/simplifier';
+
+const gc = (s) => document.querySelector(s);
+
+const gcDrop = gc('#gcDrop');
+const gcFileInput = gc('#gcFileInput');
+const gcFilebox = gc('#gcFilebox');
+const gcFname = gc('#gcFname');
+const gcFsizeOrig = gc('#gcFsizeOrig');
+const gcFclear = gc('#gcFclear');
+const gcBtnCompress = gc('#gcBtnCompress');
+const gcLogEl = gc('#gcLog');
+const gcProgress = gc('#gcProgress');
+const gcProgressBar = gc('#gcProgressBar');
+const gcResultEl = gc('#gcResult');
+const gcStatOrig = gc('#gcStatOrig');
+const gcStatNew = gc('#gcStatNew');
+const gcStatPct = gc('#gcStatPct');
+const gcBtnDownload = gc('#gcBtnDownload');
+
+const gcRatioEl = gc('#gcRatio'), gcVRatio = gc('#gcVRatio');
+const gcErrorEl = gc('#gcError'), gcVError = gc('#gcVError');
+const gcTexSizeEl = gc('#gcTexSize');
+const gcTexFormatEl = gc('#gcTexFormat');
+const gcQualityEl = gc('#gcQuality'), gcVQuality = gc('#gcVQuality');
+const gcQuantizeToggle = gc('#gcQuantizeToggle');
+
+let gcCurrentFile = null;
+
+function gcFmtSize(bytes){
+  if (bytes > 1024*1024) return (bytes/1024/1024).toFixed(2) + ' MB';
+  return (bytes/1024).toFixed(0) + ' KB';
+}
+function gcLog(msg, cls){
+  gcLogEl.classList.add('on');
+  const t = new Date().toLocaleTimeString('ar-LY', { hour12:false });
+  const line = document.createElement('div');
+  line.innerHTML = '<span class="l-t">'+t+'</span><span class="'+(cls||'')+'">'+msg+'</span>';
+  gcLogEl.appendChild(line);
+  gcLogEl.scrollTop = gcLogEl.scrollHeight;
+}
+function gcSetProgress(pct){
+  gcProgress.classList.add('on');
+  gcProgressBar.style.width = Math.max(0,Math.min(100,pct)) + '%';
+}
+
+gcDrop.addEventListener('dragover', (e) => { e.preventDefault(); gcDrop.classList.add('drag'); });
+gcDrop.addEventListener('dragleave', () => gcDrop.classList.remove('drag'));
+gcDrop.addEventListener('drop', (e) => {
+  e.preventDefault(); gcDrop.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) gcSetFile(f);
+});
+gcFileInput.addEventListener('change', () => { if (gcFileInput.files[0]) gcSetFile(gcFileInput.files[0]); });
+gcFclear.addEventListener('click', (e) => {
+  e.preventDefault(); e.stopPropagation();
+  gcCurrentFile = null;
+  gcFilebox.classList.remove('on');
+  gcFileInput.value = '';
+  gcBtnCompress.disabled = true;
+  gcResultEl.classList.remove('on');
+});
+
+function gcSetFile(f){
+  if (!f.name.toLowerCase().endsWith('.glb')){
+    alert('الملف لازم يكون بصيغة .glb');
+    return;
+  }
+  gcCurrentFile = f;
+  gcFname.textContent = f.name;
+  gcFsizeOrig.textContent = gcFmtSize(f.size);
+  gcFilebox.classList.add('on');
+  gcBtnCompress.disabled = false;
+  gcResultEl.classList.remove('on');
+}
+
+const GC_PRESETS = {
+  light:    { ratio:100, error:5,  texSize:2048, texFormat:'auto', quality:90, quantize:true },
+  medium:   { ratio:50,  error:10, texSize:1024, texFormat:'auto', quality:80, quantize:true },
+  strong:   { ratio:25,  error:20, texSize:512,  texFormat:'auto', quality:68, quantize:true },
+  stronger: { ratio:12,  error:35, texSize:256,  texFormat:'auto', quality:52, quantize:true },
+  max:      { ratio:5,   error:60, texSize:128,  texFormat:'auto', quality:35, quantize:true },
+};
+function gcApplyPreset(name){
+  const p = GC_PRESETS[name];
+  if (!p) return;
+  gcRatioEl.value = p.ratio;
+  gcErrorEl.value = p.error;
+  gcTexSizeEl.value = String(p.texSize);
+  gcTexFormatEl.value = p.texFormat;
+  gcQualityEl.value = p.quality;
+  gcQuantizeToggle.checked = p.quantize;
+  gcSyncLabels();
+}
+document.querySelectorAll('#gcPresetSegs .seg').forEach(seg => {
+  seg.addEventListener('click', () => {
+    document.querySelectorAll('#gcPresetSegs .seg').forEach(s => s.classList.remove('on'));
+    seg.classList.add('on');
+    const preset = seg.dataset.preset;
+    if (preset !== 'custom') gcApplyPreset(preset);
+  });
+});
+function gcMarkCustom(){
+  document.querySelectorAll('#gcPresetSegs .seg').forEach(s => s.classList.remove('on'));
+  document.querySelector('#gcPresetSegs .seg[data-preset="custom"]').classList.add('on');
+}
+[gcRatioEl, gcErrorEl, gcTexSizeEl, gcTexFormatEl, gcQualityEl, gcQuantizeToggle].forEach(el => {
+  el.addEventListener('input', () => { gcSyncLabels(); gcMarkCustom(); });
+});
+function gcSyncLabels(){
+  gcVRatio.textContent = gcRatioEl.value + '٪';
+  gcVError.textContent = (parseInt(gcErrorEl.value,10)/1000).toFixed(3);
+  gcVQuality.textContent = gcQualityEl.value + '٪';
+}
+gcSyncLabels();
+
+async function gcRecompressTexture(tex, opts, idx, total){
+  const imgBytes = tex.getImage();
+  if (!imgBytes || !imgBytes.length) return;
+  const srcMime = tex.getMimeType() || 'image/png';
+  let bitmap;
+  try{
+    const blob = new Blob([imgBytes], { type: srcMime });
+    bitmap = await createImageBitmap(blob);
+  } catch(e){
+    gcLog('تعذر فك ترميز الصورة رقم ' + (idx+1) + ' — تم تجاوزها', 'l-err');
+    return;
+  }
+  let { width, height } = bitmap;
+  const maxSize = opts.texSize;
+  if (maxSize && (width > maxSize || height > maxSize)){
+    const scale = Math.min(maxSize/width, maxSize/height);
+    width = Math.max(1, Math.round(width*scale));
+    height = Math.max(1, Math.round(height*scale));
+  }
+  let targetMime = opts.texFormat;
+  if (targetMime === 'keep') targetMime = srcMime;
+  if (targetMime === 'auto') targetMime = (srcMime === 'image/png') ? 'image/jpeg' : srcMime;
+
+  const noResize = (width === bitmap.width && height === bitmap.height);
+  const sameFormat = (targetMime === srcMime);
+  if (noResize && sameFormat && opts.quality >= 95) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width; canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (targetMime === 'image/jpeg'){
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,width,height);
+  }
+  ctx.drawImage(bitmap, 0, 0, width, height);
+
+  const quality = targetMime === 'image/png' ? undefined : (opts.quality/100);
+  const outBlob = await new Promise((resolve) => canvas.toBlob(resolve, targetMime, quality));
+  if (!outBlob){
+    gcLog('فشل ترميز الصورة رقم ' + (idx+1), 'l-err');
+    return;
+  }
+  const outBuf = new Uint8Array(await outBlob.arrayBuffer());
+  if (outBuf.length < imgBytes.length){
+    tex.setImage(outBuf);
+    tex.setMimeType(targetMime);
+    gcLog('صورة ' + (idx+1) + '/' + total + ': ' + gcFmtSize(imgBytes.length) + ' ← ' + gcFmtSize(outBuf.length));
+  } else {
+    gcLog('صورة ' + (idx+1) + '/' + total + ': تم تجاوزها (الأصلية أصغر بالفعل)');
+  }
+}
+
+function gcCountTriangles(doc){
+  let tris = 0;
+  for (const mesh of doc.getRoot().listMeshes()){
+    for (const prim of mesh.listPrimitives()){
+      const idx = prim.getIndices();
+      if (idx){ tris += idx.getCount() / 3; }
+      else {
+        const pos = prim.getAttribute('POSITION');
+        if (pos) tris += pos.getCount() / 3;
+      }
+    }
+  }
+  return Math.round(tris);
+}
+
+let gcPreviewState = null;
+function gcDisposePreview(){
+  if (!gcPreviewState) return;
+  cancelAnimationFrame(gcPreviewState.raf);
+  gcPreviewState.renderer.dispose();
+  const box = document.getElementById('gcPreview');
+  if (gcPreviewState.canvas && gcPreviewState.canvas.parentNode === box) box.removeChild(gcPreviewState.canvas);
+  gcPreviewState = null;
+}
+function gcShowPreview(glbBytes){
+  const box = document.getElementById('gcPreview');
+  if (typeof THREE === 'undefined' || !THREE.GLTFLoader){
+    box.style.display = 'none';
+    return;
+  }
+  gcDisposePreview();
+  box.style.display = 'block';
+
+  const canvas = document.createElement('canvas');
+  box.appendChild(canvas);
+  const w = box.clientWidth, h = box.clientHeight;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1, 2));
+  renderer.setSize(w, h, false);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, w/h, 0.01, 100);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+  dir.position.set(3, 5, 4);
+  scene.add(dir);
+  const rim = new THREE.DirectionalLight(0xc6a35d, 0.4);
+  rim.position.set(-4, 2, -3);
+  scene.add(rim);
+
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const loader = new THREE.GLTFLoader();
+  loader.parse(glbBytes.buffer.slice(glbBytes.byteOffset, glbBytes.byteOffset + glbBytes.byteLength), '', (gltf) => {
+    const model = gltf.scene;
+    const box3 = new THREE.Box3().setFromObject(model);
+    const size = new THREE.Vector3(); box3.getSize(size);
+    const center = new THREE.Vector3(); box3.getCenter(center);
+    model.position.x -= center.x;
+    model.position.z -= center.z;
+    model.position.y -= box3.min.y;
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    const scale = 1.4 / maxDim;
+    model.scale.setScalar(scale);
+    group.add(model);
+
+    const dist = 3.4;
+    camera.position.set(dist*0.7, dist*0.55, dist*0.7);
+    camera.lookAt(0, size.y*scale*0.4, 0);
+
+    gcPreviewState = { renderer, raf:0, canvas };
+    (function animate(){
+      gcPreviewState.raf = requestAnimationFrame(animate);
+      group.rotation.y += 0.006;
+      renderer.render(scene, camera);
+    })();
+  }, (err) => {
+    gcLog('تعذر عرض المعاينة ثلاثية الأبعاد (الملف نفسه سليم وقابل للتنزيل)', 'l-err');
+    box.style.display = 'none';
+  });
+}
+
+async function gcCompressGLB(arrayBuffer, opts){
+  const io = new WebIO();
+  gcLog('قراءة الملف…');
+  gcSetProgress(8);
+  const doc = await io.readBinary(new Uint8Array(arrayBuffer));
+  const trisBefore = gcCountTriangles(doc);
+
+  gcLog('توحيد النقاط المتطابقة (weld)…');
+  gcSetProgress(18);
+  await doc.transform(weld());
+
+  if (opts.ratio < 100){
+    gcLog('تبسيط الشكل الهندسي (نسبة ' + opts.ratio + '٪)…');
+    gcSetProgress(32);
+    await MeshoptSimplifier.ready;
+    await doc.transform(simplify({
+      simplifier: MeshoptSimplifier,
+      ratio: opts.ratio/100,
+      error: opts.error/1000,
+      lockBorder: true,
+    }));
+  }
+
+  if (opts.quantize){
+    gcLog('ضغط دقة النقاط والمحاور (quantize)…');
+    gcSetProgress(48);
+    await doc.transform(quantize({
+      quantizePosition: 14,
+      quantizeNormal: 10,
+      quantizeTexcoord: 12,
+      quantizeColor: 8,
+      quantizeGeneric: 12,
+    }));
+  }
+
+  const textures = doc.getRoot().listTextures();
+  if (textures.length){
+    gcLog('إعادة ضغط الصور (' + textures.length + ')…');
+    for (let i=0;i<textures.length;i++){
+      await gcRecompressTexture(textures[i], opts, i, textures.length);
+      gcSetProgress(55 + Math.round((i+1)/textures.length*30));
+    }
+  }
+
+  gcLog('إزالة البيانات المكررة (dedup)…');
+  gcSetProgress(90);
+  await doc.transform(dedup());
+
+  gcLog('تنظيف العناصر غير المستخدمة (prune)…');
+  gcSetProgress(95);
+  await doc.transform(prune());
+
+  const trisAfter = gcCountTriangles(doc);
+
+  gcLog('تصدير الملف النهائي…');
+  gcSetProgress(99);
+  const out = await io.writeBinary(doc);
+  gcSetProgress(100);
+  return { bytes: out, trisBefore, trisAfter };
+}
+
+gcBtnCompress.addEventListener('click', async () => {
+  if (!gcCurrentFile) return;
+  gcBtnCompress.disabled = true;
+  gcBtnCompress.textContent = 'جاري الضغط…';
+  gcResultEl.classList.remove('on');
+  gcLogEl.innerHTML = '';
+  gcSetProgress(0);
+
+  const opts = {
+    ratio: parseInt(gcRatioEl.value,10),
+    error: parseInt(gcErrorEl.value,10),
+    texSize: parseInt(gcTexSizeEl.value,10),
+    texFormat: gcTexFormatEl.value,
+    quality: parseInt(gcQualityEl.value,10),
+    quantize: gcQuantizeToggle.checked,
+  };
+
+  try{
+    const buf = await gcCurrentFile.arrayBuffer();
+    const { bytes: out, trisBefore, trisAfter } = await gcCompressGLB(buf, opts);
+    const outBlob = new Blob([out], { type:'model/gltf-binary' });
+    const url = URL.createObjectURL(outBlob);
+    gcBtnDownload.href = url;
+    const outName = gcCurrentFile.name.replace(/\.glb$/i, '') + '-compressed.glb';
+    gcBtnDownload.setAttribute('download', outName);
+
+    gcStatOrig.textContent = gcFmtSize(gcCurrentFile.size);
+    gcStatNew.textContent = gcFmtSize(out.length);
+    const pct = Math.round((1 - out.length/gcCurrentFile.size) * 100);
+    gcStatPct.textContent = (pct >= 0 ? pct : 0) + '٪';
+    gc('#gcExtraStats').innerHTML = 'المضلعات: <b>' + trisBefore.toLocaleString() + '</b> ← <b>' + trisAfter.toLocaleString() + '</b>';
+    gcResultEl.classList.add('on');
+    gcLog('تم بنجاح — التوفير ' + pct + '٪', 'l-ok');
+    gcShowPreview(out);
+  } catch(err){
+    console.error(err);
+    gcLog('حدث خطأ: ' + (err && err.message ? err.message : String(err)), 'l-err');
+    alert('حدث خطأ أثناء الضغط. افتح أدوات المطوّر (Console) للتفاصيل، أو جرّب إعدادات أخف.');
+  } finally {
+    gcBtnCompress.disabled = false;
+    gcBtnCompress.textContent = 'ابدأ الضغط';
+  }
+});
 </script>
 </body>
 </html>
