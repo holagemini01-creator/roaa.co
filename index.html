@@ -293,6 +293,19 @@
   .mp-veil-fs{ top:65%; left:50%; font-size:14px;
     min-width:min(80%, 300px); padding:18px 28px; }
   .mp-veil.fade{ opacity:0; }
+
+  /* خط تحميل يلف حول شريط التنبيه — يوضّح كم باقي قبل ما يختفي */
+  .veil-ring{
+    position:absolute; inset:0; overflow:visible;
+    pointer-events:none; z-index:1;
+  }
+  .veil-ring rect{
+    fill:none;
+    stroke:var(--gold, #c6a35d);
+    stroke-width:2;
+    stroke-linecap:round;
+    filter:drop-shadow(0 0 4px rgba(198,163,93,0.7));
+  }
   /* لا تظهر أي جملة قبل بدء الجولة */
   .mp-veil[hidden]{ display:none !important; }
 
@@ -355,9 +368,16 @@
   }
 
   /* طبقة تحجب اللمس عن كامل شاشة العرض عند ظهور زر الرجوع */
+  /* بعد الخروج من ملء الشاشة: نغطّي الجولة بخلفيتها الساكنة بدل ما تبان
+     أزرار ماتربورت وإعلاناتها — تحت شعارات رؤى وأزرارنا مباشرة */
   .tap-shield{
-    position:absolute; inset:0; z-index:10;
-    background:transparent; pointer-events:auto;
+    position:absolute; inset:0; z-index:4;
+    background:#11141a center/cover no-repeat;
+    pointer-events:auto;
+  }
+  .tap-shield::before{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(13,16,22,0.52), rgba(13,16,22,0.76));
   }
   .tap-shield[hidden]{ display:none !important; }
 
@@ -460,7 +480,7 @@
   .stage3d-hint > span{
     display:inline-block;
     padding:10px 22px; border-radius:999px;
-    background:#1e2430; color:#f3efe6;
+    background:var(--roaa-ink, #1e2430); color:var(--roaa-paper, #f3efe6);
     font-family:'Kufam', system-ui, sans-serif; font-size:0.86rem;
     white-space:nowrap;
     animation: roaa-pulse 1.8s ease-in-out infinite;
@@ -471,7 +491,7 @@
   /* ---------- شريط التقدّم وسطر التلميحات (في الوضعين) ---------- */
   .roaa-prog{
     position:absolute; z-index:9; left:0; right:0; bottom:0;
-    height:6px; background:rgba(30,36,48,0.16);
+    height:6px; background:var(--roaa-track, rgba(30,36,48,0.16));
     transition: opacity .5s ease;
   }
   .roaa-prog > i{
@@ -483,20 +503,27 @@
   }
   .roaa-prog.done{ opacity:0; }
 
-  /* سطر التلميحات — فوق الشريط مباشرة وبعيد عن بقية العناصر */
+  /* سطر التلميحات — فوق الشريط مباشرة وبعيد عن بقية العناصر.
+     تحته تدرّج خفيف بلون الخلفية حتى يبقى مقروءاً لما يمر المبنى وراه */
   .roaa-hints{
     position:absolute; z-index:8; left:0; right:0; bottom:10px;
     height:22px; display:flex; justify-content:center; align-items:center;
     pointer-events:none; padding:0 16px;
   }
+  .roaa-hints::before{
+    content:""; position:absolute; left:0; right:0; top:-16px; bottom:-12px;
+    background:linear-gradient(to bottom, transparent, var(--roaa-scrim, rgba(243,239,230,0.92)) 62%);
+    pointer-events:none;
+  }
   .roaa-hints > span{
+    position:relative;
     font-family:'Kufam', system-ui, sans-serif;
-    font-size:0.72rem; line-height:1.5; color:#1e2430; opacity:0;
+    font-size:0.72rem; line-height:1.5; color:var(--roaa-ink, #1e2430); opacity:0;
     text-align:center; max-width:96%;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     transition: opacity .55s ease;
   }
-  .roaa-hints > span.on{ opacity:.6; }
+  .roaa-hints > span.on{ opacity:.72; }
 
   /* زر الرجوع للنموذج — في وضع 3D يظهر على كل الأجهزة (مو الجوال فقط) */
   .exit-fs.fs-3d{ display:flex; }
@@ -1169,6 +1196,90 @@
   }
 
   /* ============================================================
+     ألوان خلفية المبنى — يختارها صاحب الموقع لكل جولة، ومنها
+     نشتق لون النص والتدرّج تلقائياً حتى يبقى كل شي مقروءاً
+     ============================================================ */
+  function hexToRgb(hex){
+    const h = String(hex || "").trim().replace("#", "");
+    const s = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+    if (!/^[0-9a-fA-F]{6}$/.test(s)) return null;
+    return { r:parseInt(s.slice(0,2),16), g:parseInt(s.slice(2,4),16), b:parseInt(s.slice(4,6),16) };
+  }
+  const clamp255 = (v) => Math.max(0, Math.min(255, Math.round(v)));
+  function mixWith(rgb, target, amount){
+    return { r: clamp255(rgb.r + (target - rgb.r) * amount),
+             g: clamp255(rgb.g + (target - rgb.g) * amount),
+             b: clamp255(rgb.b + (target - rgb.b) * amount) };
+  }
+  const rgbCss = (c, a) => "rgba(" + c.r + "," + c.g + "," + c.b + "," + (a == null ? 1 : a) + ")";
+  // سطوع اللون (0 غامق – 1 فاتح) لاختيار لون نص مناسب
+  function luminance(c){ return (0.299*c.r + 0.587*c.g + 0.114*c.b) / 255; }
+
+  /* يطبّق لون الخلفية على أي طبقة (مسرح النموذج أو شاشة التحميل)
+     ويضبط معه لون النص والتدرّج وشريط التقدّم */
+  function applyLayerColors(el, hex){
+    const base = hexToRgb(hex) || hexToRgb("#f3efe6");
+    const light = luminance(base) > 0.55;
+    const ink   = light ? { r:30, g:36, b:48 } : { r:243, g:239, b:230 };
+    const paper = light ? { r:243, g:239, b:230 } : { r:26, g:30, b:38 };
+    const center = mixWith(base, light ? 255 : 0, light ? 0.5 : 0.28);
+    const edge   = mixWith(base, light ? 0 : 255, 0.10);
+    el.style.background =
+      "radial-gradient(ellipse at 50% 42%, " + rgbCss(center) + " 0%, " +
+      rgbCss(base) + " 60%, " + rgbCss(edge) + " 100%)";
+    el.style.setProperty("--roaa-ink", rgbCss(ink));
+    el.style.setProperty("--roaa-paper", rgbCss(paper));
+    el.style.setProperty("--roaa-scrim", rgbCss(base, 0.94));
+    el.style.setProperty("--roaa-track", rgbCss(ink, 0.18));
+  }
+
+  /* ============================================================
+     خط التحميل الدائر حول شريط التنبيه داخل الجولة
+     ============================================================ */
+  function attachVeilRing(veil, ms){
+    const NS = "http://www.w3.org/2000/svg";
+    let svg = veil.querySelector(".veil-ring");
+    if (!svg){
+      svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("class", "veil-ring");
+      const rect = document.createElementNS(NS, "rect");
+      svg.appendChild(rect);
+      veil.appendChild(svg);
+    }
+    const rect = svg.querySelector("rect");
+    let tries = 0;
+    const run = () => {
+      const w = veil.offsetWidth, h = veil.offsetHeight;
+      // لو القياس لسا مو جاهز (خطوط أو تخطيط) نعيد المحاولة كم إطار
+      if (!w || !h){
+        if (tries++ < 30) requestAnimationFrame(run);
+        return;
+      }
+      tries = 0;
+      const r = Math.min(22, h / 2, w / 2), inset = 1;
+      const iw = w - inset*2, ih = h - inset*2;
+      const rr = Math.max(0, r - inset);
+      svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+      svg.setAttribute("width", w); svg.setAttribute("height", h);
+      rect.setAttribute("x", inset); rect.setAttribute("y", inset);
+      rect.setAttribute("width", iw); rect.setAttribute("height", ih);
+      rect.setAttribute("rx", rr); rect.setAttribute("ry", rr);
+      // محيط المستطيل بحواف دائرية
+      const per = 2*(iw - 2*rr) + 2*(ih - 2*rr) + 2*Math.PI*rr;
+      rect.style.transition = "none";
+      rect.style.strokeDasharray = per;
+      rect.style.strokeDashoffset = per;
+      // نبدأ الحركة في الإطار اللي بعده حتى يمسكها المتصفح
+      requestAnimationFrame(() => {
+        rect.style.transition = "stroke-dashoffset " + ms + "ms linear";
+        rect.style.strokeDashoffset = "0";
+      });
+    };
+    requestAnimationFrame(run);
+    return { restart: run };
+  }
+
+  /* ============================================================
      شريط التقدّم وسطر التلميحات — يشتغلوا في الوضعين:
      شاشة التحميل التقليدية ومسرح النموذج ثلاثي الأبعاد
      ============================================================ */
@@ -1312,9 +1423,10 @@
 
   /* يبني مسرح المبنى الطايف: تحميل + عرض + تدوير تلقائي + تدوير بالإصبع
      + دعوة الدخول + زوم الدخول والرجوع. يرجّع واجهة تتحكم بها buildTour. */
-  function buildStage3d(url, TB, introMs, faceDeg){
+  function buildStage3d(url, TB, introMs, faceDeg, bgHex){
     const el = document.createElement("div");
     el.className = "stage3d";
+    applyLayerColors(el, bgHex || "#f3efe6");   // لون الخلفية خلف المبنى
     const canvas = document.createElement("canvas");
     const loadBox = document.createElement("div"); loadBox.className = "stage3d-load";
     const lImg = document.createElement("img"); lImg.src = TB.loadingLogo; lImg.alt = "";
@@ -1799,6 +1911,7 @@
     const model3dUrl = (proj.model3d || "").trim();
     const intro3dMs  = Math.max(0, Number(proj.intro3d || 12) * 1000) || 12000;
     const face3dDeg  = Number(proj.face3d) || 0;
+    const bg3dHex    = (proj.bg3d || "").trim();
     let use3d = !!model3dUrl && isSafeEmbedUrl(model3dUrl) && hasWebGL();
     let stage3d = null;
 
@@ -1806,7 +1919,7 @@
     viewport.appendChild(veilNormal);
     viewport.appendChild(veilFs);
     if (use3d){
-      stage3d = buildStage3d(model3dUrl, TB, intro3dMs, face3dDeg);
+      stage3d = buildStage3d(model3dUrl, TB, intro3dMs, face3dDeg, bg3dHex);
       viewport._stage3d = stage3d;
       viewport.appendChild(stage3d.el);
     }else{
@@ -1819,6 +1932,7 @@
     if (!use3d){
       progTrad = makeProgressBar();
       hintsTrad = makeHintsLine();
+      applyLayerColors(loading, "#f3efe6");   // ألوان شاشة التحميل التقليدية
       loading.appendChild(hintsTrad.el);
       loading.appendChild(progTrad.el);
       hintsTrad.start();
@@ -1855,10 +1969,15 @@
     resumeBtn.hidden = true;
     resumeBtn.textContent = TB.tourResume;
 
-    // طبقة تحجب اللمس عن كل شيء عدا زر الرجوع، تظهر وتختفي معه
+    // طبقة تغطّي الجولة بصورتها الساكنة وتحجب اللمس، تظهر وتختفي مع زر الرجوع
     const tapShield = document.createElement("div");
     tapShield.className = "tap-shield";
     tapShield.hidden = true;
+    // صورة الجولة نفسها كخلفية (رابط مباشر أو صورة مرفوعة كـ data:)
+    const posterSrc = String(proj.image || "").trim();
+    if (/^(https?:\/\/|data:image\/)/i.test(posterSrc)){
+      tapShield.style.backgroundImage = "url(\"" + posterSrc.replace(/["\\]/g, "") + "\")";
+    }
     viewport.appendChild(tapShield);
     viewport.appendChild(resumeBtn);
 
@@ -1870,6 +1989,17 @@
     const homeAnchor = viewport._homeAnchor;
 
     let veilTimer = null;
+    const VEIL_MS = 12000;
+    let veilRing = null;
+    // يظهر الشريط مع خط تحميل يلف حوله، وأول ما يكمل الخط يختفي الشريط
+    const startVeil = () => {
+      veilFs.hidden = false;
+      veilFs.classList.remove("fade");
+      clearTimeout(veilTimer);
+      if (!veilRing) veilRing = attachVeilRing(veilFs, VEIL_MS);
+      else veilRing.restart();
+      veilTimer = track(() => veilFs.classList.add("fade"), VEIL_MS);
+    };
 
     // عناصر المسار من العارض لغاية body — نعلّمها حتى تبقى ظاهرة في ملء الشاشة
     const fsBranch = [];
@@ -1903,12 +2033,9 @@
       resumeBtn.hidden = true;
       tapShield.hidden = true;
       window.scrollTo(0, 0);
-      // الدائمة تختفي وتحل محلها المؤقتة التي تزول بعد 9 ثوانٍ
+      // الدائمة تختفي وتحل محلها المؤقتة التي تزول مع اكتمال خط التحميل
       veilNormal.hidden = true;
-      veilFs.hidden = false;
-      veilFs.classList.remove("fade");
-      clearTimeout(veilTimer);
-      veilTimer = track(() => veilFs.classList.add("fade"), 12000);
+      startVeil();
     };
 
     const exitFs = () => {
@@ -1933,8 +2060,12 @@
         stage3d.restore();
         return;
       }
-      // إظهار زر العودة فوق الـ iframe
-      if (isMobile()) { resumeBtn.hidden = false; tapShield.hidden = false; }
+      // إظهار زر العودة فوق خلفية الجولة الساكنة
+      if (isMobile()) {
+        resumeBtn.hidden = false;
+        tapShield.hidden = false;
+        veilNormal.hidden = true;   // ما نحتاجه: الغطاء ساتر شعار ماتربورت أصلاً
+      }
     };
 
     exitBtn.addEventListener("click", (e) => { e.stopPropagation(); exitFs(); });
@@ -1951,10 +2082,7 @@
         enterFs();                 // الجوال (خارج التضمين): ملء الشاشة المزيّف + الجملة المؤقتة
       } else {
         // اللابتوب أو وضع التضمين: الجولة تملأ الإطار مباشرة، مع الجملة المؤقتة فقط
-        veilFs.hidden = false;
-        veilFs.classList.remove("fade");
-        clearTimeout(veilTimer);
-        veilTimer = track(() => veilFs.classList.add("fade"), 12000);
+        startVeil();
       }
     };
 
@@ -2018,6 +2146,7 @@
           if (!progTrad){
             progTrad = makeProgressBar();
             hintsTrad = makeHintsLine();
+            applyLayerColors(loading, "#f3efe6");
             loading.appendChild(hintsTrad.el);
             loading.appendChild(progTrad.el);
             hintsTrad.start();
