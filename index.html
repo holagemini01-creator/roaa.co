@@ -1482,9 +1482,12 @@
     const baseOrbit = { radius: 3.6, az: faceAz, el: 0.26 };
     const target = { x: 0, y: 0.5, z: 0 };      // نقطة نظر الكاميرا
     const homeTarget = { x: 0, y: 0.5, z: 0 };  // مركز المبنى (وضع العرض العادي)
-    // نقطة الباب (اختيارية) — يحددها صاحب الموقع بالنقر على المبنى في لوحة التحكم
-    const door = (doorPt && isFinite(doorPt.x) && isFinite(doorPt.y) && isFinite(doorPt.z))
-               ? { x:+doorPt.x, y:+doorPt.y, z:+doorPt.z } : null;
+    // نقطة الباب (اختيارية) — يحددها صاحب الموقع بالنقر على المبنى في لوحة التحكم.
+    // تُقاس في فضاء المبنى بعد التوحيد (أكبر بُعد = 1.3)، فأي قيمة أكبر بكثير
+    // من مقاس المبنى معناها إنها اتسجّلت بفضاء إحداثيات ثاني — نتجاهلها
+    // بدل ما نطيّر الكاميرا لمكان فاضي (كانت تطلع شاشة غامقة).
+    let door = (doorPt && isFinite(doorPt.x) && isFinite(doorPt.y) && isFinite(doorPt.z))
+             ? { x:+doorPt.x, y:+doorPt.y, z:+doorPt.z } : null;
     const t0 = performance.now();
 
     const timers = [];
@@ -1572,6 +1575,16 @@
       modelH = size2.y;
       modelW = Math.max(size2.x, size2.z);        // أعرض بعد أفقي (عرض القاعدة)
       const halfFoot = modelW * 0.5;
+
+      // تحقّق من نقطة الباب: لازم تكون داخل حدود المبنى (بهامش بسيط)
+      if (door){
+        const okH = Math.hypot(door.x, door.z) <= halfFoot * 1.6 + 0.15;
+        const okV = door.y >= -0.05 && door.y <= modelH * 1.15;
+        if (!okH || !okV){
+          console.warn("[رؤى] نقطة الباب خارج حدود المبنى — بنتجاهلها وندخل من جهة الواجهة", door);
+          door = null;
+        }
+      }
 
       holder = new THREE.Group();
       holder.position.y = hoverBase;

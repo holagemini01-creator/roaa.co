@@ -1661,7 +1661,11 @@ const faceViewer = (function(){
     if (marker && root) root.remove(marker);
     marker = null;
   }
-  // نقرة على المبنى ترجّع النقطة اللي انضغطت عليه بالضبط
+  // نقرة على المبنى ترجّع النقطة اللي انضغطت عليه — في فضاء المشهد نفسه.
+  // ملاحظة مهمة: نماذج المسح الضوئي كثير منها محفوظة بإحداثيات مساحية ضخمة
+  // (آلاف الأمتار)، وفي هذي الحالة نقطة التقاطع ترجع بفضاء النموذج الخام
+  // مو بفضاء المشهد. فنتحقّق من النتيجة، ولو طلعت برّا حدود المبنى المرسوم
+  // نحسب النقطة بأنفسنا من تقاطع الشعاع مع صندوق المبنى (وهذا مضمون دايماً).
   function pickAt(clientX, clientY){
     if (!modelRef || !rayc || !camera) return null;
     const el = box(), r = el.getBoundingClientRect();
@@ -1669,8 +1673,29 @@ const faceViewer = (function(){
     rayc.setFromCamera({ x: ((clientX - r.left) / r.width) * 2 - 1,
                          y: -((clientY - r.top) / r.height) * 2 + 1 }, camera);
     modelRef.updateMatrixWorld(true);
+
+    // حدود المبنى كما هو مرسوم فعلاً (فضاء المشهد)
+    const bb = new THREE.Box3().setFromObject(modelRef);
+    const pad = Math.max(0.08, (Number(modelH) || 1) * 0.08);
+    const lo = { x: bb.min.x - pad, y: bb.min.y - pad, z: bb.min.z - pad };
+    const hi = { x: bb.max.x + pad, y: bb.max.y + pad, z: bb.max.z + pad };
+    const inside = (p) => p && p.x >= lo.x && p.x <= hi.x &&
+                                p.y >= lo.y && p.y <= hi.y &&
+                                p.z >= lo.z && p.z <= hi.z;
+
     const hits = rayc.intersectObject(modelRef, true);
-    return hits.length ? hits[0].point : null;
+    if (hits.length && inside(hits[0].point)) return hits[0].point.clone();
+
+    // محاولة إصلاح: نعامل النقطة كأنها بفضاء الشبكة الخام ونحوّلها للمشهد
+    if (hits.length && hits[0].object){
+      hits[0].object.updateMatrixWorld(true);
+      const fixed = hits[0].point.clone().applyMatrix4(hits[0].object.matrixWorld);
+      if (inside(fixed)) return fixed;
+    }
+
+    // الحل المضمون: تقاطع الشعاع مع صندوق المبنى نفسه
+    const hit = rayc.ray.intersectBox(bb, new THREE.Vector3());
+    return hit || null;
   }
 
   function dispose(){
