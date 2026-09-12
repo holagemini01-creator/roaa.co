@@ -432,19 +432,52 @@
     letter-spacing:.02em; color:#1e2430; opacity:.7;
   }
 
-  /* دعوة الدخول للجولة */
+  /* دعوة الدخول للجولة — التوسيط في الغلاف والنبضة في الزر نفسه،
+     حتى لا تلغي حركة النبضة توسيط العنصر */
   .stage3d-hint{
-    position:absolute; z-index:3; left:50%; bottom:8%;
-    transform:translateX(-50%);
+    position:absolute; z-index:3; left:0; right:0; bottom:12%;
+    display:flex; justify-content:center; align-items:center;
+    pointer-events:none;
+    opacity:0; transition:opacity 0.5s ease;
+  }
+  .stage3d-hint > span{
+    display:inline-block;
     padding:10px 22px; border-radius:999px;
     background:#1e2430; color:#f3efe6;
     font-family:'Kufam', system-ui, sans-serif; font-size:0.86rem;
-    white-space:nowrap; pointer-events:none;
-    opacity:0; transition:opacity 0.5s ease;
+    white-space:nowrap;
     animation: roaa-pulse 1.8s ease-in-out infinite;
   }
   .stage3d-hint.on{ opacity:1; }
   .stage3d-hint[hidden]{ display:none !important; }
+
+  /* ---------- شريط التقدّم وسطر التلميحات (في الوضعين) ---------- */
+  .roaa-prog{
+    position:absolute; z-index:7; left:0; right:0; bottom:0;
+    height:3px; background:rgba(30,36,48,0.12);
+    transition: opacity .5s ease;
+  }
+  .roaa-prog > i{
+    display:block; height:100%; width:0%;
+    background:linear-gradient(90deg, #c6a35d, #d8bd82);
+    transition: width .25s linear;
+  }
+  .roaa-prog.done{ opacity:0; }
+
+  .roaa-hints{
+    position:absolute; z-index:7; left:0; right:0; bottom:14px;
+    display:flex; justify-content:center; pointer-events:none;
+    padding:0 18px;
+  }
+  .roaa-hints > span{
+    font-family:'Kufam', system-ui, sans-serif;
+    font-size:0.72rem; line-height:1.7; color:#1e2430; opacity:0;
+    text-align:center; max-width:90%;
+    transition: opacity .55s ease;
+  }
+  .roaa-hints > span.on{ opacity:.62; }
+  /* داخل مسرح النموذج نرفع السطر شوي فوق الشريط */
+  .stage3d .roaa-hints{ bottom:16px; }
 
   /* زر الرجوع للنموذج — في وضع 3D يظهر على كل الأجهزة (مو الجوال فقط) */
   .exit-fs.fs-3d{ display:flex; }
@@ -968,6 +1001,16 @@
   const SITE_TOUR_TEXTS = Object.assign({}, {
     tourLoading:"يتم التحميل…", tourReady:"اضغط لبدء الجولة",
     tourResume:"▶ عرض الجولة بملء الشاشة",
+    // تلميحات تتبدّل أثناء التحميل — كلها قابلة للتعديل من لوحة التحكم
+    tourHints:[
+      "اسحب بإصبعك لتدوير المشهد حولك",
+      "اضغط على أي نقطة في الأرضية للانتقال إليها",
+      "قرّب بإصبعين للتكبير، وباعد للتصغير",
+      "اضغط على أيقونة المخطط لتشوف المكان من فوق",
+      "تتجوّل بحرية بين كل الغرف والأدوار",
+      "كل اللي تشوفه تصوير حقيقي للمكان"
+    ].join("\n"),
+    tourHintSec:4.5,
     emptyTitle:"اختر موقعاً لبدء الجولة",
     emptyHint:"تصفّح مكتبة الأعمال بالأسفل واختر الموقع الذي تريد استكشافه،<br/>أو افتح الرابط المخصّص الذي شاركناه معك."
   });
@@ -1105,6 +1148,81 @@
   }
 
   /* ============================================================
+     شريط التقدّم وسطر التلميحات — يشتغلوا في الوضعين:
+     شاشة التحميل التقليدية ومسرح النموذج ثلاثي الأبعاد
+     ============================================================ */
+  function makeProgressBar(){
+    const el = document.createElement("div");
+    el.className = "roaa-prog";
+    const fill = document.createElement("i");
+    el.appendChild(fill);
+    let cur = 0, raf = 0, target = 0, rate = 0, last = 0, stopped = false;
+
+    function paint(){ fill.style.width = (Math.max(0, Math.min(100, cur))).toFixed(1) + "%"; }
+    function loop(now){
+      if (stopped) return;
+      const dt = Math.max(0, (now - last) / 1000); last = now;
+      if (cur < target){
+        cur = Math.min(target, cur + rate * dt);
+        paint();
+      }
+      raf = requestAnimationFrame(loop);
+    }
+    function ensureLoop(){
+      if (raf || stopped) return;
+      last = performance.now();
+      raf = requestAnimationFrame(loop);
+    }
+    return {
+      el,
+      // يزحف تدريجياً نحو نسبة خلال مدة محددة (بلا رجوع للخلف أبداً)
+      glideTo(pct, ms){
+        target = Math.max(target, Math.min(100, pct));
+        const remain = Math.max(0, target - cur);
+        rate = ms > 0 ? remain / (ms / 1000) : remain * 60;
+        ensureLoop();
+      },
+      set(pct){
+        const v = Math.max(cur, Math.min(100, pct));
+        cur = target = v; paint();
+      },
+      finish(){
+        cur = target = 100; paint();
+        el.classList.add("done");
+      },
+      stop(){ stopped = true; if (raf) cancelAnimationFrame(raf); raf = 0; }
+    };
+  }
+
+  function makeHintsLine(){
+    const el = document.createElement("div");
+    el.className = "roaa-hints";
+    const span = document.createElement("span");
+    el.appendChild(span);
+
+    const raw = String(SITE_TOUR_TEXTS.tourHints || "");
+    const list = raw.split("\n").map(s => s.trim()).filter(Boolean);
+    let sec = Number(SITE_TOUR_TEXTS.tourHintSec);
+    if (!isFinite(sec) || sec < 1.5) sec = 4.5;
+    let i = 0, t1 = 0, t2 = 0, stopped = false;
+
+    function show(){
+      if (stopped || !list.length) return;
+      span.textContent = list[i % list.length];
+      span.classList.add("on");
+      t1 = setTimeout(() => {
+        span.classList.remove("on");
+        t2 = setTimeout(() => { i++; show(); }, 600);
+      }, sec * 1000);
+    }
+    return {
+      el,
+      start(){ if (list.length) setTimeout(show, 400); },
+      stop(){ stopped = true; clearTimeout(t1); clearTimeout(t2); }
+    };
+  }
+
+  /* ============================================================
      وضع النموذج ثلاثي الأبعاد — بديل شاشة التحميل
      يُفعَّل لكل جولة على حدة من لوحة التحكم (حقل رابط GLB).
      الجولات اللي ما عندها نموذج تبقى على شاشة التحميل التقليدية
@@ -1173,7 +1291,7 @@
 
   /* يبني مسرح المبنى الطايف: تحميل + عرض + تدوير تلقائي + تدوير بالإصبع
      + دعوة الدخول + زوم الدخول والرجوع. يرجّع واجهة تتحكم بها buildTour. */
-  function buildStage3d(url, TB, introMs){
+  function buildStage3d(url, TB, introMs, faceDeg){
     const el = document.createElement("div");
     el.className = "stage3d";
     const canvas = document.createElement("canvas");
@@ -1184,21 +1302,32 @@
     lTxt.textContent = TB.tourLoading;
     loadBox.appendChild(lImg); loadBox.appendChild(lSpin); loadBox.appendChild(lTxt);
     const hint = document.createElement("div");
-    hint.className = "stage3d-hint"; hint.hidden = true; hint.textContent = TB.tourReady;
+    hint.className = "stage3d-hint"; hint.hidden = true;
+    const hintPill = document.createElement("span");
+    hintPill.textContent = TB.tourReady;
+    hint.appendChild(hintPill);
+    const prog = makeProgressBar();
+    const hints = makeHintsLine();
     el.appendChild(canvas); el.appendChild(loadBox); el.appendChild(hint);
+    el.appendChild(hints.el); el.appendChild(prog.el);
+    hints.start();
 
     const api = { el, onEnter:null, onFail:null, entered:false };
 
     let renderer = null, scene = null, camera = null, root = null, model = null;
+    let holder = null, hitBox = null, raycaster = null;
     let raf = 0, ro = null, disposed = false, failed = false;
     let modelReady = false, tourReady = false, introDone = false;
     let armed = false, pendingEnter = false;
-    let anim = null;                          // حركة الزوم الحالية
-    let autoRotate = true, idleTimer = 0, introTimer = 0;
-    let modelH = 1, hoverBase = 0.14, fitRadius = 3.2;
+    let anim = null;                          // حركة الكاميرا الحالية
+    let autoRotate = true, introTimer = 0, introStart = 0;
+    let modelH = 1, modelW = 1, hoverBase = 0.05, fitRadius = 3.2;
+    let popped = false, popScale = 1;         // تكبير المبنى تحت الإصبع/الماوس
     const FOV_BASE = 38, FOV_ZOOM = 54;
-    const orbit = { radius: 3.6, az: -0.62, el: 0.30 };
-    const baseOrbit = { radius: 3.6, az: -0.62, el: 0.30 };
+    // زاوية الواجهة: يحدّدها صاحب الموقع من لوحة التحكم، ومنها يبدأ العرض
+    const faceAz = (Number(faceDeg) || 0) * Math.PI / 180;
+    const orbit = { radius: 3.6, az: faceAz, el: 0.26 };
+    const baseOrbit = { radius: 3.6, az: faceAz, el: 0.26 };
     const target = { y: 0.5 };
     const t0 = performance.now();
 
@@ -1219,7 +1348,9 @@
       try{
         // الملف والمكتبة ينزلوا بالتوازي، ما ننتظر واحد فوق الثاني
         const bufP = fetchModelBuffer(url, (p) => {
-          if (!disposed) lTxt.textContent = TB.tourLoading + "  " + Math.round(p * 100) + "٪";
+          if (disposed) return;
+          lTxt.textContent = TB.tourLoading + "  " + Math.round(p * 100) + "٪";
+          prog.set(p * 45);                 // تحميل الملف = أول 45٪ من الشريط
         });
         await loadThree();
         const buf = await bufP;
@@ -1270,36 +1401,46 @@
       const k = 1.3 / maxDim;
       model.scale.setScalar(k);
       modelH = size.y * k;
-      const footprint = Math.max(size.x, size.z) * k;
+      modelW = Math.max(size.x, size.z) * k;      // أعرض بعد أفقي (عرض القاعدة)
+      const halfFoot = modelW * 0.5;
 
-      const holder = new THREE.Group();
+      holder = new THREE.Group();
       holder.position.y = hoverBase;
       holder.add(model);
       root.add(holder);
-      root.userData.holder = holder;
 
-      // حلقة ذهبية خفيفة تحت المبنى (نفس هوية رؤى)
-      const ringGeo = new THREE.RingGeometry(footprint*0.62, footprint*0.66, 96);
+      // صندوق غير مرئي بحجم المبنى — نستعمله لمعرفة إن كان المؤشر فوق المبنى
+      // (أسرع بكثير من فحص مئات آلاف المثلثات عند كل حركة مؤشر)
+      const hitGeo = new THREE.BoxGeometry(size.x*k, size.y*k, size.z*k);
+      const hitMat = new THREE.MeshBasicMaterial({ visible:false });
+      hitBox = new THREE.Mesh(hitGeo, hitMat);
+      hitBox.position.y = modelH * 0.5;
+      holder.add(hitBox);
+      raycaster = new THREE.Raycaster();
+
+      // حلقة ذهبية رفيعة ملزوقة بقاعدة المبنى (نفس هوية رؤى)
+      const ringGeo = new THREE.RingGeometry(halfFoot*1.10, halfFoot*1.16, 96);
       const ringMat = new THREE.MeshBasicMaterial({
-        color:0xc6a35d, transparent:true, opacity:0.4, side:THREE.DoubleSide
+        color:0xc6a35d, transparent:true, opacity:0.45, side:THREE.DoubleSide
       });
       const ring = new THREE.Mesh(ringGeo, ringMat);
       ring.rotation.x = -Math.PI/2;
       ring.position.y = 0.001;
       root.add(ring);
-      const glowGeo = new THREE.CircleGeometry(footprint*0.6, 64);
-      const glowMat = new THREE.MeshBasicMaterial({ color:0xc6a35d, transparent:true, opacity:0.07 });
+      const glowGeo = new THREE.CircleGeometry(halfFoot*1.08, 64);
+      const glowMat = new THREE.MeshBasicMaterial({ color:0xc6a35d, transparent:true, opacity:0.08 });
       const glow = new THREE.Mesh(glowGeo, glowMat);
       glow.rotation.x = -Math.PI/2;
       root.add(glow);
 
-      target.y = hoverBase + modelH * 0.5;
-      resize();
-      orbit.radius = baseOrbit.radius = fitRadius;
+      resize();                                   // يحسب مركز التأطير ونصف القطر
+      orbit.radius = fitRadius;
       modelReady = true;
+      prog.set(45);                               // اكتمال تجهيز النموذج = 45٪
       loadBox.classList.add("hide");
       later(() => { if (loadBox.parentNode) loadBox.remove(); }, 600);
       // مدة الاستعراض تبدأ من لحظة ظهور المبنى فعلاً
+      introStart = performance.now();
       introTimer = later(() => { introDone = true; refreshArm(); }, Math.max(0, introMs));
       startLoop();
     }
@@ -1309,10 +1450,18 @@
       const w = el.clientWidth || 640, h = el.clientHeight || 400;
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
-      // نضمن دخول المبنى داخل الكادر عرضاً وطولاً مهما كان شكل الشاشة
-      const half = Math.max(0.72, modelH * 0.62);
-      const vFit = half / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-      fitRadius = (vFit / Math.min(1, camera.aspect)) * 1.28;
+
+      // التأطير: نعتبر المبنى والحلقة كتلة واحدة، ونوسّطها في الكادر
+      // رأسياً من الحلقة (y=0) إلى قمة المبنى، وأفقياً بعرض الحلقة أو المبنى
+      const topY   = hoverBase + modelH;
+      const halfH  = topY / 2;
+      const halfW  = modelW / 2;              // نطابق عرض المبنى؛ الحلقة تسيح برّا بلا ضرر
+      target.y = topY / 2;                    // مركز الكتلة بصرياً = مركز الكادر
+
+      const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      const rV = (halfH / tanV) * 1.16;       // ما يلزم لدخول الارتفاع + هامش
+      const rH = (halfW / (tanV * Math.max(0.0001, camera.aspect))) * 1.06;
+      fitRadius = Math.max(rV, rH);
       baseOrbit.radius = fitRadius;
       if (!anim && !api.entered) orbit.radius = fitRadius;
       camera.updateProjectionMatrix();
@@ -1339,8 +1488,12 @@
         if (anim){
           const t = Math.min(1, (now - anim.start) / anim.ms);
           const k = anim.ease(t);
-          orbit.radius = anim.from.radius + (anim.to.radius - anim.from.radius) * k;
-          orbit.el     = anim.from.el     + (anim.to.el     - anim.from.el)     * k;
+          if (anim.to.radius != null)
+            orbit.radius = anim.from.radius + (anim.to.radius - anim.from.radius) * k;
+          if (anim.to.el != null)
+            orbit.el = anim.from.el + (anim.to.el - anim.from.el) * k;
+          if (anim.to.az != null)
+            orbit.az = anim.from.az + (anim.to.az - anim.from.az) * k;
           if (anim.fov != null){
             camera.fov = anim.fromFov + (anim.fov - anim.fromFov) * k;
             camera.updateProjectionMatrix();
@@ -1349,9 +1502,14 @@
         }else if (autoRotate){
           orbit.az += 0.0032;
         }
+        // تكبير المبنى تحت الإصبع/الماوس (pop) بحركة ناعمة
+        const wantPop = (popped && !api.entered && !anim) ? 1.07 : 1;
+        popScale += (wantPop - popScale) * 0.18;
         // طفو خفيف للمبنى
-        const holder = root && root.userData.holder;
-        if (holder) holder.position.y = hoverBase + Math.sin((now - t0) / 1400) * modelH * 0.012;
+        if (holder){
+          holder.position.y = hoverBase + Math.sin((now - t0) / 1400) * modelH * 0.012;
+          holder.scale.setScalar(popScale);
+        }
         applyCamera();
         renderer.render(scene, camera);
       };
@@ -1360,24 +1518,43 @@
     function stopLoop(){ if (raf){ cancelAnimationFrame(raf); raf = 0; } }
 
     /* ---------- التفاعل: تدوير بالإصبع + نقرة للدخول ---------- */
-    let dragging = false, moved = 0, lastX = 0, lastY = 0, pid = null;
+    let dragging = false, moved = 0, lastX = 0, lastY = 0, pid = null, lastHitCheck = 0;
+
+    // هل المؤشر فوق المبنى نفسه؟ (فحص على صندوق غير مرئي — رخيص جداً)
+    function overModel(e){
+      if (!hitBox || !camera || !raycaster) return false;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return false;
+      const pt = { x: ((e.clientX - r.left) / r.width) * 2 - 1,
+                   y: -((e.clientY - r.top) / r.height) * 2 + 1 };
+      raycaster.setFromCamera(pt, camera);
+      return raycaster.intersectObject(hitBox, true).length > 0;
+    }
 
     function onDown(e){
       if (!modelReady || api.entered || anim) return;
       dragging = true; moved = 0;
       lastX = e.clientX; lastY = e.clientY; pid = e.pointerId;
       autoRotate = false;
-      clearTimeout(idleTimer);
+      popped = overModel(e);            // يكبر المبنى ما دام ماسكه
       el.classList.add("dragging");
       if (el.setPointerCapture && pid != null){ try{ el.setPointerCapture(pid); }catch(err){} }
     }
     function onMove(e){
-      if (!dragging) return;
-      const dx = e.clientX - lastX, dy = e.clientY - lastY;
-      lastX = e.clientX; lastY = e.clientY;
-      moved += Math.abs(dx) + Math.abs(dy);
-      orbit.az -= dx * 0.0075;
-      orbit.el = Math.max(-0.12, Math.min(1.15, orbit.el + dy * 0.005));
+      if (dragging){
+        const dx = e.clientX - lastX, dy = e.clientY - lastY;
+        lastX = e.clientX; lastY = e.clientY;
+        moved += Math.abs(dx) + Math.abs(dy);
+        orbit.az -= dx * 0.0075;
+        orbit.el = Math.max(-0.12, Math.min(1.15, orbit.el + dy * 0.005));
+        return;
+      }
+      // مرور الماوس فوق المبنى (بلا ضغط) يكبّره كذلك — نفحص بتباعد بسيط
+      if (api.entered || anim || !modelReady) return;
+      const now = performance.now();
+      if (now - lastHitCheck < 70) return;
+      lastHitCheck = now;
+      popped = overModel(e);
     }
     function onUp(e){
       if (!dragging) return;
@@ -1386,23 +1563,50 @@
       if (el.releasePointerCapture && pid != null){ try{ el.releasePointerCapture(pid); }catch(err){} }
       pid = null;
       // حركة بسيطة جداً = نقرة (دخول)، وأي سحب حقيقي = تدوير فقط
-      if (moved < 10){ tryEnter(); return; }
-      // رجوع الدوران التلقائي بعد ما يسيب الزائر المبنى
-      clearTimeout(idleTimer);
-      idleTimer = later(() => { if (!api.entered && !anim) autoRotate = true; }, 2600);
+      if (moved < 10){ popped = false; tryEnter(); return; }
+      // أول ما يسيب المبنى يرجع يلف لوحده مباشرة
+      autoRotate = true;
+      popped = false;
     }
+    function onLeave(){ popped = false; }
     el.addEventListener("pointerdown", onDown);
     el.addEventListener("pointermove", onMove);
     el.addEventListener("pointerup", onUp);
     el.addEventListener("pointercancel", onUp);
+    el.addEventListener("pointerleave", onLeave);
     el.addEventListener("contextmenu", (e) => e.preventDefault());
 
     /* ---------- الجاهزية والدخول ---------- */
+    // ── مؤشر التقدّم: تحميل الملف 45٪، وبعدها الأبطأ بين مدة الاستعراض وجاهزية الجولة
+    let progTimer = 0;
+    let tourRamp = { from:0, to:0, start:performance.now(), ms:1 };
+    function tourFracNow(){
+      const k = tourRamp.ms > 0
+        ? Math.min(1, (performance.now() - tourRamp.start) / tourRamp.ms) : 1;
+      return tourRamp.from + (tourRamp.to - tourRamp.from) * k;
+    }
+    function pushProgress(){
+      if (disposed || armed || !modelReady) return;
+      const introFrac = introMs > 0
+        ? Math.min(1, (performance.now() - introStart) / introMs) : 1;
+      prog.glideTo(45 + 55 * Math.min(introFrac, tourFracNow()), 450);
+    }
+    // buildTour يبلّغنا بتقدّم تحميل الجولة، ويزحف الشريط بنعومة نحوه
+    api.setTourProgress = (to, ms) => {
+      const cur = tourFracNow();
+      tourRamp = { from: cur, to: Math.max(cur, Math.min(1, Number(to) || 0)),
+                   start: performance.now(), ms: Math.max(1, ms || 250) };
+      pushProgress();
+    };
+    progTimer = setInterval(pushProgress, 400);
+
     function refreshArm(){
       if (disposed || api.entered) return;
       armed = introDone && tourReady && modelReady;
       if (armed){
-        hint.textContent = TB.tourReady;
+        clearInterval(progTimer);
+        prog.finish();
+        hintPill.textContent = TB.tourReady;
         hint.hidden = false;
         requestAnimationFrame(() => hint.classList.add("on"));
         if (pendingEnter){ pendingEnter = false; zoomIn(); }
@@ -1413,28 +1617,47 @@
       if (!armed){
         // ضغط قبل الجاهزية: نسجّل رغبته وندخل فوراً أول ما تجهز الجولة
         pendingEnter = true;
-        hint.textContent = TB.tourLoading;
+        hintPill.textContent = TB.tourLoading;
         hint.hidden = false;
         requestAnimationFrame(() => hint.classList.add("on"));
         return;
       }
       zoomIn();
     }
+    // الدخول على مرحلتين: يلف المبنى لين تواجهك الواجهة، ثم يدخل منها بزوم
     function zoomIn(){
       if (api.entered || anim) return;
       api.entered = true;
       autoRotate = false;
-      clearTimeout(idleTimer);
+      popped = false;
       hint.classList.remove("on");
+
+      // أقصر طريق للوصول لزاوية الواجهة (يلف يمين أو شمال حسب الأقرب)
+      const TWO_PI = Math.PI * 2;
+      let delta = (faceAz - orbit.az) % TWO_PI;
+      if (delta >  Math.PI) delta -= TWO_PI;
+      if (delta < -Math.PI) delta += TWO_PI;
+      const faceTarget = orbit.az + delta;
+      const turnMs = 300 + Math.min(700, Math.abs(delta) * 420);
+
+      const dive = () => {
+        anim = {
+          start: performance.now(), ms: 900, ease: easeIn,
+          from: { radius: orbit.radius, el: orbit.el, az: orbit.az },
+          to:   { radius: Math.max(0.06, fitRadius * 0.10), el: 0.05, az: orbit.az },
+          fromFov: camera.fov, fov: FOV_ZOOM,
+          done: () => {
+            hint.hidden = true;
+            if (typeof api.onEnter === "function") api.onEnter();
+          }
+        };
+      };
+
       anim = {
-        start: performance.now(), ms: 850, ease: easeIn,
-        from: { radius: orbit.radius, el: orbit.el },
-        to:   { radius: Math.max(0.06, fitRadius * 0.10), el: 0.06 },
-        fromFov: camera.fov, fov: FOV_ZOOM,
-        done: () => {
-          hint.hidden = true;
-          if (typeof api.onEnter === "function") api.onEnter();
-        }
+        start: performance.now(), ms: turnMs, ease: easeOut,
+        from: { radius: orbit.radius, el: orbit.el, az: orbit.az },
+        to:   { radius: fitRadius * 0.88, el: baseOrbit.el, az: faceTarget },
+        done: dive
       };
     }
 
@@ -1451,8 +1674,8 @@
       startLoop();
       anim = {
         start: performance.now(), ms: 700, ease: easeOut,
-        from: { radius: orbit.radius, el: orbit.el },
-        to:   { radius: fitRadius, el: baseOrbit.el },
+        from: { radius: orbit.radius, el: orbit.el, az: orbit.az },
+        to:   { radius: fitRadius, el: baseOrbit.el, az: orbit.az },
         fromFov: camera ? camera.fov : FOV_BASE, fov: FOV_BASE,
         done: () => {
           autoRotate = true;
@@ -1465,6 +1688,8 @@
       disposed = true;
       stopLoop();
       timers.forEach(clearTimeout);
+      clearInterval(progTimer);
+      prog.stop(); hints.stop();
       if (ro){ try{ ro.disconnect(); }catch(e){} ro = null; }
       else window.removeEventListener("resize", resize);
       if (renderer){
@@ -1546,6 +1771,7 @@
     // يشترط: رابط نموذج صالح + دعم WebGL. غير كذا نكمل بالشاشة التقليدية.
     const model3dUrl = (proj.model3d || "").trim();
     const intro3dMs  = Math.max(0, Number(proj.intro3d || 12) * 1000) || 12000;
+    const face3dDeg  = Number(proj.face3d) || 0;
     let use3d = !!model3dUrl && isSafeEmbedUrl(model3dUrl) && hasWebGL();
     let stage3d = null;
 
@@ -1553,12 +1779,29 @@
     viewport.appendChild(veilNormal);
     viewport.appendChild(veilFs);
     if (use3d){
-      stage3d = buildStage3d(model3dUrl, TB, intro3dMs);
+      stage3d = buildStage3d(model3dUrl, TB, intro3dMs, face3dDeg);
       viewport._stage3d = stage3d;
       viewport.appendChild(stage3d.el);
     }else{
       viewport.appendChild(loading);
     }
+
+    // ── شريط التقدّم وسطر التلميحات على الشاشة التقليدية ──
+    // (في وضع 3D هما جزء من المسرح نفسه)
+    let progTrad = null, hintsTrad = null;
+    if (!use3d){
+      progTrad = makeProgressBar();
+      hintsTrad = makeHintsLine();
+      loading.appendChild(hintsTrad.el);
+      loading.appendChild(progTrad.el);
+      hintsTrad.start();
+    }
+    // نسبة تقدّم تحميل الجولة — نفس الإشارات في الوضعين، بلا أي تغيير في توقيتها
+    const reportTour = (frac, ms) => {
+      if (use3d && stage3d) stage3d.setTourProgress(frac, ms);
+      else if (progTrad) progTrad.glideTo(frac * 100, ms);
+    };
+    reportTour(0.7, 12000);        // زحف تقديري لين يصل حدث اكتمال تحميل الإطار
 
     // بعد 8 ثوانٍ: تتحول شاشة التحميل إلى شاشة بدء بلمسة واحدة.
     // هذا يحل مشكلة الجوال: المتصفح يشترط تفاعل المستخدم لبدء التشغيل،
@@ -1666,6 +1909,8 @@
       if (dismissed) return;
       dismissed = true;
       revealTour();
+      if (progTrad) progTrad.stop();
+      if (hintsTrad) hintsTrad.stop();
       loading.classList.add("hide");
       track(() => loading.remove(), 900);
     };
@@ -1715,7 +1960,16 @@
         stage3d = null;
         if (!dismissed){
           viewport.insertBefore(loading, exitBtn);
-          if (proceeded) showReadyState();
+          // الشريط والتلميحات تنتقل للشاشة التقليدية
+          if (!progTrad){
+            progTrad = makeProgressBar();
+            hintsTrad = makeHintsLine();
+            loading.appendChild(hintsTrad.el);
+            loading.appendChild(progTrad.el);
+            hintsTrad.start();
+            progTrad.glideTo(70, 5000);
+          }
+          if (proceeded){ progTrad.finish(); showReadyState(); }
         }
       };
     }
@@ -1723,6 +1977,8 @@
     const proceed = () => {
       if (proceeded || dismissed) return;
       proceeded = true;
+      reportTour(1, 200);
+      if (progTrad) progTrad.finish();
       // وضع 3D: ما نفتح الجولة تلقائياً — نعلّم إنها جاهزة وننتظر ضغطة الزائر
       if (use3d && stage3d){ stage3d.setTourReady(); return; }
       showReadyState();
@@ -1730,6 +1986,9 @@
 
     // عند تحميل الإطار: انتظر مهلة التغطية ثم اكشف
     iframe.addEventListener("load", () => track(proceed, SPLASH_COVER_MS), { once: true });
+    // مؤشر التقدّم يتبع نفس الإشارة: من لحظة اكتمال تحميل الإطار يوصل 100٪
+    // بالضبط مع انتهاء مهلة التغطية (بلا أي تغيير في التوقيت نفسه)
+    iframe.addEventListener("load", () => reportTour(1, SPLASH_COVER_MS), { once: true });
     // حدّ أقصى احتياطي إن تأخّر أو لم يصل حدث onload
     track(proceed, LOAD_TIMEOUT);
 
@@ -2215,9 +2474,11 @@
     // نصوص الجولة العامة
     const tx = live && live.texts;
     if (tx){
-      ["tourLoading","tourReady","tourResume","emptyTitle","emptyHint"].forEach(k => {
+      ["tourLoading","tourReady","tourResume","emptyTitle","emptyHint","tourHints"].forEach(k => {
         if (typeof tx[k] === "string" && tx[k].trim() !== "") SITE_TOUR_TEXTS[k] = tx[k];
       });
+      const sec = Number(tx.tourHintSec);
+      if (isFinite(sec) && sec >= 1.5) SITE_TOUR_TEXTS.tourHintSec = sec;
     }
     // تخصيص كل جولة
     TOURX = (live && live.tourx && typeof live.tourx === "object") ? live.tourx : {};

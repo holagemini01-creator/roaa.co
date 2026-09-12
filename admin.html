@@ -526,6 +526,25 @@
     background:var(--gold-dim); padding:2px 9px; border-radius:var(--radius);
   }
 
+  /* اختيار زاوية واجهة المبنى داخل محرّر الجولة */
+  .face3d-box{
+    position:relative; width:100%; height:210px; margin-top:8px;
+    background:radial-gradient(ellipse at 50% 42%, #ffffff 0%, #f3efe6 60%, #e6e0d2 100%);
+    border:1px solid var(--panel-line); border-radius:var(--radius);
+    overflow:hidden; cursor:grab; touch-action:none;
+  }
+  .face3d-box.dragging{ cursor:grabbing; }
+  .face3d-box canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .face3d-ph{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    text-align:center; padding:16px; font-size:.78rem; color:#5d5a52; line-height:1.8;
+  }
+  .face3d-bar{ display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap; }
+  .face3d-val{
+    font-family:'JetBrains Mono',monospace; font-size:.75rem; color:var(--gold);
+    background:var(--gold-dim); padding:3px 10px; border-radius:var(--radius);
+  }
+
   .gc-presets{ flex-wrap:wrap; }
   .gc-presets .seg{ flex:1 1 32%; min-width:88px; border-top:1px solid var(--panel-line); }
   .gc-presets .seg:nth-child(-n+3){ border-top:none; }
@@ -704,6 +723,17 @@
         <div class="field"><label>عند الجاهزية (الجوال)</label><input type="text" data-t="tourReady" /></div>
       </div>
       <div class="field"><label>زر العودة لملء الشاشة</label><input type="text" data-t="tourResume" /></div>
+      <div class="field">
+        <label>تلميحات أثناء التحميل (سطر لكل تلميحة)</label>
+        <textarea data-t="tourHints" rows="6"></textarea>
+        <div class="hint">
+          تظهر كسطر رفيع أسفل شاشة التحميل وأسفل النموذج ثلاثي الأبعاد، وتتبدّل وحدة بعد وحدة بالتناوب.
+        </div>
+      </div>
+      <div class="field">
+        <label>مدة عرض كل تلميحة (ثواني)</label>
+        <input type="number" data-t="tourHintSec" min="2" max="30" step="0.5" placeholder="4.5" />
+      </div>
       <div class="row2">
         <div class="field"><label>عنوان الحالة الفارغة</label><input type="text" data-t="emptyTitle" /></div>
         <div class="field"><label>شرح الحالة الفارغة</label><input type="text" data-t="emptyHint" /></div>
@@ -998,12 +1028,28 @@
             </div>
             <div class="err" id="eModel" style="display:none"></div>
           </div>
-          <div class="field" style="margin-bottom:0">
+          <div class="field">
             <label>مدة استعراض المبنى قبل دعوة الدخول (ثواني)</label>
             <input type="number" id="fIntro3d" min="0" max="120" step="1" placeholder="12" />
             <div class="hint">
-              الزائر يلف المبنى بإصبعه طول هذي المدة (والمبنى يلف تلقائياً لما يسيبه).
+              الزائر يلف المبنى بإصبعه طول هذي المدة (والمبنى يلف تلقائياً أول ما يسيبه).
               بعدها تظهر دعوة «اضغط لبدء الجولة» — والدخول ما يصير إلا بضغطة منه.
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>واجهة المبنى (الزاوية اللي يبدأ منها العرض)</label>
+            <div class="face3d-box" id="face3dBox">
+              <canvas id="face3dCanvas"></canvas>
+              <div class="face3d-ph" id="face3dPh">حط رابط النموذج فوق وبعدها اضغط «تحميل النموذج»</div>
+            </div>
+            <div class="face3d-bar">
+              <button class="btn sm" type="button" id="btnFaceLoad">تحميل النموذج</button>
+              <button class="btn sm primary" type="button" id="btnFaceSet">اعتمد هذي الزاوية</button>
+              <span class="face3d-val" id="face3dVal">—</span>
+            </div>
+            <div class="hint">
+              لفّ المبنى بإصبعك لين تجيك الواجهة اللي تبي الزائر يشوفها أول ما يفتح، واضغط «اعتمد هذي الزاوية».
+              الموقع يبدأ منها، ويرجّع لها المبنى قبل الزوم عند الدخول.
             </div>
           </div>
         </div>
@@ -1150,7 +1196,16 @@ const DEFAULT_TEXTS = {
   contactTitle:"تواصل معنا", contactSub:"GET IN TOUCH",
   brandName:"رؤى", footerText:"— ALL RIGHTS RESERVED",
   pageTitle:"رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية",
-  pageDescription:"رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية."
+  pageDescription:"رؤى — للرؤية الرقمية الحديثة والجولات الافتراضية.",
+  tourHints:[
+    "اسحب بإصبعك لتدوير المشهد حولك",
+    "اضغط على أي نقطة في الأرضية للانتقال إليها",
+    "قرّب بإصبعين للتكبير، وباعد للتصغير",
+    "اضغط على أيقونة المخطط لتشوف المكان من فوق",
+    "تتجوّل بحرية بين كل الغرف والأدوار",
+    "كل اللي تشوفه تصوير حقيقي للمكان"
+  ].join("\n"),
+  tourHintSec:"4.5"
 };
 
 const DEFAULT_TYPE = { desktop:1, mobile:1, tagline:1, heading:1, card:1 };
@@ -1373,12 +1428,18 @@ function openEditor(id){
   dispMode = (t && t.model3d) ? "model3d" : "classic";
   $("#fModel3d").value = t ? (t.model3d || "") : "";
   $("#fIntro3d").value = (t && t.intro3d) ? t.intro3d : "";
+  face3dDeg = (t && Number(t.face3d)) ? Number(t.face3d) : 0;
+  faceViewer.dispose();
+  syncFaceLabel();
   syncDispMode();
   syncImgMode(); updateSlugPreview(); clearErrors();
   $("#editor").classList.add("on");
   setTimeout(() => $("#fTitle").focus(), 60);
 }
-const closeEditor = () => $("#editor").classList.remove("on");
+const closeEditor = () => {
+  $("#editor").classList.remove("on");
+  faceViewer.dispose();          // تحرير مشهد المعاينة عند إغلاق المحرّر
+};
 $("#edClose").addEventListener("click", closeEditor);
 $("#edCancel").addEventListener("click", closeEditor);
 $("#btnNew").addEventListener("click", () => openEditor(null));
@@ -1414,7 +1475,160 @@ $$(".seg[data-disp]").forEach(b => b.addEventListener("click", () => {
 function syncDispMode(){
   $$(".seg[data-disp]").forEach(b => b.classList.toggle("on", b.dataset.disp === dispMode));
   $("#disp3dBox").style.display = dispMode === "model3d" ? "block" : "none";
+  if (dispMode !== "model3d") faceViewer.dispose();
 }
+
+/* ---------- اختيار زاوية واجهة المبنى (معاينة حيّة داخل المحرّر) ----------
+   نفس حسابات الكاميرا الموجودة في index.html، حتى تطابق المعاينة الموقع. */
+let face3dDeg = 0;
+const faceViewer = (function(){
+  let renderer = null, scene = null, camera = null, root = null, holder = null;
+  let raf = 0, modelH = 1, modelW = 1, fitR = 3.2;
+  const hoverBase = 0.05, FOV = 38;
+  const orbit = { r: 3.2, az: 0, el: 0.26 };
+  const target = { y: 0.5 };
+
+  function box(){ return $("#face3dBox"); }
+
+  function apply(){
+    if (!camera) return;
+    const r = orbit.r, a = orbit.az, e = orbit.el;
+    camera.position.set(r*Math.cos(e)*Math.sin(a), target.y + r*Math.sin(e), r*Math.cos(e)*Math.cos(a));
+    camera.lookAt(0, target.y, 0);
+  }
+  function resize(){
+    if (!renderer || !camera) return;
+    const el = box();
+    const w = el.clientWidth || 520, h = el.clientHeight || 210;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    const topY = hoverBase + modelH;
+    const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    target.y = topY / 2;
+    fitR = Math.max(topY/2 / tanV, (modelW*1.16/2) / (tanV * Math.max(0.0001, camera.aspect))) * 1.16;
+    orbit.r = fitR;
+    camera.updateProjectionMatrix();
+    apply();
+  }
+  function loop(){
+    raf = requestAnimationFrame(loop);
+    apply();
+    renderer.render(scene, camera);
+  }
+
+  async function load(url){
+    dispose();
+    const el = box();
+    $("#face3dPh").textContent = "جارٍ تحميل النموذج…";
+    $("#face3dPh").style.display = "flex";
+    if (typeof THREE === "undefined" || !THREE.GLTFLoader){
+      $("#face3dPh").textContent = "مكتبة العرض ثلاثي الأبعاد ما تحمّلتش — تأكد من اتصالك بالإنترنت.";
+      return;
+    }
+    let buf;
+    try{
+      const res = await fetch(url, { credentials:"omit" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      buf = await res.arrayBuffer();
+    }catch(err){
+      $("#face3dPh").textContent = "تعذّر تحميل الملف من هذا الرابط — تأكد إنه صحيح ومرفوع.";
+      return;
+    }
+    const canvas = $("#face3dCanvas");
+    renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(FOV, 16/10, 0.01, 120);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.95));
+    const key = new THREE.DirectionalLight(0xffffff, 0.85); key.position.set(3.5, 5.5, 4); scene.add(key);
+    const rim = new THREE.DirectionalLight(0xc6a35d, 0.35); rim.position.set(-4, 2.4, -3.2); scene.add(rim);
+    root = new THREE.Group(); scene.add(root);
+
+    new THREE.GLTFLoader().parse(buf, "", (gltf) => {
+      const model = gltf.scene;
+      const b = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3(); b.getSize(size);
+      const c = new THREE.Vector3(); b.getCenter(c);
+      model.position.x -= c.x; model.position.z -= c.z; model.position.y -= b.min.y;
+      const k = 1.3 / (Math.max(size.x, size.y, size.z) || 1);
+      model.scale.setScalar(k);
+      modelH = size.y * k; modelW = Math.max(size.x, size.z) * k;
+      holder = new THREE.Group(); holder.position.y = hoverBase;
+      holder.add(model); root.add(holder);
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(modelW*0.55, modelW*0.58, 96),
+        new THREE.MeshBasicMaterial({ color:0xc6a35d, transparent:true, opacity:0.45, side:THREE.DoubleSide }));
+      ring.rotation.x = -Math.PI/2; ring.position.y = 0.001; root.add(ring);
+      orbit.az = face3dDeg * Math.PI / 180;
+      resize();
+      $("#face3dPh").style.display = "none";
+      loop();
+    }, () => {
+      $("#face3dPh").textContent = "الملف مو نموذج GLB صالح.";
+    });
+  }
+
+  function dispose(){
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+    if (renderer){
+      try{ renderer.dispose(); if (renderer.forceContextLoss) renderer.forceContextLoss(); }catch(e){}
+    }
+    renderer = scene = camera = root = holder = null;
+    const ph = $("#face3dPh");
+    if (ph){ ph.style.display = "flex"; ph.textContent = "حط رابط النموذج فوق وبعدها اضغط «تحميل النموذج»"; }
+  }
+
+  // السحب يلف المبنى داخل المعاينة
+  let dragging = false, lx = 0, ly = 0;
+  function bind(){
+    const el = box();
+    el.addEventListener("pointerdown", (e) => {
+      if (!renderer) return;
+      dragging = true; lx = e.clientX; ly = e.clientY;
+      el.classList.add("dragging");
+      try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      orbit.az -= (e.clientX - lx) * 0.0075;
+      orbit.el = Math.max(-0.12, Math.min(1.15, orbit.el + (e.clientY - ly) * 0.005));
+      lx = e.clientX; ly = e.clientY;
+    });
+    const up = () => { dragging = false; el.classList.remove("dragging"); };
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    window.addEventListener("resize", () => { if (renderer) resize(); });
+  }
+
+  return {
+    load, dispose, bind,
+    currentDeg(){
+      const TWO = Math.PI * 2;
+      let d = (orbit.az % TWO) * 180 / Math.PI;
+      d = (d % 360 + 360) % 360;
+      return Math.round(d);
+    },
+    ready(){ return !!renderer; }
+  };
+})();
+faceViewer.bind();
+
+function syncFaceLabel(){
+  $("#face3dVal").textContent = face3dDeg ? (face3dDeg + "°") : "افتراضية (0°)";
+}
+$("#btnFaceLoad").addEventListener("click", () => {
+  const url = $("#fModel3d").value.trim();
+  if (!url) return toast("حط رابط ملف GLB أول", "bad");
+  faceViewer.load(url);
+});
+$("#btnFaceSet").addEventListener("click", () => {
+  if (!faceViewer.ready()) return toast("حمّل النموذج أول باش تلفّه وتختار الزاوية", "bad");
+  face3dDeg = faceViewer.currentDeg();
+  syncFaceLabel();
+  toast("تم اعتماد زاوية الواجهة (" + face3dDeg + "°)", "ok");
+});
 
 $$(".seg[data-img]").forEach(b => b.addEventListener("click", () => {
   imgMode = b.dataset.img;
@@ -1509,7 +1723,7 @@ $("#edSave").addEventListener("click", async () => {
     title, slug, tour, image, imageMode:imgMode,
     location:$("#fLocation").value.trim(), address:$("#fAddress").value.trim(),
     mapLink:$("#fMap").value.trim(), published:$("#fPub").checked,
-    model3d, intro3d,
+    model3d, intro3d, face3d: model3d ? (Number(face3dDeg) || 0) : 0,
     updatedAt:serverTimestamp()
   };
   const btn = $("#edSave");
@@ -1701,6 +1915,7 @@ function draft(){
       if (t.model3d){
         o.model3d = t.model3d;
         o.intro3d = Number(t.intro3d) > 0 ? Number(t.intro3d) : 12;
+        if (Number(t.face3d)) o.face3d = Number(t.face3d);
       }
       return o;
     });
