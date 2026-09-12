@@ -879,6 +879,7 @@
 
       <div class="group"><h3>مستوى الضغط</h3></div>
       <div class="segs gc-presets" id="gcPresetSegs">
+        <button class="seg" type="button" data-preset="web2">هدف 2 ميجا</button>
         <button class="seg" type="button" data-preset="light">خفيف</button>
         <button class="seg on" type="button" data-preset="medium">متوسط</button>
         <button class="seg" type="button" data-preset="strong">قوي</button>
@@ -889,6 +890,22 @@
       <div class="note" style="margin-top:-6px">
         حتى في "أقصى ضغط" شكل المبنى العام يبقى محفوظ لأن التبسيط يقفل على الحواف الخارجية للمجسّم — اللي يتأثر أكثر هو
         التفاصيل الدقيقة ووضوح الصور. جرّب المعاينة تحت قبل ما تعتمد أي إعداد على جولة حقيقية.
+      </div>
+
+      <label class="toggle" style="margin:6px 0 10px">
+        <input type="checkbox" id="gcTargetToggle" />
+        <span class="track"></span>
+        وصّل لحجم محدّد تلقائياً
+      </label>
+      <div class="field" id="gcTargetBox" style="display:none">
+        <label>الحجم المطلوب (ميجابايت)</label>
+        <input type="number" id="gcTargetMB" min="0.3" max="60" step="0.1" value="2" />
+        <div class="hint">
+          البرنامج يجرّب بنفسه لين يوصل للحجم هذا: يقصّ من <b>المضلعات</b> أول (شكل المبنى
+          يتحمّل التبسيط لأن أغلبه أسطح مستوية)، ويبقي <b>دقة الصور عالية</b> لأطول مدى ممكن —
+          وهي اللي تبيّن الواجهة واسم الشركة. ما ينزّل دقة الصور تحت 1024px إلا لو استحال
+          الوصول للحجم بغيرها. ملف 50 ميجا يوصل عادةً لـ2 ميجا بثلاث محاولات.
+        </div>
       </div>
 
       <div class="gc-slider">
@@ -3203,6 +3220,7 @@ const gcTexSizeEl = gc('#gcTexSize');
 const gcTexFormatEl = gc('#gcTexFormat');
 const gcQualityEl = gc('#gcQuality'), gcVQuality = gc('#gcVQuality');
 const gcQuantizeToggle = gc('#gcQuantizeToggle');
+const gcTargetToggle = gc('#gcTargetToggle'), gcTargetMB = gc('#gcTargetMB');
 
 let gcCurrentFile = null;
 
@@ -3253,7 +3271,11 @@ function gcSetFile(f){
   gcResultEl.classList.remove('on');
 }
 
+// إعداد البداية لوضع الهدف: نبدأ بتبسيط متوسط وصور عالية الدقة،
+// والبحث التلقائي هو اللي ينزل بالمضلعات لين يوصل للحجم المطلوب
+const GC_TARGET_START = { ratio:20, error:25, texSize:2048, texFormat:'auto', quality:82, quantize:true };
 const GC_PRESETS = {
+  web2:     { ...GC_TARGET_START, target:2 },
   light:    { ratio:100, error:5,  texSize:2048, texFormat:'auto', quality:90, quantize:true },
   medium:   { ratio:50,  error:10, texSize:1024, texFormat:'auto', quality:80, quantize:true },
   strong:   { ratio:25,  error:20, texSize:512,  texFormat:'auto', quality:68, quantize:true },
@@ -3263,6 +3285,10 @@ const GC_PRESETS = {
 function gcApplyPreset(name){
   const p = GC_PRESETS[name];
   if (!p) return;
+  // البريستات اللي فيها هدف تشغّل وضع «وصّل لحجم محدّد»
+  gcTargetToggle.checked = !!p.target;
+  if (p.target) gcTargetMB.value = p.target;
+  gcSyncTargetBox();
   gcRatioEl.value = p.ratio;
   gcErrorEl.value = p.error;
   gcTexSizeEl.value = String(p.texSize);
@@ -3286,6 +3312,11 @@ function gcMarkCustom(){
 [gcRatioEl, gcErrorEl, gcTexSizeEl, gcTexFormatEl, gcQualityEl, gcQuantizeToggle].forEach(el => {
   el.addEventListener('input', () => { gcSyncLabels(); gcMarkCustom(); });
 });
+function gcSyncTargetBox(){
+  gc('#gcTargetBox').style.display = gcTargetToggle.checked ? 'block' : 'none';
+}
+gcTargetToggle.addEventListener('change', () => { gcSyncTargetBox(); });
+gcSyncTargetBox();
 function gcSyncLabels(){
   gcVRatio.textContent = gcRatioEl.value + '٪';
   gcVError.textContent = (parseInt(gcErrorEl.value,10)/1000).toFixed(3);
@@ -3482,12 +3513,82 @@ async function gcCompressGLB(arrayBuffer, opts){
   await doc.transform(prune());
 
   const trisAfter = gcCountTriangles(doc);
+  // حجم الصور بعد الضغط — ثابت تقريباً مهما تغيّر تبسيط المضلعات،
+  // فنستعمله كـ«أرضية» عند حساب المحاولة الجاية في وضع الهدف
+  let texBytes = 0;
+  for (const t of doc.getRoot().listTextures()){
+    const im = t.getImage();
+    if (im) texBytes += im.length;
+  }
 
   gcLog('تصدير الملف النهائي…');
   gcSetProgress(99);
   const out = await io.writeBinary(doc);
   gcSetProgress(100);
-  return { bytes: out, trisBefore, trisAfter };
+  return { bytes: out, trisBefore, trisAfter, texBytes };
+}
+
+/* ── وضع «وصّل لحجم محدّد» ──────────────────────────────────────────
+   الفكرة: حجم الملف = صور (ثابتة) + هندسة (تتناسب خطياً مع نسبة التبسيط).
+   فبعد كل محاولة نحسب النسبة الجديدة من النتيجة الفعلية بدل التخمين:
+       نسبة جديدة = نسبة حالية × (الهدف − الصور) ÷ (الناتج − الصور)
+   ونقصّ من المضلعات أول؛ ما ننزّل دقة الصور إلا لما تنتهي حيلة المضلعات،
+   لأن الصور هي اللي تبيّن الواجهة واسم الشركة. */
+function gcPlanNext(cur, outBytes, texBytes, targetBytes){
+  const OVERHEAD = 48 * 1024;                    // رؤوس الملف وبيانات المشهد
+  const geoOut  = Math.max(1, outBytes - texBytes - OVERHEAD);
+  const geoWant = targetBytes - texBytes - OVERHEAD;
+
+  // في ميزانية معقولة للمضلعات؟ إذن نكتفي بتعديل نسبة التبسيط
+  if (geoWant > geoOut * 0.06 && cur.ratio > 1.4){
+    const factor = Math.max(0.06, Math.min(0.92, geoWant / geoOut));
+    const ratio = Math.max(1, Math.min(100, cur.ratio * factor));
+    if (ratio < cur.ratio - 0.4){
+      return { ...cur, ratio,
+               error: Math.min(150, Math.round(cur.error * 1.25)),
+               step: 'geo' };
+    }
+  }
+  // خلصت حيلة المضلعات — ننزل بالصور درجة واحدة (وهذا آخر ما نلجأ له)
+  const sizes = [4096, 2048, 1024, 768, 512, 256];
+  const curSize = cur.texSize || 2048;
+  const nextSize = sizes.find(v => v < curSize) || 0;
+  if (nextSize && nextSize >= 256){
+    return { ...cur, texSize: nextSize,
+             quality: Math.max(60, cur.quality - 6),
+             ratio: Math.max(4, cur.ratio), step: 'tex' };
+  }
+  if (cur.quality > 50){
+    return { ...cur, quality: Math.max(50, cur.quality - 8), step: 'quality' };
+  }
+  return null;                                   // ما بقى شي نقدر نقصّه
+}
+
+async function gcCompressToTarget(arrayBuffer, startOpts, targetBytes, maxPasses){
+  let opts = { ...startOpts };
+  let best = null, first = null;
+  for (let pass = 1; pass <= maxPasses; pass++){
+    gcLog('محاولة ' + pass + ': تبسيط ' + Math.round(opts.ratio) + '٪ / صور '
+          + (opts.texSize || 'كما هي') + 'px / جودة ' + opts.quality + '٪…');
+    const res = await gcCompressGLB(arrayBuffer, { ...opts, ratio: Math.round(opts.ratio) });
+    if (!first) first = res;
+    if (!best || res.bytes.length < best.bytes.length) best = res;
+    gcLog('   ← الناتج ' + gcFmtSize(res.bytes.length)
+          + ' (الصور منها ' + gcFmtSize(res.texBytes) + ')');
+    if (res.bytes.length <= targetBytes){
+      gcLog('وصلنا للحجم المطلوب في المحاولة ' + pass, 'l-ok');
+      return { ...res, opts, passes: pass, reached: true };
+    }
+    const next = gcPlanNext(opts, res.bytes.length, res.texBytes, targetBytes);
+    if (!next){
+      gcLog('ما نقدرش ننزل أكثر بلا ما نخرّب الشكل — هذا أصغر حجم ممكن.', 'l-err');
+      break;
+    }
+    if (next.step === 'tex')
+      gcLog('المضلعات وصلت حدها — ننزّل دقة الصور لـ' + next.texSize + 'px', 'l-err');
+    opts = next;
+  }
+  return { ...best, opts, passes: maxPasses, reached: false };
 }
 
 gcBtnCompress.addEventListener('click', async () => {
@@ -3509,7 +3610,25 @@ gcBtnCompress.addEventListener('click', async () => {
 
   try{
     const buf = await gcCurrentFile.arrayBuffer();
-    const { bytes: out, trisBefore, trisAfter } = await gcCompressGLB(buf, opts);
+    let out, trisBefore, trisAfter, usedOpts = null, reached = true;
+    if (gcTargetToggle.checked){
+      const mb = parseFloat(gcTargetMB.value);
+      const targetBytes = Math.max(0.3, isFinite(mb) ? mb : 2) * 1024 * 1024;
+      gcLog('الهدف: ' + gcFmtSize(targetBytes) + ' — نبدأ ونعدّل تلقائياً');
+      const r = await gcCompressToTarget(buf, { ...GC_TARGET_START, texFormat: opts.texFormat },
+                                         targetBytes, 5);
+      out = r.bytes; trisBefore = r.trisBefore; trisAfter = r.trisAfter;
+      usedOpts = r.opts; reached = r.reached;
+      // نعكس الإعدادات اللي وصلنا بها على الشاشة حتى يشوفها ويعيد استعمالها
+      gcRatioEl.value = Math.round(usedOpts.ratio);
+      gcErrorEl.value = usedOpts.error;
+      gcTexSizeEl.value = String(usedOpts.texSize);
+      gcQualityEl.value = usedOpts.quality;
+      gcSyncLabels();
+    }else{
+      const r = await gcCompressGLB(buf, opts);
+      out = r.bytes; trisBefore = r.trisBefore; trisAfter = r.trisAfter;
+    }
     const outBlob = new Blob([out], { type:'model/gltf-binary' });
     const url = URL.createObjectURL(outBlob);
     gcBtnDownload.href = url;
@@ -3521,8 +3640,14 @@ gcBtnCompress.addEventListener('click', async () => {
     const pct = Math.round((1 - out.length/gcCurrentFile.size) * 100);
     gcStatPct.textContent = (pct >= 0 ? pct : 0) + '٪';
     gc('#gcExtraStats').innerHTML = 'المضلعات: <b>' + trisBefore.toLocaleString() + '</b> ← <b>' + trisAfter.toLocaleString() + '</b>';
+    if (usedOpts){
+      gc('#gcExtraStats').innerHTML +=
+        '<br>الإعداد اللي وصلنا بيه: تبسيط <b>' + Math.round(usedOpts.ratio) +
+        '٪</b> — صور <b>' + usedOpts.texSize + 'px</b> — جودة <b>' + usedOpts.quality + '٪</b>';
+    }
     gcResultEl.classList.add('on');
-    gcLog('تم بنجاح — التوفير ' + pct + '٪', 'l-ok');
+    gcLog('تم بنجاح — التوفير ' + pct + '٪' + (reached ? '' : ' (ما وصلناش للهدف تماماً)'),
+          reached ? 'l-ok' : 'l-err');
     gcShowPreview(out);
   } catch(err){
     console.error(err);

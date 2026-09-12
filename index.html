@@ -1508,10 +1508,9 @@
     (async function start(){
       try{
         // الملف والمكتبة ينزلوا بالتوازي، ما ننتظر واحد فوق الثاني
-        const bufP = fetchModelBuffer(url, (p) => {
-          if (disposed) return;
-          lTxt.textContent = TB.tourLoading + "  " + Math.round(p * 100) + "٪";
-        });
+        // بلا نسبة مئوية على نص المبنى — «يتم التحميل…» فقط،
+        // والشريط السفلي هو اللي يعد المدة لين تظهر دعوة الدخول
+        const bufP = fetchModelBuffer(url);
         await loadThree();
         const buf = await bufP;
         if (disposed) return;
