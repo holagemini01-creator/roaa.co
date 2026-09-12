@@ -1077,7 +1077,18 @@
             </div>
             <div class="hint">
               لفّ المبنى بإصبعك لين تجيك الواجهة اللي تبي الزائر يشوفها أول ما يفتح، واضغط «اعتمد هذي الزاوية».
-              الموقع يبدأ منها، ويرجّع لها المبنى قبل الزوم عند الدخول.
+            </div>
+
+            <div class="group" style="margin:18px 0 10px"><h3>مكان الدخول (الباب)</h3></div>
+            <div class="face3d-bar">
+              <button class="btn sm" type="button" id="btnDoorPick">حدد مكان الباب</button>
+              <button class="btn sm" type="button" id="btnDoorClear">إزالة التحديد</button>
+              <span class="face3d-val" id="door3dVal">غير محدد</span>
+            </div>
+            <div class="hint">
+              اضغط «حدد مكان الباب» وبعدها انقر على الباب في المبنى فوق — تظهر نقطة ذهبية على مكانه.
+              عند الدخول للجولة الكاميرا تلف لجهة الباب وتدخل منه بدل ما تدخل من وسط المبنى.
+              بدون تحديد، الدخول يصير من جهة الواجهة زي قبل.
             </div>
           </div>
         </div>
@@ -1457,8 +1468,12 @@ function openEditor(id){
   $("#fModel3d").value = t ? (t.model3d || "") : "";
   $("#fIntro3d").value = (t && t.intro3d) ? t.intro3d : "";
   face3dDeg = (t && Number(t.face3d)) ? Number(t.face3d) : 0;
+  const d = t && t.door3d;
+  door3dPt = (d && isFinite(d.x) && isFinite(d.y) && isFinite(d.z))
+           ? { x:+d.x, y:+d.y, z:+d.z } : null;
   faceViewer.dispose();
   syncFaceLabel();
+  syncDoorLabel();
   setBg3d((t && t.bg3d) || BG3D_DEFAULT);
   syncDispMode();
   syncImgMode(); updateSlugPreview(); clearErrors();
@@ -1510,6 +1525,7 @@ function syncDispMode(){
 /* ---------- اختيار زاوية واجهة المبنى (معاينة حيّة داخل المحرّر) ----------
    نفس حسابات الكاميرا الموجودة في index.html، حتى تطابق المعاينة الموقع. */
 let face3dDeg = 0;
+let door3dPt = null;      // نقطة الباب على المجسّم {x,y,z}
 // تفتيح/تغميق لون بنسبة (موجب = أفتح، سالب = أغمق)
 function shade(hex, amount){
   const h = String(hex || "").replace("#", "");
@@ -1524,6 +1540,7 @@ function shade(hex, amount){
 }
 const faceViewer = (function(){
   let renderer = null, scene = null, camera = null, root = null, holder = null;
+  let modelRef = null, marker = null, rayc = null, pickMode = false;
   let raf = 0, modelH = 1, modelW = 1, fitR = 3.2;
   const hoverBase = 0.05, FOV = 38;
   const orbit = { r: 3.2, az: 0, el: 0.26 };
@@ -1606,18 +1623,48 @@ const faceViewer = (function(){
         new THREE.RingGeometry(modelW*0.55, modelW*0.58, 96),
         new THREE.MeshBasicMaterial({ color:0xc6a35d, transparent:true, opacity:0.45, side:THREE.DoubleSide }));
       ring.rotation.x = -Math.PI/2; ring.position.y = 0.001; root.add(ring);
+      modelRef = model;
+      rayc = new THREE.Raycaster();
       orbit.az = face3dDeg * Math.PI / 180;
       resize();
       $("#face3dPh").style.display = "none";
+      if (door3dPt) placeMarker(door3dPt);      // نعرض الباب المحفوظ إن وُجد
       loop();
     }, () => {
       $("#face3dPh").textContent = "الملف مو نموذج GLB صالح.";
     });
   }
 
+  // علامة ذهبية صغيرة على مكان الباب
+  function placeMarker(p){
+    if (!root || !p) return;
+    if (marker){ root.remove(marker); marker = null; }
+    const size = Math.max(0.03, modelH * 0.045);
+    marker = new THREE.Mesh(
+      new THREE.SphereGeometry(size, 20, 16),
+      new THREE.MeshBasicMaterial({ color:0xc6a35d }));
+    marker.position.set(p.x, p.y, p.z);
+    root.add(marker);
+  }
+  function clearMarker(){
+    if (marker && root){ root.remove(marker); }
+    marker = null;
+  }
+  // نقرة على المبنى ترجّع النقطة اللي انضغطت عليه بالضبط
+  function pickAt(clientX, clientY){
+    if (!modelRef || !rayc || !camera) return null;
+    const el = box(), r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    rayc.setFromCamera({ x: ((clientX - r.left) / r.width) * 2 - 1,
+                         y: -((clientY - r.top) / r.height) * 2 + 1 }, camera);
+    const hits = rayc.intersectObject(modelRef, true);
+    return hits.length ? hits[0].point : null;
+  }
+
   function dispose(){
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
+    modelRef = null; rayc = null; marker = null; pickMode = false;
     if (renderer){
       try{ renderer.dispose(); if (renderer.forceContextLoss) renderer.forceContextLoss(); }catch(e){}
     }
@@ -1626,30 +1673,54 @@ const faceViewer = (function(){
     if (ph){ ph.style.display = "flex"; ph.textContent = "حط رابط النموذج فوق وبعدها اضغط «تحميل النموذج»"; }
   }
 
-  // السحب يلف المبنى داخل المعاينة
-  let dragging = false, lx = 0, ly = 0;
+  // السحب يلف المبنى داخل المعاينة، والنقرة في وضع التحديد تختار الباب
+  let dragging = false, lx = 0, ly = 0, moved = 0;
   function bind(){
     const el = box();
     el.addEventListener("pointerdown", (e) => {
       if (!renderer) return;
-      dragging = true; lx = e.clientX; ly = e.clientY;
+      dragging = true; moved = 0; lx = e.clientX; ly = e.clientY;
       el.classList.add("dragging");
       try{ el.setPointerCapture(e.pointerId); }catch(err){}
     });
     el.addEventListener("pointermove", (e) => {
       if (!dragging) return;
-      orbit.az -= (e.clientX - lx) * 0.0075;
-      orbit.el = Math.max(-0.12, Math.min(1.15, orbit.el + (e.clientY - ly) * 0.005));
+      const dx = e.clientX - lx, dy = e.clientY - ly;
+      moved += Math.abs(dx) + Math.abs(dy);
+      orbit.az -= dx * 0.0075;
+      orbit.el = Math.max(-0.12, Math.min(1.15, orbit.el + dy * 0.005));
       lx = e.clientX; ly = e.clientY;
     });
-    const up = () => { dragging = false; el.classList.remove("dragging"); };
+    const up = (e) => {
+      if (!dragging) return;
+      dragging = false; el.classList.remove("dragging");
+      if (pickMode && moved < 10){        // نقرة (مو سحب) = تحديد الباب
+        const p = pickAt(e.clientX, e.clientY);
+        if (p){
+          door3dPt = { x:+p.x.toFixed(4), y:+p.y.toFixed(4), z:+p.z.toFixed(4) };
+          placeMarker(door3dPt);
+          pickMode = false;
+          el.style.cursor = "";
+          syncDoorLabel();
+          toast("تم تحديد مكان الباب", "ok");
+        }else{
+          toast("انقر على المبنى نفسه مش على الفراغ", "bad");
+        }
+      }
+    };
     el.addEventListener("pointerup", up);
-    el.addEventListener("pointercancel", up);
+    el.addEventListener("pointercancel", () => { dragging = false; el.classList.remove("dragging"); });
     window.addEventListener("resize", () => { if (renderer) resize(); });
   }
 
   return {
-    load, dispose, bind,
+    load, dispose, bind, placeMarker, clearMarker,
+    startPick(){
+      if (!renderer) return false;
+      pickMode = true;
+      box().style.cursor = "crosshair";
+      return true;
+    },
     // نعرض نفس خلفية الموقع داخل المعاينة حتى يشوف النتيجة الحقيقية
     setBg(hex){
       const b = box();
@@ -1698,6 +1769,21 @@ $("#btnFaceSet").addEventListener("click", () => {
   face3dDeg = faceViewer.currentDeg();
   syncFaceLabel();
   toast("تم اعتماد زاوية الواجهة (" + face3dDeg + "°)", "ok");
+});
+
+/* ---------- تحديد مكان الباب بالنقر على المبنى ---------- */
+function syncDoorLabel(){
+  $("#door3dVal").textContent = door3dPt ? "محدد ✓" : "غير محدد";
+}
+$("#btnDoorPick").addEventListener("click", () => {
+  if (!faceViewer.startPick()) return toast("حمّل النموذج أول باش تنقر على الباب", "bad");
+  toast("انقر على الباب في المبنى");
+});
+$("#btnDoorClear").addEventListener("click", () => {
+  door3dPt = null;
+  faceViewer.clearMarker();
+  syncDoorLabel();
+  toast("اتشال تحديد الباب — الدخول يرجع من جهة الواجهة");
 });
 
 $$(".seg[data-img]").forEach(b => b.addEventListener("click", () => {
@@ -1795,6 +1881,7 @@ $("#edSave").addEventListener("click", async () => {
     mapLink:$("#fMap").value.trim(), published:$("#fPub").checked,
     model3d, intro3d, face3d: model3d ? (Number(face3dDeg) || 0) : 0,
     bg3d: model3d ? ($("#fBg3d").value || BG3D_DEFAULT) : "",
+    door3d: (model3d && door3dPt) ? door3dPt : null,
     updatedAt:serverTimestamp()
   };
   const btn = $("#edSave");
@@ -1989,6 +2076,10 @@ function draft(){
         o.intro3d = (isFinite(iv) && iv >= 0) ? iv : 6;
         if (Number(t.face3d)) o.face3d = Number(t.face3d);
         if (t.bg3d && t.bg3d !== "#f3efe6") o.bg3d = t.bg3d;
+        const dr = t.door3d;
+        if (dr && isFinite(dr.x) && isFinite(dr.y) && isFinite(dr.z)){
+          o.door3d = { x:+dr.x, y:+dr.y, z:+dr.z };
+        }
       }
       return o;
     });
