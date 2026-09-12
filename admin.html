@@ -1086,10 +1086,11 @@
               <span class="face3d-val" id="door3dVal">غير محدد</span>
             </div>
             <div class="hint">
-              اضغط «حدد مكان الباب» وبعدها انقر على الباب في المبنى فوق — تظهر نقطة ذهبية على مكانه.
-              عند الدخول للجولة الكاميرا تلف لجهة الباب وتدخل منه بدل ما تدخل من وسط المبنى.
-              بدون تحديد، الدخول يصير من جهة الواجهة زي قبل.
+              اضغط «حدد مكان الباب» وبعدها انقر على الباب في المبنى فوق — يظهر دبّوس ذهبي على مكانه
+              (يبان فوق المبنى دايماً حتى لو النقطة على جدار). عند الدخول للجولة، الزوم يتوجّه للباب
+              ويدخل منه وتبدأ الجولة في نفس اللحظة. بدون تحديد، الدخول يصير من جهة الواجهة.
             </div>
+
           </div>
         </div>
       </div>
@@ -1468,9 +1469,9 @@ function openEditor(id){
   $("#fModel3d").value = t ? (t.model3d || "") : "";
   $("#fIntro3d").value = (t && t.intro3d) ? t.intro3d : "";
   face3dDeg = (t && Number(t.face3d)) ? Number(t.face3d) : 0;
-  const d = t && t.door3d;
-  door3dPt = (d && isFinite(d.x) && isFinite(d.y) && isFinite(d.z))
-           ? { x:+d.x, y:+d.y, z:+d.z } : null;
+  const dr0 = t && t.door3d;
+  door3dPt = (dr0 && isFinite(dr0.x) && isFinite(dr0.y) && isFinite(dr0.z))
+           ? { x:+dr0.x, y:+dr0.y, z:+dr0.z } : null;
   faceViewer.dispose();
   syncFaceLabel();
   syncDoorLabel();
@@ -1635,19 +1636,29 @@ const faceViewer = (function(){
     });
   }
 
-  // علامة ذهبية صغيرة على مكان الباب
+  // دبّوس ذهبي على مكان الباب — نرسمه بلا اختبار عمق وبترتيب متأخّر
+  // حتى يبان فوق المبنى دايماً (قبل كذا كان يندفن في الجدار فما يبانش)
   function placeMarker(p){
     if (!root || !p) return;
-    if (marker){ root.remove(marker); marker = null; }
-    const size = Math.max(0.03, modelH * 0.045);
-    marker = new THREE.Mesh(
-      new THREE.SphereGeometry(size, 20, 16),
-      new THREE.MeshBasicMaterial({ color:0xc6a35d }));
-    marker.position.set(p.x, p.y, p.z);
+    clearMarker();
+    const size = Math.max(0.035, (Number(modelH) || 1) * 0.05);
+    const mat = new THREE.MeshBasicMaterial({ color:0xc6a35d, depthTest:false, depthWrite:false });
+    marker = new THREE.Group();
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(size, 20, 16), mat);
+    ball.renderOrder = 998;
+    marker.add(ball);
+    const stem = new THREE.Mesh(
+      new THREE.CylinderGeometry(size * 0.16, size * 0.16, size * 3.4, 12), mat);
+    stem.position.y = size * 2.0; stem.renderOrder = 998;
+    marker.add(stem);
+    // ندفع الدبّوس شوي برّا السطح في اتجاه بعيد عن محور المبنى
+    const out = Math.hypot(p.x, p.z) || 1;
+    marker.position.set(p.x + (p.x / out) * size * 0.7, p.y,
+                        p.z + (p.z / out) * size * 0.7);
     root.add(marker);
   }
   function clearMarker(){
-    if (marker && root){ root.remove(marker); }
+    if (marker && root) root.remove(marker);
     marker = null;
   }
   // نقرة على المبنى ترجّع النقطة اللي انضغطت عليه بالضبط
@@ -1657,6 +1668,7 @@ const faceViewer = (function(){
     if (!r.width || !r.height) return null;
     rayc.setFromCamera({ x: ((clientX - r.left) / r.width) * 2 - 1,
                          y: -((clientY - r.top) / r.height) * 2 + 1 }, camera);
+    modelRef.updateMatrixWorld(true);
     const hits = rayc.intersectObject(modelRef, true);
     return hits.length ? hits[0].point : null;
   }
@@ -1715,8 +1727,9 @@ const faceViewer = (function(){
 
   return {
     load, dispose, bind, placeMarker, clearMarker,
+    hasModel(){ return !!modelRef; },
     startPick(){
-      if (!renderer) return false;
+      if (!renderer || !modelRef) return false;
       pickMode = true;
       box().style.cursor = "crosshair";
       return true;
@@ -1773,7 +1786,9 @@ $("#btnFaceSet").addEventListener("click", () => {
 
 /* ---------- تحديد مكان الباب بالنقر على المبنى ---------- */
 function syncDoorLabel(){
-  $("#door3dVal").textContent = door3dPt ? "محدد ✓" : "غير محدد";
+  $("#door3dVal").textContent = door3dPt
+    ? "محدد ✓  (" + door3dPt.x + ", " + door3dPt.y + ", " + door3dPt.z + ")"
+    : "غير محدد";
 }
 $("#btnDoorPick").addEventListener("click", () => {
   if (!faceViewer.startPick()) return toast("حمّل النموذج أول باش تنقر على الباب", "bad");

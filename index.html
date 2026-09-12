@@ -459,7 +459,7 @@
   .stage3d-fade{
     position:absolute; inset:0; z-index:9; pointer-events:none;
     background: var(--roaa-base, #f3efe6);
-    opacity:0; transition: opacity 0.34s ease-in;
+    opacity:0; transition: opacity 0.26s ease-in;
   }
   .stage3d-fade.on{ opacity:1; }
 
@@ -1475,7 +1475,7 @@
     let autoRotate = true, introTimer = 0, introStart = 0;
     let modelH = 1, modelW = 1, hoverBase = 0.05, fitRadius = 3.2;
     let popped = false, popScale = 1;         // تكبير المبنى تحت الإصبع/الماوس
-    const FOV_BASE = 38, FOV_ZOOM = 54, FOV_DIVE = 28, FADE_MS = 340;
+    const FOV_BASE = 38, FOV_ZOOM = 54, FADE_MS = 300;
     // زاوية الواجهة: يحدّدها صاحب الموقع من لوحة التحكم، ومنها يبدأ العرض
     const faceAz = (Number(faceDeg) || 0) * Math.PI / 180;
     const orbit = { radius: 3.6, az: faceAz, el: 0.26 };
@@ -1829,37 +1829,34 @@
       const turnMs = 300 + Math.min(700, Math.abs(delta) * 420);
 
       const dive = () => {
-        // الوجهة: الباب نفسه إن وُجد، وإلا وسط المبنى كالسابق
+        // الوجهة: الباب نفسه إن وُجد، وإلا وسط المبنى
         const toT = door ? door : homeTarget;
-        // ── مسافة التوقّف: نقف *قدّام* الباب ولا نعبر الجدار أبداً.
-        // عبور الجدار كان يخلي آخر لحظة من الحركة بلا أي شي يُرسم،
-        // فيبان لون الخلفية (غامق = تحسّه شاشة سوداء) قبل ما تفتح الجولة.
-        const halfFoot = modelW * 0.5;                 // نصف أوسع بعد أفقي
-        const doorH = door ? Math.hypot(door.x, door.z) : 0;
-        const clearR = halfFoot + 0.10 - doorH;        // أقل مسافة تضمن إننا برّا الكتلة
-        const endR = door
-          ? Math.max(0.30, modelW * 0.42, clearR)
-          : Math.max(0.30, fitRadius * 0.22, halfFoot + 0.10);
-        // العدسة تضيق بدل ما تتوسّع: يعطي إحساس «الدفع للداخل» بلا ملامسة الجدار
-        const endFov = door ? FOV_DIVE : FOV_ZOOM;
-        const DIVE_MS = 900;
+        // الزوم يدخل للمبنى فعلاً (ما يتوقّفش قدّام الجدار) والجولة تفتح
+        // لحظة العبور بالضبط — التلاشي بلون الخلفية يغطّي اللحظة اللي
+        // تصير فيها الكاميرا ملزوقة بالجدار، فما يبانش أي فراغ غامق.
+        const endR = door ? 0.02 : Math.max(0.06, fitRadius * 0.10);
+        const DIVE_MS = 820;
         anim = {
           start: performance.now(), ms: DIVE_MS, ease: easeIn,
           from: { radius: orbit.radius, el: orbit.el, az: orbit.az,
                   tx: target.x, ty: target.y, tz: target.z },
           to:   { radius: endR, el: door ? 0.02 : 0.05, az: orbit.az,
                   tx: toT.x, ty: toT.y, tz: toT.z },
-          fromFov: camera.fov, fov: endFov,
-          done: () => {
-            hint.hidden = true;
-            if (typeof api.onEnter === "function") api.onEnter();
-          }
+          fromFov: camera.fov, fov: FOV_ZOOM,
+          done: enterNow
         };
-        // آخر ثلث ثانية: تلاشي بلون خلفية الجولة نفسها — انتقال مقصود
-        // بدل فراغ مفاجئ، ثم تنكشف الجولة من تحته
+        // التلاشي يبدأ قبل نهاية الحركة حتى يكون مكتملاً لحظة الدخول
         later(() => { if (!disposed && api.entered) fade.classList.add("on"); },
               Math.max(0, DIVE_MS - FADE_MS));
       };
+      // فتح الجولة مرة واحدة فقط مهما صار
+      let entryFired = false;
+      function enterNow(){
+        if (entryFired || disposed) return;
+        entryFired = true;
+        hint.hidden = true;
+        if (typeof api.onEnter === "function") api.onEnter();
+      }
 
       // المرحلة الأولى: لفّة نحو جهة الدخول مع تقريب بسيط،
       // ولو في باب نميل الكاميرا تدريجياً لمستواه
@@ -2003,8 +2000,8 @@
                      ? NaN : Number(proj.intro3d);
     const intro3dMs  = (isFinite(rawIntro) && rawIntro >= 0) ? rawIntro * 1000 : 6000;
     const face3dDeg  = Number(proj.face3d) || 0;
-    const bg3dHex    = (proj.bg3d || "").trim();
     const door3dPt   = (proj.door3d && typeof proj.door3d === "object") ? proj.door3d : null;
+    const bg3dHex    = (proj.bg3d || "").trim();
     let use3d = !!model3dUrl && isSafeEmbedUrl(model3dUrl) && hasWebGL();
     let stage3d = null;
 
