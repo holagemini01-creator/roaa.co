@@ -335,9 +335,20 @@
     .viewport.is-fs .cover-logo{ bottom:12px; right:2px; width:200px; height:88px; }
     /* إلغاء الحاجز الشفاف الأيسر في وضع ملء الشاشة */
     .viewport.is-fs .cover-block{ display:none; }
-    /* إخفاء بقية الموقع تماماً أثناء ملء الشاشة */
+    /* إخفاء بقية الموقع تماماً أثناء ملء الشاشة.
+       نخفي كل شي ما عدا المسار المؤدي للعارض (fs-branch) والعارض نفسه،
+       حتى يبقى الإطار في مكانه من الـDOM ولا تُعاد الجولة من أولها. */
     body.fs-lock{ overflow:hidden; }
-    body.fs-lock > *:not(.fs-host){ display:none !important; }
+    body.fs-lock > *:not(.fs-host):not(.fs-branch){ display:none !important; }
+    body.fs-lock .fs-branch > *:not(.fs-host):not(.fs-branch){ display:none !important; }
+    /* نبطّل أي شي في عناصر المسار يكسر التثبيت أو يقصّ العارض */
+    body.fs-lock .fs-branch{
+      transform:none !important; filter:none !important; backdrop-filter:none !important;
+      will-change:auto !important; perspective:none !important; contain:none !important;
+      animation:none !important; opacity:1 !important; overflow:visible !important;
+      margin:0 !important; padding:0 !important; border:0 !important;
+      max-width:none !important; background:none !important; box-shadow:none !important;
+    }
     .fs-host{ position:static; z-index:auto; }
     /* زر العودة إلى ملء الشاشة (يظهر فوق الـ iframe بعد الخروج) */
     .resume-fs{ display:flex !important; }
@@ -370,6 +381,12 @@
     align-items:center; justify-content:center; gap:22px;
     background:#f3efe6;
     transition: opacity 0.8s ease;
+    /* مساحة محجوزة تحت لسطر التلميحات وشريط التقدّم حتى لا يتراكبوا */
+    padding-bottom:44px;
+  }
+  @media (max-height:340px){
+    .loading-screen{ gap:12px; padding-bottom:40px; }
+    .loading-screen img{ max-height:30%; }
   }
   .loading-screen.hide{ opacity:0; pointer-events:none; }
   .loading-screen img{
@@ -435,7 +452,7 @@
   /* دعوة الدخول للجولة — التوسيط في الغلاف والنبضة في الزر نفسه،
      حتى لا تلغي حركة النبضة توسيط العنصر */
   .stage3d-hint{
-    position:absolute; z-index:3; left:0; right:0; bottom:12%;
+    position:absolute; z-index:8; left:0; right:0; bottom:44px;
     display:flex; justify-content:center; align-items:center;
     pointer-events:none;
     opacity:0; transition:opacity 0.5s ease;
@@ -453,31 +470,33 @@
 
   /* ---------- شريط التقدّم وسطر التلميحات (في الوضعين) ---------- */
   .roaa-prog{
-    position:absolute; z-index:7; left:0; right:0; bottom:0;
-    height:3px; background:rgba(30,36,48,0.12);
+    position:absolute; z-index:9; left:0; right:0; bottom:0;
+    height:6px; background:rgba(30,36,48,0.16);
     transition: opacity .5s ease;
   }
   .roaa-prog > i{
     display:block; height:100%; width:0%;
-    background:linear-gradient(90deg, #c6a35d, #d8bd82);
+    background:linear-gradient(90deg, #b8913f, #e0c27f);
+    box-shadow:0 0 10px rgba(198,163,93,0.85);
+    border-radius:0 3px 3px 0;
     transition: width .25s linear;
   }
   .roaa-prog.done{ opacity:0; }
 
+  /* سطر التلميحات — فوق الشريط مباشرة وبعيد عن بقية العناصر */
   .roaa-hints{
-    position:absolute; z-index:7; left:0; right:0; bottom:14px;
-    display:flex; justify-content:center; pointer-events:none;
-    padding:0 18px;
+    position:absolute; z-index:8; left:0; right:0; bottom:10px;
+    height:22px; display:flex; justify-content:center; align-items:center;
+    pointer-events:none; padding:0 16px;
   }
   .roaa-hints > span{
     font-family:'Kufam', system-ui, sans-serif;
-    font-size:0.72rem; line-height:1.7; color:#1e2430; opacity:0;
-    text-align:center; max-width:90%;
+    font-size:0.72rem; line-height:1.5; color:#1e2430; opacity:0;
+    text-align:center; max-width:96%;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     transition: opacity .55s ease;
   }
-  .roaa-hints > span.on{ opacity:.62; }
-  /* داخل مسرح النموذج نرفع السطر شوي فوق الشريط */
-  .stage3d .roaa-hints{ bottom:16px; }
+  .roaa-hints > span.on{ opacity:.6; }
 
   /* زر الرجوع للنموذج — في وضع 3D يظهر على كل الأجهزة (مو الجوال فقط) */
   .exit-fs.fs-3d{ display:flex; }
@@ -716,6 +735,8 @@
     bottom:var(--ctrl-bottom); right:var(--ctrl-right);
     display:flex; direction:ltr; align-items:center; gap:var(--ctrl-gap);
   }
+  /* أزرار الجولة ما تظهر إلا داخل الجولة نفسها (مو فوق شاشة التحميل أو المبنى) */
+  .tour-controls[hidden]{ display:none !important; }
   .tour-ctrl{
     width:var(--ctrl-size); height:var(--ctrl-size); border-radius:50%;
     display:flex; align-items:center; justify-content:center; padding:0;
@@ -1392,16 +1413,21 @@
       model = obj;
       const box = new THREE.Box3().setFromObject(model);
       const size = new THREE.Vector3(); box.getSize(size);
-      const center = new THREE.Vector3(); box.getCenter(center);
       // نوسّط أفقياً فقط، ونخلي قاعدة المبنى على y=0 حتى يطفو فوق الحلقة
-      model.position.x -= center.x;
-      model.position.z -= center.z;
-      model.position.y -= box.min.y;
       const maxDim = Math.max(size.x, size.y, size.z) || 1;
       const k = 1.3 / maxDim;
       model.scale.setScalar(k);
-      modelH = size.y * k;
-      modelW = Math.max(size.x, size.z) * k;      // أعرض بعد أفقي (عرض القاعدة)
+      // مهم: نعيد قياس الصندوق بعد التصغير، لأن الإزاحة تُحسب بمقياس الأب
+      // (لو استعملنا قياس ما قبل التصغير يطلع المبنى مرفوع عن الحلقة ومقصوص)
+      model.updateMatrixWorld(true);
+      const box2 = new THREE.Box3().setFromObject(model);
+      const size2 = new THREE.Vector3(); box2.getSize(size2);
+      const c2 = new THREE.Vector3(); box2.getCenter(c2);
+      model.position.x -= c2.x;
+      model.position.z -= c2.z;
+      model.position.y -= box2.min.y;             // قاعدة المبنى تستقر على y = 0
+      modelH = size2.y;
+      modelW = Math.max(size2.x, size2.z);        // أعرض بعد أفقي (عرض القاعدة)
       const halfFoot = modelW * 0.5;
 
       holder = new THREE.Group();
@@ -1411,7 +1437,7 @@
 
       // صندوق غير مرئي بحجم المبنى — نستعمله لمعرفة إن كان المؤشر فوق المبنى
       // (أسرع بكثير من فحص مئات آلاف المثلثات عند كل حركة مؤشر)
-      const hitGeo = new THREE.BoxGeometry(size.x*k, size.y*k, size.z*k);
+      const hitGeo = new THREE.BoxGeometry(size2.x, size2.y, size2.z);
       const hitMat = new THREE.MeshBasicMaterial({ visible:false });
       hitBox = new THREE.Mesh(hitGeo, hitMat);
       hitBox.position.y = modelH * 0.5;
@@ -1714,6 +1740,7 @@
     viewport._timers = [];
     // تحرير مشهد ثلاثي الأبعاد سابق (إن وُجد) قبل بناء جولة جديدة
     if (viewport._stage3d){ try{ viewport._stage3d.dispose(); }catch(e){} viewport._stage3d = null; }
+    viewport._controls = null;
     viewport.classList.remove("is-fs", "fs-host");
     document.body.classList.remove("fs-lock");
     viewport.innerHTML = "";
@@ -1844,12 +1871,35 @@
 
     let veilTimer = null;
 
+    // عناصر المسار من العارض لغاية body — نعلّمها حتى تبقى ظاهرة في ملء الشاشة
+    const fsBranch = [];
+    let fsMoved = false;      // هل اضطرينا ننقل العنصر (الطريقة القديمة)؟
+    const markBranch = () => {
+      let n = viewport.parentNode;
+      while (n && n !== document.body && n.classList){
+        n.classList.add("fs-branch");
+        fsBranch.push(n);
+        n = n.parentNode;
+      }
+    };
+    const clearBranch = () => {
+      fsBranch.forEach(n => n.classList.remove("fs-branch"));
+      fsBranch.length = 0;
+    };
+
     const enterFs = () => {
       if (!isMobile()) return;
-      // ننقل العنصر إلى body للخروج من stacking context الذي يبقي بقية الموقع فوقه
-      document.body.appendChild(viewport);
+      // نخلي الإطار في مكانه من الصفحة (بلا نقل) حتى ما تُعاد الجولة من أولها
+      markBranch();
       viewport.classList.add("fs-host", "is-fs");
       document.body.classList.add("fs-lock");
+      // لو تعذّر ملء الشاشة بهذي الطريقة (عنصر أب يكسر التثبيت) نرجع للنقل القديم
+      const r = viewport.getBoundingClientRect();
+      if (r.width < window.innerWidth - 2 || r.left > 2 || r.top > 2){
+        clearBranch();
+        document.body.appendChild(viewport);
+        fsMoved = true;
+      }
       resumeBtn.hidden = true;
       tapShield.hidden = true;
       window.scrollTo(0, 0);
@@ -1869,14 +1919,17 @@
       veilFs.hidden = true;
       // الجملة الدائمة تظهر بعد الخروج من ملء الشاشة
       veilNormal.hidden = false;
-      // إعادة العنصر إلى مكانه الأصلي داخل الصفحة
-      if (homeAnchor.parentNode) {
+      clearBranch();
+      // ما نرجّع العنصر لمكانه إلا لو اضطرينا ننقله أصلاً (حتى ما تُعاد الجولة)
+      if (fsMoved && homeAnchor.parentNode) {
         homeAnchor.parentNode.insertBefore(viewport, homeAnchor);
+        fsMoved = false;
       }
       // وضع 3D: الخروج يرجّع الزائر للمبنى الطايف نفسه (الجولة تبقى محمّلة تحته)
       if (use3d && stage3d){
         exitBtn.hidden = true;
         veilNormal.hidden = true;
+        if (viewport._controls) viewport._controls.hidden = true;  // نرجع للمبنى فتختفي الأزرار
         stage3d.restore();
         return;
       }
@@ -1893,6 +1946,7 @@
 
     // كشف الجولة نفسها (ملء شاشة مزيّف في الجوال، أو داخل الإطار في اللابتوب)
     const revealTour = () => {
+      if (viewport._controls) viewport._controls.hidden = false;   // الأزرار تبان داخل الجولة فقط
       if (isMobile() && !IS_EMBED) {
         enterFs();                 // الجوال (خارج التضمين): ملء الشاشة المزيّف + الجملة المؤقتة
       } else {
@@ -2015,6 +2069,9 @@
     // زر ملء الشاشة — يظهر دائماً (يملأ الشاشة على اللابتوب، ويفتح تبويب على الجوال)
     controls.appendChild(makeFsToggle(viewport, proj));
 
+    // مخفية لين تنكشف الجولة فعلاً (ما تظهر فوق شاشة التحميل ولا فوق المبنى)
+    controls.hidden = true;
+    viewport._controls = controls;
     viewport.appendChild(controls);
   } else {
     viewport.innerHTML = `
