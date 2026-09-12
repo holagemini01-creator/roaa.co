@@ -1605,7 +1605,9 @@
       const halfH  = topY / 2;
       const halfW  = modelW / 2;              // نطابق عرض المبنى؛ الحلقة تسيح برّا بلا ضرر
 
-      const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      // نحسب دايماً بزاوية العدسة الأساسية، مو الحالية — وإلا لو صار تغيير
+      // حجم أثناء الزوم (والعدسة متوسّعة) يطلع المقاس غلط ويرجع المبنى كبير
+      const tanV = Math.tan(THREE.MathUtils.degToRad(FOV_BASE / 2));
       const rV = (halfH / tanV) * 1.16;       // ما يلزم لدخول الارتفاع + هامش
       const rH = (halfW / (tanV * Math.max(0.0001, camera.aspect))) * 1.06;
       fitRadius = Math.max(rV, rH);
@@ -1804,7 +1806,8 @@
           start: performance.now(), ms: 900, ease: easeIn,
           from: { radius: orbit.radius, el: orbit.el, az: orbit.az,
                   tx: target.x, ty: target.y, tz: target.z },
-          to:   { radius: door ? 0.03 : Math.max(0.06, fitRadius * 0.10),
+          // نقف قدّام الباب مباشرة ولا ندخل جوّا الجدار (وإلا تطلع الشاشة سوداء)
+          to:   { radius: door ? Math.max(0.14, modelW * 0.18) : Math.max(0.06, fitRadius * 0.10),
                   el: door ? 0.02 : 0.05, az: orbit.az,
                   tx: toT.x, ty: toT.y, tz: toT.z },
           fromFov: camera.fov, fov: FOV_ZOOM,
