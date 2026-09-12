@@ -1044,10 +1044,12 @@
           </div>
           <div class="field">
             <label>مدة استعراض المبنى قبل دعوة الدخول (ثواني)</label>
-            <input type="number" id="fIntro3d" min="0" max="120" step="1" placeholder="12" />
+            <input type="number" id="fIntro3d" min="0" max="120" step="1" placeholder="6" />
             <div class="hint">
               الزائر يلف المبنى بإصبعه طول هذي المدة (والمبنى يلف تلقائياً أول ما يسيبه).
               بعدها تظهر دعوة «اضغط لبدء الجولة» — والدخول ما يصير إلا بضغطة منه.
+              الافتراضي 6 ثواني، نفس وقت انتظار شاشة التحميل التقليدية. ملاحظة: الدعوة ما تظهر
+              إلا لما تجهز الجولة كذلك، فلو كانت أبطأ ينتظرها.
             </div>
           </div>
           <div class="field">
@@ -1778,11 +1780,11 @@ $("#edSave").addEventListener("click", async () => {
   }
   if (!ok) return;
 
-  // مدة الاستعراض: 12 ثانية افتراضياً، وتُحفظ فقط مع وضع النموذج
+  // مدة الاستعراض: 6 ثوانٍ افتراضياً (نفس انتظار الشاشة التقليدية)
   let intro3d = 0;
   if (model3d){
     const raw = parseInt($("#fIntro3d").value, 10);
-    intro3d = (isFinite(raw) && raw >= 0 && raw <= 120) ? raw : 12;
+    intro3d = (isFinite(raw) && raw >= 0 && raw <= 120) ? raw : 6;
   }
 
   const image = imgMode === "auto" ? autoThumb(tour)
@@ -1983,7 +1985,8 @@ function draft(){
       // حقول وضع النموذج ثلاثي الأبعاد تُنشر فقط للجولات اللي مفعّل عندها
       if (t.model3d){
         o.model3d = t.model3d;
-        o.intro3d = Number(t.intro3d) > 0 ? Number(t.intro3d) : 12;
+        const iv = Number(t.intro3d);
+        o.intro3d = (isFinite(iv) && iv >= 0) ? iv : 6;
         if (Number(t.face3d)) o.face3d = Number(t.face3d);
         if (t.bg3d && t.bg3d !== "#f3efe6") o.bg3d = t.bg3d;
       }

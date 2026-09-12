@@ -1909,7 +1909,10 @@
     // ── وضع العرض: نموذج 3D بدل شاشة التحميل (إن كان مضبوطاً لهذي الجولة) ──
     // يشترط: رابط نموذج صالح + دعم WebGL. غير كذا نكمل بالشاشة التقليدية.
     const model3dUrl = (proj.model3d || "").trim();
-    const intro3dMs  = Math.max(0, Number(proj.intro3d || 12) * 1000) || 12000;
+    // مدة استعراض المبنى: الافتراضي 6 ثواني (نفس انتظار الشاشة التقليدية)
+    const rawIntro   = (proj.intro3d === "" || proj.intro3d == null)
+                     ? NaN : Number(proj.intro3d);
+    const intro3dMs  = (isFinite(rawIntro) && rawIntro >= 0) ? rawIntro * 1000 : 6000;
     const face3dDeg  = Number(proj.face3d) || 0;
     const bg3dHex    = (proj.bg3d || "").trim();
     let use3d = !!model3dUrl && isSafeEmbedUrl(model3dUrl) && hasWebGL();
